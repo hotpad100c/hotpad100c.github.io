@@ -19,8 +19,8 @@ youtube_username: "@Ryan100c"
 #########################################################################################
 ######### Nothing below needs to be changed (unless you know what you're doing) #########
 #########################################################################################
-remote_theme: michaelnordmeyer/jekyll-theme-nix
-
+# remote_theme: michaelnordmeyer/jekyll-theme-nix
+theme: minima
 rss: rss
 
 kramdown:
