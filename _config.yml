@@ -5,7 +5,7 @@ description: "Ryan's blogs, just blogs." # This will show up in places like twit
 # Email / Social media user names used by the minima theme:
 # All of these are optional and can be removed or commented out
 email: "hotpad100c@mail.com"
-twitter_username: "-"
+#twitter_username: "-"
 github_username: "hotpad100c"
 modrinth_username: Ryan100c
 #linkedin_username: "Ryan100c"
