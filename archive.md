@@ -2,6 +2,10 @@
 layout: page
 title: Blog Archive
 ---
+<style>
+  .post-list { list-style: none; }
+  .post-item { border-left: 4px solid blue; padding: 10px; margin: 10px 0; }
+</style>
 
 <div class="archive">
   {% if site.tags.size > 0 %}
