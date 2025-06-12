@@ -9,12 +9,14 @@ title: Blog Archive
       <h3 class="tag-title">{{ tag[0] }}</h3>
       <ul class="post-list">
         {% for post in tag[1] %}
+        <blockquote>
           <li class="post-item">
             <a href="{{ post.url }}">
-              <span class="post-date">{{ post.date | date: "%B %Y" }}</span> - 
-              <span class="post-title">{{ post.title }}</span>
+                   <span class="post-date">{{ post.date | date: "%B %Y" }}</span> - 
+                   <span class="post-title">{{ post.title }}</span>
             </a>
           </li>
+        </blockquote>
         {% endfor %}
       </ul>
     {% endfor %}
