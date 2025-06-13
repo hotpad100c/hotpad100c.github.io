@@ -56,7 +56,8 @@ title: Blog Archive
         {% for post in tag[1] %}
           <li class="post-item">
             <a href="{{ post.url }}">
-                   <span class="post-date">{{ post.date | date: "%B %Y" }}</span> - 
+                   <span class="post-date">{{ post.date | date: "%B %Y" }}</span> 
+              
                    <span class="post-title">{{ post.title }}</span>
             </a>
           </li>
