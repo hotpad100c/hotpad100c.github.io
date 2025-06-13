@@ -44,15 +44,7 @@ title: Blog Archive
   font-weight: bold;
 }
 
-/* 添加引号图标（可选） */
-.post-item::before {
-  content: '“';
-  position: absolute;
-  left: -1.5rem;
-  top: 0.5rem;
-  font-size: 2rem;
-  color: #007bff;
-}
+
 </style>
 
 <div class="archive">
@@ -61,14 +53,12 @@ title: Blog Archive
       <h3 class="tag-title">{{ tag[0] }}</h3>
       <ul class="post-list">
         {% for post in tag[1] %}
-        <blockquote>
           <li class="post-item">
             <a href="{{ post.url }}">
                    <span class="post-date">{{ post.date | date: "%B %Y" }}</span> - 
                    <span class="post-title">{{ post.title }}</span>
             </a>
           </li>
-        </blockquote>
         {% endfor %}
       </ul>
     {% endfor %}
