@@ -7,7 +7,7 @@ title: Blog Archive
   font-size: 1.5em;
   margin-top: 2rem;
   color: #333;
-  border-bottom: 2px solid #007bff;
+  border-bottom: 2px solid #7a4cb5;
   padding-bottom: 0.5rem;
 }
 
@@ -18,7 +18,7 @@ title: Blog Archive
 
 .post-item {
   background: #f9f9f9;
-  border-left: 4px solid #007bff;
+  border-left: 4px solid #ad7feb;
   margin: 1rem 0;
   padding: 1rem;
   position: relative;
