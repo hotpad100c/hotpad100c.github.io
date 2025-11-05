@@ -50,10 +50,16 @@ config:
         linkText: 阅读文章
       -
         title: GTMC
-        icon: ✍️
+        icon: 📕
         details: 我参与的一个Minecraft技术文档项目
         link: https://techmc.wiki/#/
         linkText: 阅读文章
+      -
+        title: TMCWords-Search
+        icon: 🔎
+        details: 便捷的TMC属于查询！感谢DuskScorpio的数据库
+        link: https://github.com/DuskScorpio/TechMC-Glossary/commits?author=DuskScorpio
+        linkText: 查询术语
 ---
 > 你好，世界。
 ![owo](https://count.getloli.com/@RBDGN?name=RBDGN&theme=3d-num&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
