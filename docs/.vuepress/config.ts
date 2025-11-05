@@ -32,6 +32,18 @@ export default defineUserConfig({
       message: "使用 VuePress + Plume 主题构建, 参考 https://github.com/ZXBHELLO/Website",
       copyright: "Copyright © 2025 Ryan100c",
     },
+    comment: {
+      provider: 'Giscus', // "Artalk" | "Giscus" | "Twikoo" | "Waline"
+      comment: true,
+      repo: 'hotpad100c/hotpad100c.github.io',
+      repoId: '-',
+      category: 'General',
+      categoryId: '-',
+      mapping: 'url',
+      reactionsEnabled: true,
+      inputPosition: 'top',
+    },
+    
   }),
   cache: 'filesystem',
   bundler: webpackBundler(),
