@@ -1,6 +1,7 @@
 {
   "name": "vuepress-blog",
   "version": "1.0.0",
+  "packageManager": "pnpm@10.15.1",
   "scripts": {
     "docs:build": "vuepress build docs"
   },
