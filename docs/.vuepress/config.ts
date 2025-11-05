@@ -33,5 +33,6 @@ export default defineUserConfig({
       copyright: "Copyright © 2025 Ryan100c",
     },
   }),
+  cache: 'filesystem',
   bundler: webpackBundler(),
 });
