@@ -1,5 +1,6 @@
 import { defineUserConfig } from "vuepress";
 import theme from "vuepress-theme-plume";
+import { webpackBundler } from '@vuepress/bundler-webpack'
 
 export default defineUserConfig({
   lang: "zh-CN",
