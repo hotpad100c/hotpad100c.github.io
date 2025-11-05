@@ -1,5 +1,5 @@
 # 你好，我是 **Ryan100c**，也叫 **Ryan**。
-<img src="media/round.png" width="250px" height="250px" align="right" />
+<img src="media/pfp.png" width="250px" height="250px" align="right" />
 
 
 ![Ryan100c](https://github-readme-stats.vercel.app/api?username=hotpad100c&show_icons=true)
