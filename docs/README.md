@@ -2,11 +2,11 @@
 home: true
 config:
   - type: hero
+    avatar: /about/media/pfp.png
+    background: images/Bg.png
     hero:
       name: Ryan100c
       text: 编程 · Minecraft · 创造
-      avatar: /about/media/pfp.png
-      background: images/Bg.png
       actions:
         -
           theme: brand
