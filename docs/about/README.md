@@ -27,7 +27,7 @@
 #  社交
 
 也许..你会希望关注我的[Youtube](https://youtube.com/@ryan100c?si=pXAZx1J267bsRHhK)，[Bilibili](https://b23.tv/JrRwBBm)，或者加入我的[Discord服务器](https://discord.gg/r25t6cQpDP)！
-
+<CardGrid>
 <ImageCard
   image="https://i.imgur.com/A61RLP0.png"
   title="Youtube"
@@ -46,7 +46,7 @@
   description="这是discord服务器，我在上面发布模组更新等"
   href="https://discord.gg/r25t6cQpDP"
 />
-
+</CardGrid>
 另外，如果你想联系我，你可以通过
 - 我的邮箱 : hotpad100c@gmail.com
 - 我的qq : 3854665503
