@@ -47,11 +47,16 @@
   href="https://discord.gg/r25t6cQpDP"
 />
 </CardGrid>
+
 另外，如果你想联系我，你可以通过
+
 - 我的邮箱 : hotpad100c@gmail.com
+  
 - 我的qq : 3854665503
+  
 - 我的dc : https://discord.gg/323QBKeW
-与我取的联系。
+
+与我取得联系。
 
 ---
 
