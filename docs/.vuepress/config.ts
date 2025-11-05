@@ -21,12 +21,14 @@ export default defineUserConfig({
 
     social: [
       { icon: "github", link: "https://github.com/hotpad100c" },
+      {icon: "bilibili", link: "https://b23.tv/gR2fZk3"}'
+      {icon: "youtube", link: "https://youtube.com/@ryan100c"},
     ],
 
     collection: {
       avatar: "/logo.png",
       name: "Ryan100c",
-      description: "-",
+      description: "你好啊，朋友",
     },
 
     footer: {
