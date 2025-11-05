@@ -24,6 +24,37 @@
 
 ---
 
+#  社交
+
+也许..你会希望关注我的[Youtube](https://youtube.com/@ryan100c?si=pXAZx1J267bsRHhK)，[Bilibili](https://b23.tv/JrRwBBm)，或者加入我的[Discord服务器](https://discord.gg/r25t6cQpDP)！
+
+<ImageCard
+  image="https://i.imgur.com/A61RLP0.png"
+  title="Youtube"
+  description="我的youtube帐号"
+  href="https://youtube.com/@ryan100c?si=pXAZx1J267bsRHhK"
+/>
+<ImageCard
+  image="https://i.imgur.com/1eb3X2E.png"
+  title="Bilibili"
+  description="这是我的Bilibili帐号"
+  href="https://b23.tv/JrRwBBm"
+/>
+<ImageCard
+  image="https://i.imgur.com/pODrbtB.png"
+  title="我的Discord服务器"
+  description="这是discord服务器，我在上面发布模组更新等"
+  href="https://discord.gg/r25t6cQpDP"
+/>
+
+另外，如果你想联系我，你可以通过
+- 我的邮箱 : hotpad100c@gmail.com
+- 我的qq : 3854665503
+- 我的dc : https://discord.gg/323QBKeW
+与我取的联系。
+
+---
+
 # 活动
 
 到目前为止，我在[Modrinth](https://modrinth.com/user/ryan100c)拥有13个实际项目。你可以在我的“项目”页面浏览它们。
