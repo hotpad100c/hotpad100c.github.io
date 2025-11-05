@@ -14,6 +14,7 @@ export default defineUserConfig({
     navbar: [
       { text: "首页", link: "/" },
       { text: "文章", link: "/posts/" },
+      { text: "项目", link: "/projects/" },
       { text: "关于", link: "/about/" },
       { text: "GitHub", link: "https://github.com/hotpad100c" },
     ],
