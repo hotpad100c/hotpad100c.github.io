@@ -49,5 +49,13 @@
   author="CC BY-NC-SA 4.0"
 />
 
+我还有一些其它有趣的项目，你可以在我的"项目"页面浏览它们。
+
+<Card title="卡片标题" icon="📚">
+  详细查看我的项目。
+</Card>
+
+喔，最后，这里有一些表单表，它将展示我贡献与负责的公开项目。
+
 ![Repos I contributed to](https://github-contrib-stats.vercel.app/Hotpad100c/contributed.svg)
 ![Repos I created](https://github-contrib-stats.vercel.app/Hotpad100c/created.svg)
