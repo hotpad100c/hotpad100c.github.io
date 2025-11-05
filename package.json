@@ -1,0 +1,10 @@
+{
+  "name": "vuepress-blog",
+  "version": "1.0.0",
+  "scripts": {
+    "docs:build": "vuepress build docs"
+  },
+  "devDependencies": {
+    "vuepress": "next"
+  }
+}
