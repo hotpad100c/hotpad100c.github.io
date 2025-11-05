@@ -58,7 +58,7 @@ config:
         title: TMCWords-Search
         icon: 🔎
         details: 便捷的TMC属于查询！感谢DuskScorpio的数据库
-        link: https://github.com/DuskScorpio/TechMC-Glossary/commits?author=DuskScorpio
+        link: https://hotpad100c.github.io/TMCWords-Search/
         linkText: 查询术语
       -
         title: 朋友们
