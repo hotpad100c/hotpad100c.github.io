@@ -16,6 +16,7 @@ export default defineUserConfig({
       { text: "文章", link: "/posts/" },
       { text: "项目", link: "/projects/" },
       { text: "关于", link: "/about/" },
+      { text: "友链", link: "/friends.md" },
       { text: "GitHub", link: "https://github.com/hotpad100c" },
     ],
 
