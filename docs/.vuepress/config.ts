@@ -36,9 +36,9 @@ export default defineUserConfig({
       provider: 'Giscus', // "Artalk" | "Giscus" | "Twikoo" | "Waline"
       comment: true,
       repo: 'hotpad100c/hotpad100c.github.io',
-      repoId: '-',
+      repoId: 'R_kgDOO6QXBw',
       category: 'General',
-      categoryId: '-',
+      categoryId: 'DIC_kwDOO6QXB84CxcwQ',
       mapping: 'url',
       reactionsEnabled: true,
       inputPosition: 'top',
