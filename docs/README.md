@@ -66,6 +66,12 @@ config:
         details: 看看我的朋友们？
         link: /friends.md
         linkText: 看看👀
+      -
+        title: 引言录
+        icon: 🤓
+        details: 这里收集了各种神经聊天记录的截图
+        link: https://qoute-f9qd.onrender.com
+        
 ---
 > 你好，世界。
 ![owo](https://count.getloli.com/@RBDGN?name=RBDGN&theme=3d-num&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
