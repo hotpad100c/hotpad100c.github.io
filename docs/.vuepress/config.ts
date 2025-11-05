@@ -21,7 +21,7 @@ export default defineUserConfig({
 
     social: [
       { icon: "github", link: "https://github.com/hotpad100c" },
-      {icon: "bilibili", link: "https://b23.tv/gR2fZk3"}'
+      {icon: "bilibili", link: "https://b23.tv/gR2fZk3"},
       {icon: "youtube", link: "https://youtube.com/@ryan100c"},
     ],
 
