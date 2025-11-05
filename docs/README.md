@@ -60,6 +60,12 @@ config:
         details: 便捷的TMC属于查询！感谢DuskScorpio的数据库
         link: https://github.com/DuskScorpio/TechMC-Glossary/commits?author=DuskScorpio
         linkText: 查询术语
+      -
+        title: 朋友们
+        icon: 😃
+        details: 看看我的朋友们？
+        link: /friends.md
+        linkText: 看看👀
 ---
 > 你好，世界。
 ![owo](https://count.getloli.com/@RBDGN?name=RBDGN&theme=3d-num&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
