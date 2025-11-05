@@ -22,7 +22,7 @@ export default defineUserConfig({
       { icon: "github", link: "https://github.com/hotpad100c" },
     ],
 
-    blog: {
+    collection: {
       avatar: "/logo.png",
       name: "Ryan100c",
       description: "-",
