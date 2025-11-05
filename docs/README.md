@@ -1,12 +1,12 @@
 ---
 home: true
 config:
-  -
-    type: hero
+  - type: hero
     hero:
       name: Ryan100c
       text: 编程 · Minecraft · 创造
-      image: /avatar.png
+      avatar: /imges/avatar.png
+      background: images/Bg.png
       actions:
         -
           theme: brand
