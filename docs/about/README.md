@@ -1,5 +1,5 @@
 # 你好，我是 **Ryan100c**，也叫 **Ryan**。
-<img src="media/pfp.png" width="250px" height="250px" align="right" />
+<img src="https://i.imgur.com/FaWB3Tf.png" width="250px" height="250px" align="right" />
 
 
 ![Ryan100c](https://github-readme-stats.vercel.app/api?username=hotpad100c&show_icons=true)
@@ -24,7 +24,7 @@
 在接触Minecraft前，我热衷于Unity游戏开发，我发布过数个小游戏(和一些当年爆火Unity游戏的破解版)。
 如果你感兴趣，你可以在我的[itch.io主页](https://ryan100c.itch.io)找到并下载它们。
 <ImageCard
-  image="media/itchIo.jpeg"
+  image="https://i.imgur.com/e3xOlwM.jpeg"
   title="我的itch.io主页"
   description="这是我的itch.io主页，我已经很久很久没有碰Unity了，真是怀念啊..."
   href="https://ryan100c.itch.io"
