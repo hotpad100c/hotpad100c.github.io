@@ -5,7 +5,7 @@ config:
     hero:
       name: Ryan100c
       text: 编程 · Minecraft · 创造
-      avatar: /imges/avatar.png
+      avatar: /about/media/pfp.png
       background: images/Bg.png
       actions:
         -
