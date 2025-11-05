@@ -15,4 +15,5 @@
 
 ---
 到目前为止，我在[Modrinth](https://modrinth.com/user/ryan100c)拥有13个实际项目。你可以在我的“项目”页面浏览它们。
+![modrinth主页-2025-11-5](media/MyModrinth.png)
 
