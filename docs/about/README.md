@@ -1,9 +1,8 @@
 # 你好
 我是 **Ryan100c**，也叫 **Ryan**。
-<img src="https://i.imgur.com/FaWB3Tf.png" width="250px" height="250px" align="right" />
 
+![Ryan100c](https://github-readme-stats.vercel.app/api?username=hotpad100c&show_icons=true)<img src="https://i.imgur.com/FaWB3Tf.png" width="250px" height="250px" align="right" />
 
-![Ryan100c](https://github-readme-stats.vercel.app/api?username=hotpad100c&show_icons=true)
 
 [![skilled-lang](https://skillicons.dev/icons?i=cs,java,py,js,blender,idea,unity)](https://skillicons.dev)
 
@@ -12,7 +11,7 @@
 这个名字的由来其实很简单：  
 它是由我的英文名 **Ryan** 和邮箱 **hotpad100c@gmail.com** 组合而成的。  
 如果你更我比较熟悉，有时我被群友叫做「人言一百草」「ryan将军」，至于将军的称号是怎么来的，我也不知道，你应该询问*寒鱼*。
-  
+
 ---
 
 我是一名热爱 **红石**， **编程**， **Minecraft 模组开发** 与 **视频创作** 的创作者。也是一名学生。
