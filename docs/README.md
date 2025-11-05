@@ -48,6 +48,12 @@ config:
         details: 记录开发日志、灵感、与 Minecraft 技术研究
         link: /posts/
         linkText: 阅读文章
+      -
+        title: GTMC
+        icon: ✍️
+        details: 我参与的一个Minecraft技术文档项目
+        link: https://techmc.wiki/#/
+        linkText: 阅读文章
 ---
 > 你好，世界。
 ![owo](https://count.getloli.com/@RBDGN?name=RBDGN&theme=3d-num&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
