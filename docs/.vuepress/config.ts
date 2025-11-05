@@ -32,4 +32,5 @@ export default defineUserConfig({
       copyright: "Copyright © 2025 Ryan100c",
     },
   }),
+  bundler: webpackBundler(),
 });
