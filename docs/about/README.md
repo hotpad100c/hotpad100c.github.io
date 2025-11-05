@@ -1,4 +1,5 @@
-# 你好，我是 **Ryan100c**，也叫 **Ryan**。
+# 你好
+我是 **Ryan100c**，也叫 **Ryan**。
 <img src="https://i.imgur.com/FaWB3Tf.png" width="250px" height="250px" align="right" />
 
 
