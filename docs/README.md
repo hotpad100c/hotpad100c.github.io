@@ -4,7 +4,7 @@ config:
   -
     type: hero
     hero:
-      name: Ryan
+      name: Ryan100c
       text: 编程 · Minecraft · 创造
       image: /avatar.png
       actions:
@@ -50,3 +50,4 @@ config:
         linkText: 阅读文章
 ---
 > 你好，世界。
+![owo](https://count.getloli.com/@RBDGN?name=RBDGN&theme=3d-num&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto)
