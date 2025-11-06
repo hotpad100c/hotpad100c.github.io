@@ -18,6 +18,7 @@ config:
       - text: 文章
         link: /posts/
         icon: material-symbols:menu-book
+---
 <!--
   - type: features
     features:
