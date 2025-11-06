@@ -2,7 +2,6 @@
 pageLayout: home
 pageClass: layout-landing
 title: Ryan100c
-navbar: false
 config:
   - type: Landing
     name: Ryan100c
