@@ -1,25 +1,25 @@
 ---
 home: true
 config:
-  - type: hero
+  - type: Landing
     avatar: /about/media/pfp.png
     background: images/Bg.png
-    hero:
-      name: Ryan100c
-      text: 编程 · Minecraft · 创造
-      actions:
-        -
-          theme: brand
-          text: 关于我
-          link: /about/
-        -
-          theme: brand
-          text: 项目
-          link: /projects/
-        -
-          theme: alt
-          text: 文章
-          link: /posts/
+
+    name: Ryan100c
+    text: 编程 · Minecraft · 创造
+    actions:
+      -
+        theme: brand
+        text: 关于我
+        link: /about/
+      -
+        theme: brand
+        text: 项目
+        link: /projects/
+      -
+        theme: alt
+        text: 文章
+        link: /posts/
           
   -
     type: features
