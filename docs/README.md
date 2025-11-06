@@ -7,8 +7,8 @@ config:
   - type: Landing
     name: Ryan100c
     tagline: 编程 · Minecraft · 创造
-    avatar: /about/media/pfp.png
-    background: /images/Bg.png
+    avatar: https://i.imgur.com/FaWB3Tf.png
+    background: https://i.imgur.com/uTPkgAY.png
     nav:
       - text: 关于我
         link: /about/
