@@ -7,7 +7,7 @@ config:
     name: Ryan100c
     tagline: 编程 · Minecraft · 创造
     avatar: https://i.imgur.com/FaWB3Tf.png
-    background: https://i.imgur.com/uTPkgAY.png
+    backgroundImage: https://i.imgur.com/uTPkgAY.png
     nav:
       - text: 关于我
         link: /about/
