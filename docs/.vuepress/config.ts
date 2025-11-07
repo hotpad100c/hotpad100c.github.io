@@ -10,7 +10,9 @@ export default defineUserConfig({
   theme: theme({
     logo: "/logo.png",
     favicon: "/logo.png",
-
+    markdown: {
+      pdf: true, 
+    },
     navbar: [
       { text: "首页", link: "/" },
       { text: "文章", link: "/posts/" },
