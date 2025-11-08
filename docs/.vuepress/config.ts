@@ -35,7 +35,7 @@ export default defineUserConfig({
     },
 
     footer: {
-      message: "使用 VuePress + Plume 主题构建, 参考 https://github.com/ZXBHELLO/Website",
+      message: "使用 VuePress + Plume 主题构建",
       copyright: "Copyright © 2025 Ryan100c",
     },
     comment: {
