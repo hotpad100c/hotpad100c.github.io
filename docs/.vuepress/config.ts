@@ -12,7 +12,7 @@ export default defineUserConfig({
     favicon: "/logo.png",
     collections: [ 
       { type: 'post', dir: 'posts', title: '博客' }
-    ]
+    ],
     markdown: {
       pdf: true, 
     },
