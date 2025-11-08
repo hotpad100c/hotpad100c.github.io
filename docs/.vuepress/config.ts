@@ -10,6 +10,9 @@ export default defineUserConfig({
   theme: theme({
     logo: "/logo.png",
     favicon: "/logo.png",
+    collections: [ 
+      { type: 'post', dir: 'posts', title: '博客' }
+    ]
     markdown: {
       pdf: true, 
     },
