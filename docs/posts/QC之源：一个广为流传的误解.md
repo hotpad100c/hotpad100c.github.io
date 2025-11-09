@@ -1,6 +1,7 @@
 ---
 title: QC之源：一个广为流传的误解
 date: 2025-06-12
+permalink: /posts/QC/
 tags: [Redstone, TMC]
 ---
 
