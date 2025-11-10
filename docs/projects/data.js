@@ -115,5 +115,41 @@ export const navData = [
         cover: 'https://cdn.modrinth.com/data/UnwbI7YL/images/cb4271a773b5039667b179740a83aca4d17efe9c.png'
       }
     ]
-  }
+  },
+  {
+    category: '网页',
+    items: [
+      {
+        id: 'QUOTE',
+        title: 'QUOTE',
+        description: '这里存放了神人群友的奇怪发言',
+        detail: '这是一个开源项目，收录各种聊天记录组成的表情。欢迎贡献。', 
+        url: 'https://qoute-f9qd.onrender.com/',
+        cover: ''
+      },
+      {
+        id: 'TMCS',
+        title: 'TMCWords-Search',
+        description: '技术向Minecraft术语表',
+        detail: '这个项目从https://github.com/DuskScorpio/TechMC-Glossary/blob/main/TechMC%20Glossary.csv拉取TMC术语并提供搜索功能', 
+        url: 'https://hotpad100c.github.io/TMCWords-Search/',
+        cover: ''
+      },
+      {
+        id: ' GTMC',
+        title: 'GTMC Wiki',
+        description: '技术向Minecraft教程集',
+        detail: '仍在编写的Minecraft技术教程集，欢迎你的贡献！', 
+        url: 'https://techmc.wiki',
+        cover: ''
+      },
+      {
+        id: 'REditor',
+        title: 'MinecraftRedStoneEditor-2D',
+        description: '改进版的红石网页2D编辑器',
+        detail: '一个基于Web的Minecraft红石电路设计工具，让你可以随时随地设计和模拟红石电路。这是个很好的工具！', 
+        url: 'http://rseditor.zxbhello.top/',
+        cover: ''
+      }
+    ]
 ]
