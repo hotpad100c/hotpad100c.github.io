@@ -150,6 +150,14 @@ export const navData = [
         detail: '一个基于Web的Minecraft红石电路设计工具，让你可以随时随地设计和模拟红石电路。这是个很好的工具！', 
         url: 'http://rseditor.zxbhello.top/',
         cover: 'https://i.postimg.cc/7h4mJSyZ/IMG-0765.jpg'
+      },
+      {
+        id: 'Ryan的博客',
+        title: 'Ryan的博客',
+        description: '什么？',
+        detail: '什么，为什么要在博客里看博客?！', 
+        url: 'https://hotpad100c.github.io/app/blog-in-blog/',
+        cover: 'https://i.imgur.com/4cqHElU.jpeg'
       }
     ]
   }
