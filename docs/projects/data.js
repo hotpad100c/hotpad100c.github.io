@@ -9,7 +9,7 @@ export const navData = [
         description: '轻量但强大的编辑器',
         detail: 'VSCode 是微软开发的跨平台编辑器，拥有强大的插件生态。',
         url: 'https://code.visualstudio.com/',
-        cover: '/images/vscode-cover.jpg'
+        cover: 'https://cdn.modrinth.com/data/Iib8xwCx/images/3234da1fc08d8e2ed098a5be2e7a1be89e563bbf.png'
       },
       {
         id: 'github',
