@@ -1,49 +1,36 @@
+//测试
 export const navData = [
   {
-    category: '模组',
+    category: '开发工具',
     items: [
       {
-        id: 'A',
-        title: '模组1',
-        description: '介绍1',
-        url: '//',
-        iconType: 'iconify',
-        icon: 'material-symbols:article-outline',
-        showIconBorder: true,
+        id: 'vscode',
+        title: 'Visual Studio Code',
+        description: '轻量但强大的编辑器',
+        detail: 'VSCode 是微软开发的跨平台编辑器，拥有强大的插件生态。',
+        url: 'https://code.visualstudio.com/',
+        cover: '/images/vscode-cover.jpg'
       },
-      
       {
-        id: 'B',
-        title: '2',
-        description: 'e1',
-        url: '//',
-        iconType: 'iconify',
-        icon: 'material-symbols:article-outline',
-        showIconBorder: true,
+        id: 'github',
+        title: 'GitHub',
+        description: '开源项目的家园',
+        detail: '一个全球最大的代码托管平台，可以协作开发与版本管理。',
+        url: 'https://github.com/',
+        cover: '/images/github-cover.png'
       }
     ]
   },
   {
-    category: '工具',
+    category: '设计与资源',
     items: [
       {
-        id: 'A',
-        title: '模',
-        description: '介绍1',
-        url: '//',
-        iconType: 'iconify',
-        icon: 'material-symbols:article-outline',
-        showIconBorder: true,
-      },
-      
-      {
-        id: 'B',
-        title: '2',
-        description: 'e1',
-        url: '//',
-        iconType: 'iconify',
-        icon: 'material-symbols:article-outline',
-        showIconBorder: true,
+        id: 'unsplash',
+        title: 'Unsplash',
+        description: '免费高清图片素材网站',
+        detail: '可免费商用的高质量图片资源。',
+        url: 'https://unsplash.com/',
+        cover: '/images/unsplash.jpg'
       }
     ]
   }
