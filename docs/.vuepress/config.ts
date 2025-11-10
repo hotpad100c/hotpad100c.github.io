@@ -9,6 +9,7 @@ export default defineUserConfig({
   head: [
       // 配置站点图标
       ['link', { rel: 'icon', type: 'image/png', href: 'https://i.postimg.cc/ZRHDmzH8/Untitled30-20251111074818.png' }],
+      ['script', { src: 'https://code.iconify.design/2/2.1.2/iconify.min.js', async: 'true' }]
   ],
 
   theme: theme({
