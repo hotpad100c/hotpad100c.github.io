@@ -32,8 +32,8 @@
           <!-- 展开详情 -->
           <transition name="fade">
             <div 
-              v-if="expandedItem === item.id"
               class="masonry-detail"
+              :class="{ expanded: expandedItem === item.id }"
             >
               <p>{{ item.detail }}</p>
               <button 
@@ -72,7 +72,24 @@ function openLink(url) {
   margin: 0 auto;
   padding: 1rem;
 }
+/* 展开详情：默认隐藏 */
+.masonry-detail {
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0 1rem;
+  background: var(--vp-c-bg);
+  border-top: 1px solid transparent;
+  transition: all 0.35s ease;
+}
 
+/* 展开状态 */
+.masonry-detail.expanded {
+  max-height: 300px; 
+  opacity: 1;
+  padding: 0.8rem 1rem 1rem;
+  border-top-color: var(--vp-c-divider);
+}
 /* 每个分组 */
 .masonry-group {
   margin-bottom: 2.5rem;
