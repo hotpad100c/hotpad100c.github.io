@@ -1,5 +1,6 @@
 <template>
   <div class="masonry-page">
+    <!-- 按分类显示 -->
     <div 
       v-for="group in navData" 
       :key="group.category"
@@ -28,25 +29,32 @@
             <h3>{{ item.title }}</h3>
             <p class="desc">{{ item.description }}</p>
           </div>
-
-          <!-- 弹出详情 -->
-          <transition name="fade">
-            <div 
-              v-if="expandedItem === item.id"
-              class="masonry-overlay"
-              @click.self="expandedItem = null"
-            >
-              <div class="masonry-popup">
-                <img v-if="item.cover" :src="item.cover" class="popup-cover" />
-                <h3>{{ item.title }}</h3>
-                <p>{{ item.detail }}</p>
-                <button class="view-btn" @click.stop="openLink(item.url)">看一看</button>
-              </div>
-            </div>
-          </transition>
         </div>
       </div>
     </div>
+
+    <!-- 居中弹窗 -->
+    <transition name="fade">
+      <div 
+        v-if="activeItem" 
+        class="masonry-overlay" 
+        @click.self="activeItem = null"
+      >
+        <div class="masonry-popup">
+          <img 
+            v-if="activeItem.cover" 
+            :src="activeItem.cover" 
+            class="popup-cover" 
+            loading="lazy"
+          />
+          <h3>{{ activeItem.title }}</h3>
+          <p>{{ activeItem.detail }}</p>
+          <button class="view-btn" @click.stop="openLink(activeItem.url)">
+            看一看
+          </button>
+        </div>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -54,10 +62,10 @@
 import { ref } from 'vue'
 import { navData } from '../../projects/data.js'
 
-const expandedItem = ref(null)
+const activeItem = ref(null)
 
 function toggleItem(item) {
-  expandedItem.value = expandedItem.value === item.id ? null : item.id
+  activeItem.value = activeItem.value?.id === item.id ? null : item
 }
 
 function openLink(url) {
@@ -66,17 +74,17 @@ function openLink(url) {
 </script>
 
 <style scoped>
-/* === 页面整体布局 === */
+/* ====== 布局基础 ====== */
 .masonry-page {
   max-width: 1800px;
   margin: 0 auto;
   padding: 1rem;
 }
 
-/* === 分组标题 === */
 .masonry-group {
   margin-bottom: 2.5rem;
 }
+
 .masonry-group-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -86,7 +94,6 @@ function openLink(url) {
   padding-bottom: 0.4rem;
 }
 
-/* === Masonry 瀑布流布局 === */
 .masonry-container {
   column-count: 4;
   column-gap: 1rem;
@@ -101,7 +108,7 @@ function openLink(url) {
   .masonry-container { column-count: 1; }
 }
 
-/* === 单个卡片 === */
+/* ====== 卡片样式 ====== */
 .masonry-card {
   background: var(--vp-c-bg-soft);
   border-radius: 10px;
@@ -118,7 +125,7 @@ function openLink(url) {
   box-shadow: 0 4px 10px rgba(0,0,0,0.12);
 }
 
-/* === 封面图 === */
+/* ====== 封面 ====== */
 .masonry-cover {
   width: 100%;
   display: block;
@@ -127,7 +134,7 @@ function openLink(url) {
   border-bottom: 1px solid var(--vp-c-divider);
 }
 
-/* === 卡片信息 === */
+/* ====== 标题与简介 ====== */
 .masonry-info {
   padding: 0.8rem 1rem;
 }
@@ -141,11 +148,11 @@ function openLink(url) {
   color: var(--vp-c-text-2);
 }
 
-/* === 弹出详情层 === */
+/* ====== 弹窗样式 ====== */
 .masonry-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -153,7 +160,6 @@ function openLink(url) {
   animation: fadeIn 0.25s ease;
 }
 
-/* === 详情弹窗 === */
 .masonry-popup {
   background: var(--vp-c-bg);
   border-radius: 12px;
@@ -162,8 +168,8 @@ function openLink(url) {
   max-width: 90%;
   max-height: 85%;
   overflow-y: auto;
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
-  animation: scaleIn 0.3s ease;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  animation: scaleIn 0.25s ease;
 }
 
 .popup-cover {
@@ -172,9 +178,10 @@ function openLink(url) {
   margin-bottom: 1rem;
 }
 
-/* === 按钮 === */
+/* ====== 按钮 ====== */
 .view-btn {
-  padding: 0.4rem 1rem;
+  margin-top: 1rem;
+  padding: 0.5rem 1.2rem;
   border: none;
   background-color: var(--vp-c-brand);
   color: white;
@@ -186,7 +193,7 @@ function openLink(url) {
   background-color: var(--vp-c-brand-darker);
 }
 
-/* === 过渡与动画 === */
+/* ====== 动画 ====== */
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.25s ease;
 }
@@ -205,9 +212,6 @@ function openLink(url) {
 </style>
 
 <!--
-修改自
-https://doc.zxbhello.top/nav/guide/
-
-许可证：
-署名-非商业性-相同方式共享 4.0 国际 (CC-BY-NC-SA-4.0)
+修改自 https://doc.zxbhello.top/nav/guide/
+许可证：署名-非商业性-相同方式共享 4.0 国际 (CC-BY-NC-SA-4.0)
 -->
