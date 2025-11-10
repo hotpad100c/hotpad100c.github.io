@@ -8,7 +8,7 @@ export default defineUserConfig({
   description: "杂七杂八的东西！",
   head: [
       // 配置站点图标
-      ['link', { rel: 'icon', type: 'image/png', href: 'https://lh3.googleusercontent.com/a/ACg8ocIIY6crlvu70FsvSnnBWNPHzvRZrDJEs7X0ljxUX83LuqIn6GPp6A=s576-c-no' }],
+      ['link', { rel: 'icon', type: 'image/png', href: 'https://i.postimg.cc/ZRHDmzH8/Untitled30-20251111074818.png' }],
   ],
 
   theme: theme({
