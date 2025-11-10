@@ -32,7 +32,7 @@
           <!-- 展开详情 -->
           <transition name="fade">
             <div 
-              v-if="expandedItem === item"
+              v-if="expandedItem === item.id"
               class="masonry-detail"
             >
               <p>{{ item.detail }}</p>
@@ -57,7 +57,7 @@ import { navData } from '../../projects/data.js'
 const expandedItem = ref(null)
 
 function toggleItem(item) {
-  expandedItem.value = expandedItem.value === item ? null : item
+  expandedItem.value = expandedItem.value === item.id ? null : item.id
 }
 
 function openLink(url) {
