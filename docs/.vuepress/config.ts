@@ -5,11 +5,11 @@ import { webpackBundler } from '@vuepress/bundler-webpack'
 export default defineUserConfig({
   lang: "zh-CN",
   title: "Ryan100c的博客",
-  description: "-。",
+  description: "杂七杂八的东西！",
 
   theme: theme({
-    logo: "/logo.png",
-    favicon: "/logo.png",
+    logo: "/images/icon.png",
+    favicon: "/images/icon.png",
     collections: [ 
       { type: 'post', dir: 'posts', title: '博客' }
     ],
