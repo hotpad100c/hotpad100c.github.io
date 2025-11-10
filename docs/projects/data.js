@@ -125,7 +125,7 @@ export const navData = [
         description: '这里存放了神人群友的奇怪发言',
         detail: '这是一个开源项目，收录各种聊天记录组成的表情。欢迎贡献。', 
         url: 'https://qoute-f9qd.onrender.com/',
-        cover: 'https://postimg.cc/9RxGvR05][img]https://i.postimg.cc/9RxGvR05/IMG-0764.jpg'
+        cover: 'https://i.postimg.cc/9RxGvR05/IMG-0764.jpg'
       },
       {
         id: 'TMCS',
@@ -133,7 +133,7 @@ export const navData = [
         description: '技术向Minecraft术语表',
         detail: '这个项目从https://github.com/DuskScorpio/TechMC-Glossary/blob/main/TechMC%20Glossary.csv拉取TMC术语并提供搜索功能', 
         url: 'https://hotpad100c.github.io/TMCWords-Search/',
-        cover: 'https://postimg.cc/wyWhSyvZ][img]https://i.postimg.cc/wyWhSyvZ/IMG-0767.jpg'
+        cover: 'https://i.postimg.cc/ZnmVv6hR/IMG-0764.jpg'
       },
       {
         id: ' GTMC',
@@ -141,7 +141,7 @@ export const navData = [
         description: '技术向Minecraft教程集',
         detail: '仍在编写的Minecraft技术教程集，欢迎你的贡献！', 
         url: 'https://techmc.wiki',
-        cover: 'https://postimg.cc/G8MkZ826][img]https://i.postimg.cc/G8MkZ826/IMG-0766.jpg'
+        cover: 'https://i.postimg.cc/G8MkZ826/IMG-0766.jpg'
       },
       {
         id: 'REditor',
@@ -149,7 +149,7 @@ export const navData = [
         description: '改进版的红石网页2D编辑器',
         detail: '一个基于Web的Minecraft红石电路设计工具，让你可以随时随地设计和模拟红石电路。这是个很好的工具！', 
         url: 'http://rseditor.zxbhello.top/',
-        cover: 'https://postimg.cc/k6jxk640][img]https://i.postimg.cc/k6jxk640/IMG-0765.jpg'
+        cover: 'https://i.postimg.cc/k6jxk640/IMG-0765.jpg'
       }
     ]
   }
