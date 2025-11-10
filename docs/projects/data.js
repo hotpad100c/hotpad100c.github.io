@@ -56,7 +56,7 @@ export const navData = [
         description: '保持模组菜单滚动位置',
         detail: '离开模组菜单后，再次进入仍然保持原来的滚动位置，提升客户端使用体验。', 
         url: 'https://modrinth.com/mod/keepmymodmenuscrollkmmms',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/axukUHes/images/97e772e77621f36348792a568501cbb1d75bcb63.gif'
       },
       {
         id: 'ScheduledTickVisualizer',
@@ -64,7 +64,7 @@ export const navData = [
         description: '实时渲染 ScheduledTick 事件',
         detail: '在客户端和服务器中渲染方块与流体的 ScheduledTick，包括 triggerTick、priority 和 subTickOrder，帮助理解底层机制。', 
         url: 'https://modrinth.com/mod/scheduledtickvisualizer',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/4bMS6SlB/images/b7b3fbf5f7e892fdee51d45414fc10da4857fbc3.png'
       },
       {
         id: 'Conium',
@@ -72,7 +72,7 @@ export const navData = [
         description: '面向现代 Minecraft 的数据包及脚本框架',
         detail: '（我参与了该项目的合作）无需 Java 编码即可完成模组功能：通过数据包和脚本在 Fabric 环境下实现多种扩展特性。', 
         url: 'https://modrinth.com/mod/conium',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/i7S4uT5P/images/96c4027a44a755232e5a5a17d5966c4e095c8cca_350.webp'
       },
       {
         id: 'ExplosionVisualizer',
