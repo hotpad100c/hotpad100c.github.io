@@ -29,19 +29,19 @@
             <p class="desc">{{ item.description }}</p>
           </div>
 
-          <!-- 展开详情 -->
+          <!-- 弹出详情 -->
           <transition name="fade">
             <div 
-              class="masonry-detail"
-              :class="{ expanded: expandedItem === item.id }"
+              v-if="expandedItem === item.id"
+              class="masonry-overlay"
+              @click.self="expandedItem = null"
             >
-              <p>{{ item.detail }}</p>
-              <button 
-                class="view-btn" 
-                @click.stop="openLink(item.url)"
-              >
-                看一看
-              </button>
+              <div class="masonry-popup">
+                <img v-if="item.cover" :src="item.cover" class="popup-cover" />
+                <h3>{{ item.title }}</h3>
+                <p>{{ item.detail }}</p>
+                <button class="view-btn" @click.stop="openLink(item.url)">看一看</button>
+              </div>
             </div>
           </transition>
         </div>
@@ -66,35 +66,17 @@ function openLink(url) {
 </script>
 
 <style scoped>
-/* 整体布局 */
+/* === 页面整体布局 === */
 .masonry-page {
   max-width: 1800px;
   margin: 0 auto;
   padding: 1rem;
 }
-/* 展开详情：默认隐藏 */
-.masonry-detail {
-  max-height: 0;
-  opacity: 0;
-  overflow: hidden;
-  padding: 0 1rem;
-  background: var(--vp-c-bg);
-  border-top: 1px solid transparent;
-  transition: all 0.35s ease;
-}
 
-/* 展开状态 */
-.masonry-detail.expanded {
-  max-height: 300px; 
-  opacity: 1;
-  padding: 0.8rem 1rem 1rem;
-  border-top-color: var(--vp-c-divider);
-}
-/* 每个分组 */
+/* === 分组标题 === */
 .masonry-group {
   margin-bottom: 2.5rem;
 }
-
 .masonry-group-title {
   font-size: 1.5rem;
   font-weight: 600;
@@ -104,29 +86,22 @@ function openLink(url) {
   padding-bottom: 0.4rem;
 }
 
-/* Masonry 瀑布流布局 */
+/* === Masonry 瀑布流布局 === */
 .masonry-container {
   column-count: 4;
   column-gap: 1rem;
 }
-
 @media (max-width: 1200px) {
-  .masonry-container {
-    column-count: 3;
-  }
+  .masonry-container { column-count: 3; }
 }
 @media (max-width: 768px) {
-  .masonry-container {
-    column-count: 2;
-  }
+  .masonry-container { column-count: 2; }
 }
 @media (max-width: 480px) {
-  .masonry-container {
-    column-count: 1;
-  }
+  .masonry-container { column-count: 1; }
 }
 
-/* 单个卡片 */
+/* === 单个卡片 === */
 .masonry-card {
   background: var(--vp-c-bg-soft);
   border-radius: 10px;
@@ -143,7 +118,7 @@ function openLink(url) {
   box-shadow: 0 4px 10px rgba(0,0,0,0.12);
 }
 
-/* 封面图 */
+/* === 封面图 === */
 .masonry-cover {
   width: 100%;
   display: block;
@@ -152,7 +127,7 @@ function openLink(url) {
   border-bottom: 1px solid var(--vp-c-divider);
 }
 
-/* 标题与简介 */
+/* === 卡片信息 === */
 .masonry-info {
   padding: 0.8rem 1rem;
 }
@@ -166,19 +141,38 @@ function openLink(url) {
   color: var(--vp-c-text-2);
 }
 
-/* 展开详情 */
-.masonry-detail {
-  padding: 0.8rem 1rem 1rem;
-  background: var(--vp-c-bg);
-  border-top: 1px solid var(--vp-c-divider);
+/* === 弹出详情层 === */
+.masonry-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
   animation: fadeIn 0.25s ease;
 }
-.masonry-detail p {
-  margin-bottom: 0.5rem;
-  line-height: 1.5;
+
+/* === 详情弹窗 === */
+.masonry-popup {
+  background: var(--vp-c-bg);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 500px;
+  max-width: 90%;
+  max-height: 85%;
+  overflow-y: auto;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  animation: scaleIn 0.3s ease;
 }
 
-/* 按钮 */
+.popup-cover {
+  width: 100%;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+}
+
+/* === 按钮 === */
 .view-btn {
   padding: 0.4rem 1rem;
   border: none;
@@ -192,7 +186,7 @@ function openLink(url) {
   background-color: var(--vp-c-brand-darker);
 }
 
-/* 动画 */
+/* === 过渡与动画 === */
 .fade-enter-active, .fade-leave-active {
   transition: opacity 0.25s ease;
 }
@@ -201,8 +195,12 @@ function openLink(url) {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(4px); }
-  to { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; } 
+  to { opacity: 1; }
+}
+@keyframes scaleIn {
+  from { transform: scale(0.95); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
 }
 </style>
 
