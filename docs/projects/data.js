@@ -80,7 +80,7 @@ export const navData = [
         description: '实时 3D 渲染爆炸信息显示',
         detail: '在游戏中可视化爆炸射线、将被破坏方块、爆炸中心、预估实体伤害等，是理解爆炸机制的强大工具。（已经与Lucidity合并。）', 
         url: 'https://modrinth.com/mod/explosionvisualizer',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/tcQZ3dXM/images/64d6160b4f3b9948e0087cde3b7dcd01734bb8b9_350.webp'
       },
       {
         id: 'CauldronFix',
@@ -88,7 +88,7 @@ export const navData = [
         description: '增强炼药锅功能的模组',
         detail: '改进炼药锅行为，使其在特定环境下表现更合理（例如岩浆遇水变黑曜石）并提升兼容性。', 
         url: 'https://modrinth.com/mod/cauldronfix',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/jEXj32z7/images/6bbbed5e64c7685d4b0f3a1709c21be61b1c7aa9.png'
       },
       {
         id: 'ColorfulCollars',
@@ -96,7 +96,7 @@ export const navData = [
         description: '宠物项圈自由混色模组',
         detail: '允许玩家将狗的项圈颜色自由混合，自定义配色方案，提升宠物装饰可玩性。', 
         url: 'https://modrinth.com/mod/colorfulcollars',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/9lrZBaEb/images/a4f63c8ce1f69204c8ff715b866349b7d123edbe_350.webp'
       },
       {
         id: 'OhMyResin',
@@ -104,7 +104,7 @@ export const navData = [
         description: '模拟树脂生成的命令扩展',
         detail: '新增一些命令来模拟树脂生成机制，用于设计树脂农场。', 
         url: 'https://modrinth.com/mod/ohmyresin',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/qpaYfzCL/83010ad4d7df14ac128972c4935d683d9095fbb1_96.webp'
       },
       {
         id: 'GlowMyBlocks',
@@ -112,7 +112,7 @@ export const navData = [
         description: '将方块变成像实体一样发光',
         detail: '让任意方块具备类似实体的发光效果，提升建筑、红石电路、装饰的可视化效果。', 
         url: 'https://modrinth.com/mod/glowmyblocks',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/UnwbI7YL/images/cb4271a773b5039667b179740a83aca4d17efe9c.png'
       }
     ]
   }
