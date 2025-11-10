@@ -8,15 +8,15 @@ export const navData = [
         description: '在工作台显示 Litematica 原理图所需材料清单',
         detail: '简单却强大的工具：加载 Litematica 原理图后，在工作台界面显示完整材料列表。', 
         url: 'https://modrinth.com/mod/tmwin',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/C6MLLE28/images/d1dba1dc075d9a0e4201f2a261cfe04daa802ea3.png'
       },
       {
         id: 'Lucidity',
         title: 'Lucidity',
         description: 'All‑in‑One 客户端可视化辅助模组',
-        detail: '集合了弹道预测、矿物高亮、流体源高亮、伤害指示器、键位显示等功能，专为 Fabric 客户端设计。', 
+        detail: '集合了选择性渲染、弹道预测、矿物高亮、流体源高亮、伤害指示器、键位显示等功能，专为 Fabric 客户端设计。', 
         url: 'https://modrinth.com/mod/lucidity-mod',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/d5tfHGzs/images/29a29ee9d895be27fc34d8448e66aaa87dfc953c.png'
       },
       {
         id: 'YetAnotherCarpetAddition',
@@ -24,7 +24,7 @@ export const navData = [
         description: '又一个有用的地毯扩展！',
         detail: '给 Minecraft 添加更多类型的地毯（Carpet）选项，增强装饰与建筑可玩性。', 
         url: 'https://modrinth.com/mod/yetanothercarpetaddition',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/Iib8xwCx/images/f4971bd15ae3c902deed14abf9ca0fa9b59fa4f7.png'
       },
       {
         id: 'Trajectory',
@@ -32,15 +32,15 @@ export const navData = [
         description: '投掷物轨迹预测工具',
         detail: '在客户端预测各种投掷物（雪球、箭、三叉戟等）的轨迹，直观可见其运动路径。（已经与Lucidity合并。）', 
         url: 'https://modrinth.com/mod/trajectory',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/F1C8EHRy/images/24815d4227471172b1046caebbd295a36b366017.png'
       },
       {
         id: 'FlashbackOutlineFix',
         title: 'Flashback Outline Fix',
         description: '修复 Flashback 模组中容器方块的轮廓问题',
-        detail: '专为 Flashback 模组设计的兼容补丁，使容器方块（如箱子等）轮廓正确渲染，提升视觉及交互体验。', 
+        detail: '专为 Flashback 模组设计的补丁，使容器方块（如箱子等）轮廓正确渲染。（已经不再需要）', 
         url: 'https://modrinth.com/mod/flashbackoutlinefix',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/unwLsDh8/images/7c8c3cb0da0287409905c0357d88e94e462fad78.png'
       },
       {
         id: 'Flashback‑Iris‑SkyColorOverrideCompat',
@@ -48,7 +48,7 @@ export const navData = [
         description: '为 IrisShaders 的天空色覆盖提供 Flashback 兼容',
         detail: '解决使用 IrisShaders 时，Flashback 模组与天空色覆盖功能冲突的问题，使视觉更和谐。', 
         url: 'https://modrinth.com/mod/flashback-iris-skycoloroverridecompat',
-        cover: ''
+        cover: 'https://cdn.modrinth.com/data/7zbW87Jg/images/d1e3ff0a93c7c51b76e15286f56f8c540d2be536.png'
       },
       {
         id: 'KeepMyModMenuScroll',
