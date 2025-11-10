@@ -41,7 +41,7 @@
 </template>
 
 <script setup>
-import { navData } from '../../nav/data.js'
+import { navData } from '../../projects/data.js'
 </script>
 
 <style>
