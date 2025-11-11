@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Track Generator</title>
+    <style>
+        :root {
+            --primary-light: #D7BDE2; /* Light purple */
+            --secondary-light: #FFFFFF; /* White */
+            --accent-light: rgba(128, 128, 128, 0.5); /* Transparent gray */
+            --text-light: #333333;
+            --bg-light: #F9F9F9;
+            --glow-light: linear-gradient(135deg, #E8DAEF, #D7BDE2);
+            --shadow-light: rgba(0, 0, 0, 0.1);
+
+            --primary-dark: #A569BD; /* Darker purple */
+            --secondary-dark: #2C3E50; /* Dark secondary */
+            --accent-dark: rgba(211, 211, 211, 0.3); /* Transparent light gray */
+            --text-dark: #E0E0E0;
+            --bg-dark: #1E1E1E;
+            --glow-dark: linear-gradient(135deg, #8E44AD, #A569BD);
+            --shadow-dark: rgba(255, 255, 255, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: var(--primary-dark);
+                --secondary: var(--secondary-dark);
+                --accent: var(--accent-dark);
+                --text: var(--text-dark);
+                --bg: var(--bg-dark);
+                --glow: var(--glow-dark);
+                --shadow: var(--shadow-dark);
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --primary: var(--primary-light);
+                --secondary: var(--secondary-light);
+                --accent: var(--accent-light);
+                --text: var(--text-light);
+                --bg: var(--bg-light);
+                --glow: var(--glow-light);
+                --shadow: var(--shadow-light);
+            }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .left, .right {
+            width: 50%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .input-section, .output-section {
+            background-color: var(--secondary);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px var(--shadow);
+        }
+
+        .input-section {
+            flex: 1;
+        }
+
+        .output-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--accent);
+            border-radius: 10px;
+            background-color: var(--bg);
+            color: var(--text);
+            box-shadow: inset 0 2px 5px var(--shadow);
+        }
+
+        button {
+            background: var(--glow);
+            color: var(--text);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px var(--shadow);
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            border: 1px solid var(--accent);
+            border-radius: 10px;
+            background-color: var(--bg);
+            color: var(--text);
+            resize: none;
+            font-family: monospace;
+        }
+
+        .right {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: var(--secondary);
+            border-radius: 15px;
+            box-shadow: 0 4px 10px var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        #preview-slider {
+            width: 80%;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <div class="input-section">
+                <label>Center Point (x, y, z):</label>
+                <input type="text" id="center" placeholder="e.g., 0,0,0" value="0,0,0">
+
+                <label>Radius:</label>
+                <input type="number" id="radius" value="10">
+
+                <label>Starting Angle (degrees):</label>
+                <input type="number" id="startAngle" value="0">
+
+                <label>Rotation Duration (seconds):</label>
+                <input type="number" id="duration" value="10">
+
+                <label>Keyframe Interval (seconds):</label>
+                <input type="number" id="interval" value="1">
+
+                <label>Target Point (x, y, z) - default same as center:</label>
+                <input type="text" id="target" placeholder="e.g., 0,0,0">
+
+                <button onclick="generateJSON()">Generate JSON</button>
+            </div>
+            <div class="output-section">
+                <textarea id="jsonOutput" readonly></textarea>
+            </div>
+        </div>
+        <div class="right">
+            <canvas id="previewCanvas" width="400" height="400"></canvas>
+            <input type="range" id="preview-slider" min="0" max="1" step="0.01" value="0" oninput="updatePreview(this.value)">
+        </div>
+    </div>
+
+    <script>
+        let center = [0, 0, 0];
+        let target = [0, 0, 0];
+        let radius = 10;
+        let startAngle = 0;
+        let duration = 10;
+        let interval = 1;
+        let keyframes = {};
+        let animationFrame;
+
+        function parseVector(input) {
+            return input.split(',').map(Number);
+        }
+
+        function generateJSON() {
+            center = parseVector(document.getElementById('center').value || '0,0,0');
+            radius = parseFloat(document.getElementById('radius').value) || 10;
+            startAngle = parseFloat(document.getElementById('startAngle').value) || 0;
+            duration = parseFloat(document.getElementById('duration').value) || 10;
+            interval = parseFloat(document.getElementById('interval').value) || 1;
+            const targetInput = document.getElementById('target').value;
+            target = targetInput ? parseVector(targetInput) : [...center];
+
+            keyframes = {};
+            const numKeyframes = Math.floor(duration / interval) + 1;
+            for (let i = 0; i < numKeyframes; i++) {
+                const t = i * interval;
+                const angleDeg = startAngle + (360 * t / duration);
+                const angleRad = angleDeg * Math.PI / 180;
+                const camX = center[0] + radius * Math.cos(angleRad);
+                const camY = center[1];
+                const camZ = center[2] + radius * Math.sin(angleRad);
+
+                const deltaX = target[0] - camX;
+                const deltaY = target[1] - camY;
+                const deltaZ = target[2] - camZ;
+
+                const yaw = Math.atan2(deltaX, deltaZ) * 180 / Math.PI;
+                const pitch = Math.atan2(deltaY, Math.sqrt(deltaX * deltaX + deltaZ * deltaZ)) * 180 / Math.PI;
+
+                keyframes[t.toString()] = {
+                    position: [camX, camY, camZ],
+                    yaw: yaw,
+                    pitch: pitch,
+                    roll: 0.0,
+                    type: "camera",
+                    interpolation_type: "SMOOTH"
+                };
+            }
+
+            const jsonData = {
+                savedTracks: [{
+                    type: "CAMERA",
+                    track: 0,
+                    copiedFromDisabled: false,
+                    keyframes: keyframes
+                }]
+            };
+
+            document.getElementById('jsonOutput').value = JSON.stringify(jsonData, null, 2);
+
+            // Update slider max
+            document.getElementById('preview-slider').max = duration;
+
+            drawPreview();
+            startAnimation();
+        }
+
+        function drawPreview(currentTime = 0) {
+            const canvas = document.getElementById('previewCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width;
+            const h = canvas.height;
+            ctx.clearRect(0, 0, w, h);
+
+            // Scale and translate to center
+            const scale = Math.min(w, h) / (2 * radius + 20);
+            ctx.translate(w / 2, h / 2);
+            ctx.scale(scale, scale);
+
+            // Draw circle trajectory
+            ctx.beginPath();
+            ctx.arc(0, 0, radius, 0, 2 * Math.PI);
+            ctx.strokeStyle = 'purple';
+            ctx.lineWidth = 2 / scale;
+            ctx.stroke();
+
+            // Draw center point (red circle)
+            ctx.beginPath();
+            ctx.arc(0, 0, 2 / scale, 0, 2 * Math.PI);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+
+            // Draw target point if different (green circle)
+            const targetOffsetX = target[0] - center[0];
+            const targetOffsetZ = target[2] - center[2];
+            if (targetOffsetX !== 0 || targetOffsetZ !== 0) {
+                ctx.beginPath();
+                ctx.arc(targetOffsetX, targetOffsetZ, 2 / scale, 0, 2 * Math.PI);
+                ctx.fillStyle = 'green';
+                ctx.fill();
+            }
+
+            // Draw keyframe points (blue dots)
+            Object.keys(keyframes).forEach(t => {
+                const angleDeg = startAngle + (360 * parseFloat(t) / duration);
+                const angleRad = angleDeg * Math.PI / 180;
+                const posX = radius * Math.cos(angleRad);
+                const posZ = radius * Math.sin(angleRad);
+                ctx.beginPath();
+                ctx.arc(posX, posZ, 1.5 / scale, 0, 2 * Math.PI);
+                ctx.fillStyle = 'blue';
+                ctx.fill();
+            });
+
+            // Draw current camera position (yellow triangle)
+            const currentAngleDeg = startAngle + (360 * currentTime / duration);
+            const currentAngleRad = currentAngleDeg * Math.PI / 180;
+            const currX = radius * Math.cos(currentAngleRad);
+            const currZ = radius * Math.sin(currentAngleRad);
+
+            // Triangle pointing towards target
+            const dirX = (targetOffsetX - currX) / radius; // Normalized direction
+            const dirZ = (targetOffsetZ - currZ) / radius;
+            const perpX = -dirZ;
+            const perpZ = dirX;
+
+            ctx.beginPath();
+            ctx.moveTo(currX + dirX * 3 / scale, currZ + dirZ * 3 / scale); // Front
+            ctx.lineTo(currX - dirX * 1.5 / scale + perpX * 1.5 / scale, currZ - dirZ * 1.5 / scale + perpZ * 1.5 / scale);
+            ctx.lineTo(currX - dirX * 1.5 / scale - perpX * 1.5 / scale, currZ - dirZ * 1.5 / scale - perpZ * 1.5 / scale);
+            ctx.closePath();
+            ctx.fillStyle = 'yellow';
+            ctx.fill();
+
+            ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset transform
+        }
+
+        function updatePreview(value) {
+            drawPreview(parseFloat(value));
+        }
+
+        function startAnimation() {
+            cancelAnimationFrame(animationFrame);
+            let startTime = performance.now();
+            function animate(time) {
+                const elapsed = (time - startTime) / 1000;
+                const currentTime = elapsed % duration;
+                drawPreview(currentTime);
+                animationFrame = requestAnimationFrame(animate);
+            }
+            animate(performance.now());
+        }
+    </script>
+</body>
+</html>
