@@ -13,8 +13,6 @@ export default defineUserConfig({
   ],
 
   theme: theme({
-    logo: "/images/icon.png",
-    favicon: "/images/icon.png",
     collections: [ 
       { type: 'post', dir: 'posts', title: '博客' }
     ],
