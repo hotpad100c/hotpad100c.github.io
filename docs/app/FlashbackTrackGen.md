@@ -1,5 +1,6 @@
 ---
 title: Flashback摄像机路径生成器
+pageLayout: page
 createTime: 2025-11-12
 permalink: /app/flashbackCamGen/
 ---
