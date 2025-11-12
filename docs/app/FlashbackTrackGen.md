@@ -20,7 +20,7 @@ permalink: /app/flashbackCamGen/
   z-index: 0;
 ">
   <iframe
-    src="https://public/camera-generator.html"
+    src="https://hotpad100c.github.io/public/camera-generator.html"
     style="width: 100%; height: 100%; border: none;"
   ></iframe>
 </div>
