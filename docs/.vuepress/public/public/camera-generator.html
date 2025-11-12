@@ -6,17 +6,17 @@
     <title>Camera Elliptical Track Generator</title>
     <style>
         :root {
-            --primary-light: #D7BDE2; /* Light purple */
-            --secondary-light: #FFFFFF; /* White */
-            --accent-light: rgba(128, 128, 128, 0.5); /* Transparent gray */
+            --primary-light: #D7BDE2;
+            --secondary-light: #FFFFFF;
+            --accent-light: rgba(128, 128, 128, 0.5);
             --text-light: #333333;
             --bg-light: #F9F9F9;
             --glow-light: linear-gradient(135deg, #E8DAEF, #D7BDE2);
             --shadow-light: rgba(0, 0, 0, 0.1);
 
-            --primary-dark: #A569BD; /* Darker purple */
-            --secondary-dark: #2C3E50; /* Dark secondary */
-            --accent-dark: rgba(211, 211, 211, 0.3); /* Transparent light gray */
+            --primary-dark: #A569BD;
+            --secondary-dark: #2C3E50;
+            --accent-dark: rgba(211, 211, 211, 0.3);
             --text-dark: #E0E0E0;
             --bg-dark: #1E1E1E;
             --glow-dark: linear-gradient(135deg, #8E44AD, #A569BD);
@@ -70,27 +70,12 @@
             box-sizing: border-box;
         }
 
-        .left {
-            display: flex;
-            flex-direction: column;
-        }
-
         .input-section, .output-section {
             background-color: var(--secondary);
             border-radius: 15px;
             padding: 20px;
             margin-bottom: 20px;
             box-shadow: 0 4px 10px var(--shadow);
-        }
-
-        .input-section {
-            flex: 1;
-        }
-
-        .output-section {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
         }
 
         label {
@@ -155,6 +140,11 @@
             width: 80%;
             margin-bottom: 10px;
         }
+
+        #playPauseBtn {
+            margin-top: 5px;
+            background: var(--primary);
+        }
     </style>
 </head>
 <body>
@@ -162,7 +152,7 @@
         <div class="left">
             <div class="input-section">
                 <label>Center Point (x, y, z):</label>
-                <input type="text" id="center" placeholder="e.g., 0,0,0" value="0,0,0">
+                <input type="text" id="center" value="0,0,0">
 
                 <label>Ellipse Radius X (horizontal):</label>
                 <input type="number" id="radiusX" value="15">
@@ -191,6 +181,7 @@
         <div class="right">
             <canvas id="previewCanvas" width="400" height="400"></canvas>
             <input type="range" id="preview-slider" min="0" max="1" step="1" value="0" oninput="updatePreview(this.value)">
+            <button id="playPauseBtn" onclick="togglePlayPause()">⏸ Pause</button>
         </div>
     </div>
 
@@ -200,10 +191,12 @@
         let radiusX = 15;
         let radiusZ = 10;
         let startAngle = 0;
-        let duration = 300; // frames
-        let interval = 30;  // frames
+        let duration = 300;
+        let interval = 30;
         let keyframes = {};
         let animationFrame;
+        let currentFrame = 0;
+        let playing = true;
 
         function parseVector(input) {
             return input.split(',').map(Number);
@@ -224,7 +217,7 @@
 
             for (let i = 0; i < numKeyframes; i++) {
                 const frame = i * interval;
-                const t = frame / duration; // 0 to 1
+                const t = frame / duration;
                 const angleDeg = startAngle + 360 * t;
                 const angleRad = angleDeg * Math.PI / 180;
 
@@ -237,77 +230,70 @@
                 const deltaZ = target[2] - camZ;
 
                 const yaw = Math.atan2(deltaX, deltaZ) * 180 / Math.PI;
-                const horizontalDist = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+                const horizontalDist = Math.sqrt(deltaX ** 2 + deltaZ ** 2);
                 const pitch = Math.atan2(deltaY, horizontalDist) * 180 / Math.PI;
 
                 keyframes[frame.toString()] = {
                     position: [camX, camY, camZ],
-                    yaw: yaw,
-                    pitch: pitch,
+                    yaw, pitch,
                     roll: 0.0,
                     type: "camera",
                     interpolation_type: "SMOOTH"
                 };
             }
 
-            const jsonData = {
+            document.getElementById('jsonOutput').value = JSON.stringify({
                 savedTracks: [{
                     type: "CAMERA",
                     track: 0,
                     copiedFromDisabled: false,
                     keyframes: keyframes
                 }]
-            };
+            }, null, 2);
 
-            document.getElementById('jsonOutput').value = JSON.stringify(jsonData, null, 2);
-
-            // Update slider to frame count
             const slider = document.getElementById('preview-slider');
             slider.max = duration;
             slider.step = interval;
             slider.value = 0;
 
-            drawPreview();
+            currentFrame = 0;
+            drawPreview(0);
             startAnimation();
         }
 
         function drawPreview(currentFrame = 0) {
             const canvas = document.getElementById('previewCanvas');
             const ctx = canvas.getContext('2d');
-            const w = canvas.width;
-            const h = canvas.height;
-            ctx.clearRect(0, 0, w, h);
+            const w = canvas.width, h = canvas.height;
 
-            // Determine scale to fit ellipse
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, w, h);
+            ctx.translate(w / 2, h / 2);
+
             const maxDiameter = Math.max(radiusX, radiusZ) * 2 + 20;
             const scale = Math.min(w, h) / maxDiameter;
-            ctx.translate(w / 2, h / 2);
             ctx.scale(scale, scale);
 
-            // Draw ellipse trajectory
             ctx.beginPath();
             ctx.ellipse(0, 0, radiusX, radiusZ, 0, 0, 2 * Math.PI);
             ctx.strokeStyle = 'purple';
             ctx.lineWidth = 2 / scale;
             ctx.stroke();
 
-            // Draw center point (red)
             ctx.beginPath();
             ctx.arc(0, 0, 2 / scale, 0, 2 * Math.PI);
             ctx.fillStyle = 'red';
             ctx.fill();
 
-            // Draw target point if different (green)
             const targetOffsetX = target[0] - center[0];
             const targetOffsetZ = target[2] - center[2];
-            if (targetOffsetX !== 0 || targetOffsetZ !== 0) {
+            if (targetOffsetX || targetOffsetZ) {
                 ctx.beginPath();
                 ctx.arc(targetOffsetX, targetOffsetZ, 2 / scale, 0, 2 * Math.PI);
                 ctx.fillStyle = 'green';
                 ctx.fill();
             }
 
-            // Draw keyframe points (blue)
             Object.keys(keyframes).forEach(frameStr => {
                 const frame = parseInt(frameStr);
                 const t = frame / duration;
@@ -321,58 +307,46 @@
                 ctx.fill();
             });
 
-            // Draw current camera position (yellow triangle)
             const currentT = currentFrame / duration;
-            const currentAngleDeg = startAngle + 360 * currentT;
-            const currentAngleRad = currentAngleDeg * Math.PI / 180;
-            const currX = radiusX * Math.cos(currentAngleRad);
-            const currZ = radiusZ * Math.sin(currentAngleRad);
+            const angle = (startAngle + 360 * currentT) * Math.PI / 180;
+            const currX = radiusX * Math.cos(angle);
+            const currZ = radiusZ * Math.sin(angle);
 
-            // Direction vector to target
-            const dirX = (targetOffsetX - currX);
-            const dirZ = (targetOffsetZ - currZ);
-            const dist = Math.hypot(dirX, dirZ);
-            const normDirX = dirX / dist;
-            const normDirZ = dirZ / dist;
-            const perpX = -normDirZ;
-            const perpZ = normDirX;
-
-            const size = 3 / scale;
-            const baseSize = 1.5 / scale;
-
+            ctx.save();
+            ctx.translate(currX, currZ);
             ctx.beginPath();
-            ctx.moveTo(currX + normDirX * size, currZ + normDirZ * size); // Front
-            ctx.lineTo(currX - normDirX * baseSize + perpX * baseSize, currZ - normDirZ * baseSize + perpZ * baseSize);
-            ctx.lineTo(currX - normDirX * baseSize - perpX * baseSize, currZ - normDirZ * baseSize - perpZ * baseSize);
+            ctx.moveTo(0, -3 / scale);
+            ctx.lineTo(2 / scale, 2 / scale);
+            ctx.lineTo(-2 / scale, 2 / scale);
             ctx.closePath();
             ctx.fillStyle = 'yellow';
             ctx.fill();
-
-            ctx.setTransform(1, 0, 0, 1, 0, 0); // Reset
+            ctx.restore();
         }
 
         function updatePreview(value) {
-            drawPreview(parseFloat(value));
+            currentFrame = parseInt(value);
+            drawPreview(currentFrame);
         }
 
         function startAnimation() {
             cancelAnimationFrame(animationFrame);
-            let startTime = performance.now();
-            function animate(time) {
-                const elapsed = time - startTime;
-                const frame = (elapsed * 60 / 1000) % duration; // Assuming 60 FPS
-                drawPreview(Math.floor(frame));
-                document.getElementById('preview-slider').value = Math.floor(frame);
+            function animate() {
+                if (playing) {
+                    drawPreview(currentFrame);
+                    currentFrame += 2;
+                    if (currentFrame > duration) currentFrame = 0;
+                    document.getElementById('preview-slider').value = currentFrame;
+                }
                 animationFrame = requestAnimationFrame(animate);
             }
-            startTime = performance.now();
-            animate(startTime);
+            animate();
         }
 
-        // Initialize on load
-        window.onload = () => {
-            generateJSON(); // Auto-generate with defaults
-        };
+        function togglePlayPause() {
+            playing = !playing;
+            document.getElementById('playPauseBtn').textContent = playing ? 'Pause' : 'Play';
+        }
     </script>
 </body>
 </html>
