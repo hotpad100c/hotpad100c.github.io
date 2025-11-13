@@ -158,7 +158,15 @@ export const navData = [
         detail: '什么，为什么要在博客里看博客?！', 
         url: 'https://hotpad100c.github.io/app/blog-in-blog/',
         cover: 'https://i.imgur.com/4cqHElU.jpeg'
-      }
+      },
+      {
+        id: 'FlashbackCamGen',
+        title: 'Flashback圆形轨道生成器',
+        description: '生成简单的Flashback圆形相机轨道',
+        detail: '输入圆轨的信息后，点击 Generate JSON 按钮，并将json输出复制，随后在flashback模组界面内粘贴。关键帧会直接出现在轨道上。', 
+        url: 'https://hotpad100c.github.io/public/camera-generator.html',
+        cover: 'https://i.postimg.cc/cLM2Gjtj/IMG-0782.jpg'
+      }      
     ]
   }
 ]
