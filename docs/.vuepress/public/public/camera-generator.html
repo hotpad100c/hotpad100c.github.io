@@ -228,10 +228,12 @@
                 const deltaX = target[0] - camX;
                 const deltaY = target[1] - camY;
                 const deltaZ = target[2] - camZ;
+                
+                const yaw = -Math.atan2(deltaX, deltaZ) * 180 / Math.PI;
+                
+                const horizontalDist = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+                const pitch = -Math.atan2(deltaY, horizontalDist) * 180 / Math.PI;
 
-                const yaw = Math.atan2(deltaX, deltaZ) * 180 / Math.PI;
-                const horizontalDist = Math.sqrt(deltaX ** 2 + deltaZ ** 2);
-                const pitch = Math.atan2(deltaY, horizontalDist) * 180 / Math.PI;
 
                 keyframes[frame.toString()] = {
                     position: [camX, camY, camZ],
