@@ -19,6 +19,9 @@ export default defineUserConfig({
     ],
     markdown: {
       pdf: true, 
+      collapse: true, 
+      field: true, 
+      abbr: true, 
     },
     navbar: [
       { text: "首页", link: "/" },
