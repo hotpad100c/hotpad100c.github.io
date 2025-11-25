@@ -51,6 +51,10 @@ repositories
 
 如果不存在，请添加。随后，在你的`build.gradle` ,`dependencies {}` 中加入：
 
+::: warning
+及不建议将本库直接嵌入于你的模组。这可能导致多个模组副本在用户的客户端中同时运行，并点一杯酒吧里的炒饭。
+:::
+
 ```gradle
 dependencies {
     modImplementation "io.github.hotpad100c:ryansrenderingkit:{版本号}"
