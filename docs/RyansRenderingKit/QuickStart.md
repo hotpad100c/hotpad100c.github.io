@@ -1,3 +1,7 @@
+---
+permalink: /RyansRenderingKit/QuickStart/
+---
+
 # 快速开始
 
 ## 1. 导入
@@ -83,3 +87,23 @@ ShapeGenerator.generateText()             // 文字
 | BUFFERED      | 大量完全静止的形状           | 高   |
 
 :::
+
+## 3. 注册形状
+在本库中，`ShapeManagers` 是形状渲染的核心管理器。它负责将形状注册到适当的渲染管道，并在每帧的世界渲染事件中自动调用渲染逻辑。
+
+要注册一个形状并使其渲染，你需要使用`ShapeManagers.addShape()`方法注册它。
+以下的例子将注册一个立方体。
+
+```java
+Shape cube = ShapeGenerator.generateBox()
+        .pos(new Vec3d(100, 70, 100)) 
+        .size(new Vec3d(5, 5, 5)) 
+        .color(Color.CYAN) 
+        .seeThrough(true) 
+        .build(Shape.RenderingType.BATCH)
+
+ResourceLocation id = new Identifier("mymod", "debug_box_1");  // 自定义 ID
+ShapeManagers.addShape(id, cube);//注册形状
+```
+
+每个形状都需要一个唯一 ID（ResourceLocation 类型，格式如 modid:path/to/shape），它在库中扮演“键”的角色，用于标识和管理。
