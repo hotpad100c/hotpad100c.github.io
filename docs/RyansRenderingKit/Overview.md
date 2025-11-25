@@ -6,7 +6,6 @@ permalink: /RyansRenderingKit/Overview/
 
 **RyansRenderingKit** 是一个为 Minecraft Fabric 模组开发的世界渲染库，极大简化了在游戏世界中绘制自定义 3D 图形、线框、文字、模型等需求。它封装了 Minecraft 底层的渲染操作，让你可以较为轻松地轻松绘制与控制各种形状。
 
-适用于：调试可视化、方块高亮、实体轨迹、空间测量工具、自定义 HUD、建筑预览等一切需要在世界中渲染的场景。
 
 ## 特性一览
 
