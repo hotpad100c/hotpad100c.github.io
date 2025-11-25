@@ -54,6 +54,7 @@ repositories
 ```gradle
 dependencies {
     modImplementation "io.github.hotpad100c:ryansrenderingkit:{版本号}"
+}
 ```
 
 关于`版本号`，请前往[这里](https://mvnrepository.com/artifact/io.github.hotpad100c/ryansrenderingkit)查看最新版本。
