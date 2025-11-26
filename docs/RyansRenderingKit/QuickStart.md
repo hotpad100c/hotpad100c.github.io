@@ -124,4 +124,4 @@ ShapeManagers.addShape(id, cube);//注册形状
 
 你可以通过`ShapeManagers.removeShape(id)`移除指定图形，或`ShapeManagers.removeShapes(rootID)`进行批量移除。
 
-
+<LinkCard title="变换器" href="https://hotpad100c.github.io/RyansRenderingKit/Transformer" description="变换器特性介绍" />
