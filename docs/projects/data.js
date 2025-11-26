@@ -166,7 +166,15 @@ export const navData = [
         detail: '输入圆轨的信息后，点击 Generate JSON 按钮，并将json输出复制，随后在flashback模组界面内粘贴。关键帧会直接出现在轨道上。', 
         url: 'https://hotpad100c.github.io/public/camera-generator.html',
         cover: 'https://i.postimg.cc/cLM2Gjtj/IMG-0782.jpg'
-      }      
+      },
+      {
+        id: 'RyansRenderingKit',
+        title: 'RyansRenderingKit',
+        description: '简单的Minecraft，Fabric渲染库',
+        detail: '是的。', 
+        url: 'https://hotpad100c.github.io/RyansRenderingKit/Overview/',
+        cover: ' '
+      }   
     ]
   }
 ]
