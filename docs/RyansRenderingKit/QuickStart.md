@@ -55,8 +55,8 @@ ShapeGenerator.generateBox()                // 创建盒子构建器
         .build(Shape.RenderingType.BATCH)
 ```
 
-::: collapse
-- 所有形状快速入口
+::: details 所有形状快速入口
+
 ```java
 ShapeGenerator.generateBox()              // 实心盒子
 ShapeGenerator.generateBoxWireframe()     // 线框盒子
@@ -78,7 +78,9 @@ ShapeGenerator.generateObjModelOutline() // .obj 模型线框
 
 ShapeGenerator.generateText()             // 文字
 ```
-- 渲染类型
+:::
+
+::: details 渲染类型
 
 | 类型          | 适用场景                           | 性能 |
 |---------------|------------------------------------|------|
@@ -88,7 +90,7 @@ ShapeGenerator.generateText()             // 文字
 
 :::
 
-## 3. 注册形状
+## 3. 注册并渲染
 在本库中，`ShapeManagers` 是形状渲染的核心管理器。它负责将形状注册到适当的渲染管道，并在每帧的世界渲染事件中自动调用渲染逻辑。
 
 要注册一个形状并使其渲染，你需要使用`ShapeManagers.addShape()`方法注册它。
