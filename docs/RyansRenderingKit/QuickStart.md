@@ -105,5 +105,9 @@ Shape cube = ShapeGenerator.generateBox()
 ResourceLocation id = new Identifier("mymod", "debug_box_1");  // 自定义 ID
 ShapeManagers.addShape(id, cube);//注册形状
 ```
+:::info
+每个形状都需要一个唯一 ID（ResourceLocation 类型，格式如 modid:path/to/shape），这个 ID 确保形状不会重复注册或冲突，且可被追踪。
+:::
+调用 `addShape(id, Shape)`时，图形将长期保存，直到被移除；调用 `addShape(Shape)` ，不传入 ID 时，库会自动生成临时 ID，这些图形会在首次渲染后被自动移除。
+你可以通过`ShapeManagers.removeShape(id)`移除指定图形，或`ShapeManagers.removeShapes(rootID)`批量移除。
 
-每个形状都需要一个唯一 ID（ResourceLocation 类型，格式如 modid:path/to/shape），它在库中扮演“键”的角色，用于标识和管理。
