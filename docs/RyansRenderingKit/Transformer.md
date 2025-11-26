@@ -120,5 +120,5 @@ box.forceSetDimension(new Vec3(5, 5, 5));  // 立即变化
 ## 注意事项
 
 - BUFFERED 形状需在变换后手动重建 VBO。
-- 开启 DEBUG 后，启用 Minecraft 命中箱显示（f3+b），可观察 Transformer 的三层中心点与顶点信息
+- 使用 /ryansRenderingKit_DEBUG toggle 开启 DRBUG 后，启用 Minecraft 命中箱显示（f3+b），可观察 Transformer 的三层中心点与顶点信息
   
