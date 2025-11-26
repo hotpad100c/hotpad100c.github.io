@@ -1,3 +1,7 @@
+---
+permalink: /RyansRenderingKit/Examples/
+---
+
 # 示例展示
 
 本页是一些使用例。
