@@ -6,6 +6,7 @@ permalink: /RyansRenderingKit/QuickStart/
 
 ## 1. 导入
 
+### ✦ Maven 仓库
 本库[已上传至Maven Central](https://mvnrepository.com/artifact/io.github.hotpad100c/ryansrenderingkit)。因此只需要在`build.gradle` 加入依赖即可。
 
 如果你使用 Architectury Loom / Fabric Loom，这里通常已经包含：
@@ -18,8 +19,11 @@ repositories
 
 如果不存在，请添加。随后，在你的`build.gradle` ,`dependencies {}` 中加入：
 
+### ✦ 添加依赖
+
 ::: warning
-及不建议将本库直接嵌入于你的模组。这可能导致多个模组副本在用户的客户端中同时运行，并点一杯酒吧里的炒饭。
+不建议把本库直接打进你的模组 JAR 中。
+这可能导致在生产环境出现多个本库的重复副本，并点一杯酒吧里的炒饭。
 :::
 
 ```gradle
@@ -28,7 +32,10 @@ dependencies {
 }
 ```
 
-关于`版本号`，请前往[这里](https://mvnrepository.com/artifact/io.github.hotpad100c/ryansrenderingkit)查看最新版本。
+`版本号` 请前往最新版本页面查看：
+[https://mvnrepository.com/artifact/io.github.hotpad100c/ryansrenderingkit](https://mvnrepository.com/artifact/io.github.hotpad100c/ryansrenderingkit)
+
+
 
 ## 2. 创建一个形状
 
@@ -37,22 +44,22 @@ dependencies {
 ```java
 Shape shape = ShapeGenerator.generateXXX()
 	.pos(...)   
-        .其它必要参数 (...)
-        .color(...)    
-        .seeThrough(...) 
+	.其它参数 (...)
+	.color(...)    
+	.seeThrough(...) 
 	.transform(transformer -> {...})
-        .build(...)
+	.build(...)
 ```
 
-如下的例子将构建一个位于100，20，100处的，边长为5的，穿墙可见的青色立方体。
+下面的示例会生成一个位于`(100, 70, 100)`、边长为 5、可穿墙看见的青色立方体：
 
 ```java
-ShapeGenerator.generateBox()                // 创建盒子构建器
-        .pos(new Vec3d(100, 70, 100)) 
-        .size(new Vec3d(5, 5, 5)) 
-        .color(Color.CYAN) 
-        .seeThrough(true) 
-        .build(Shape.RenderingType.BATCH)
+ShapeGenerator.generateBox()
+        .pos(new Vec3d(100, 70, 100))
+        .size(new Vec3d(5, 5, 5))
+        .color(Color.CYAN)
+        .seeThrough(true)
+        .build(Shape.RenderingType.BATCH);
 ```
 
 ::: details 所有形状快速入口
@@ -82,19 +89,22 @@ ShapeGenerator.generateText()             // 文字
 
 ::: details 渲染类型
 
-| 类型          | 适用场景                           | 性能 |
-|---------------|------------------------------------|------|
-| IMMEDIATE     | 少量出现/需要自定义化的形状             | 低   |
-| BATCH         | 大量动态形状       | 中   |
-| BUFFERED      | 大量完全静止的形状           | 高   |
+| 类型      | 适用场景                         | 性能 |
+| ----------- | ---------------------------------- | ------ |
+| IMMEDIATE | 少量、特殊、需要临时自定义的形状 | 低   |
+| BATCH     | 大量动态形状（推荐一般使用）     | 中   |
+| BUFFERED  | 完全静止、数量巨大的形状         | 高   |
 
 :::
 
 ## 3. 注册并渲染
-在本库中，`ShapeManagers` 是形状渲染的核心管理器。它负责将形状注册到适当的渲染管道，并在每帧的世界渲染事件中自动调用渲染逻辑。
+`ShapeManagers` 是本库的核心渲染管理器。
+它会在每帧的世界渲染事件中自动处理所有注册的形状。
 
-要注册一个形状并使其渲染，你需要使用`ShapeManagers.addShape()`方法注册它。
-以下的例子将注册一个立方体。
+要让形状开始渲染，只需要调用：
+`ShapeManagers.addShape(id, shape)`
+
+以下的例子将注册一个立方体:
 
 ```java
 Shape cube = ShapeGenerator.generateBox()
@@ -110,6 +120,8 @@ ShapeManagers.addShape(id, cube);//注册形状
 :::info
 每个形状都需要一个唯一 ID（ResourceLocation 类型，格式如 modid:path/to/shape），这个 ID 确保形状不会重复注册或冲突，且可被追踪。
 :::
-调用 `addShape(id, Shape)`时，图形将长期保存，直到被移除；调用 `addShape(Shape)` ，不传入 ID 时，库会自动生成临时 ID，这些图形会在首次渲染后被自动移除。
-你可以通过`ShapeManagers.removeShape(id)`移除指定图形，或`ShapeManagers.removeShapes(rootID)`批量移除。
+调用 `addShape(id, Shape)`时，图形将长期保存，直到被移除。此外，也可以调`addShape(shape)` 进行**匿名形状**注册，这样的图形是一次性的，**会在首次渲染后被自动移除**。
+
+你可以通过`ShapeManagers.removeShape(id)`移除指定图形，或`ShapeManagers.removeShapes(rootID)`进行批量移除。
+
 
