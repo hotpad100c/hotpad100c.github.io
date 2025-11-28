@@ -1,6 +1,8 @@
-# Minecraft LevelEvent
+---
+permalink: /mcCodeIndex/LevelEvents
+---
+# LevelEvent.java中的世界事件
 
--
 | ID   | 名称                              | 种类        | 描述                                      |
 |------|-----------------------------------|-------------|--------------------------------------------------|
 | 1000 | SOUND_DISPENSER_DISPENSE          | Sound      | 分配器成功分配物品的声音。                       |
