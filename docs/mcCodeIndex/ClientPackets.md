@@ -2,7 +2,7 @@
 title: ClientPacketListener.java 中出现的 Packet
 pageLayout: page
 createTime: 2025-11-18
-permalink: /app/mcindex/clientPackets
+permalink: /mcindex/clientPackets
 ---
 # Minecraft ClientPacketListener.java 中出现的 Packet
 
