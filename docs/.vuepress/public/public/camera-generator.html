@@ -316,6 +316,18 @@
 
             ctx.save();
             ctx.translate(currX, currZ);
+
+            const targetX = targetOffsetX || 0;
+            const targetZ = targetOffsetZ || 0;
+            
+            const dx = targetX - currX;
+            const dy = targetZ - currZ;
+            let rotation = 0;
+            if (dx !== 0 || dy !== 0) {
+                rotation = Math.atan2(dy, dx);
+            }
+            ctx.rotate(rotation);
+            
             ctx.beginPath();
             ctx.moveTo(0, -3 / scale);
             ctx.lineTo(2 / scale, 2 / scale);
@@ -323,6 +335,7 @@
             ctx.closePath();
             ctx.fillStyle = 'yellow';
             ctx.fill();
+
             ctx.restore();
         }
 
