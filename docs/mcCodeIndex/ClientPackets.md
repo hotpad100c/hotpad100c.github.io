@@ -1,5 +1,5 @@
 ---
-permalink: /mcindex/clientPackets
+permalink: /mcCodeIndex/ClientPackets
 ---
 # Minecraft ClientPacketListener.java 中出现的 Packet
 
