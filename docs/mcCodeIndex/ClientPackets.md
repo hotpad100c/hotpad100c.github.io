@@ -149,10 +149,4 @@ permalink: /mcCodeIndex/ClientPackets
 | ServerboundConfigurationAcknowledgedPacket | Serverbound | 确认配置。 | INSTANCE |
 | ServerboundChunkBatchReceivedPacket | Serverbound | 确认批量区块接收。 | desiredChunksPerTick |
 | ServerboundClientInformationPacket | Serverbound | 发送客户端信息（如设置）。 | information |
-| ServerboundPlayerLoadedPacket | Serverbound | 通知玩家加载完成。 | (空) |
-
-## 总结与注意
-- **携带的数据**：基于代码中 `packet.getXXX()` 或直接 `packet.XXX()` 的唯一字段列表，代表序列化数据（如 ID、位置 Vec3、状态 Bool、列表等）。完整类型需参考 Minecraft 协议（e.g., VarInt for ID, NBT for data）。
-- **总数**：~100 Clientbound + ~12 Serverbound（从代码 imports 提取）。
-- **来源**：纯代码分析，无外部假设。部分空因代码截断或无 getter。
-- **协议版本**：对应 Minecraft 1.21+（含新 packet 如 TickingState）。如需二进制结构，参考 [Minecraft Wiki Protocol](https://minecraft.wiki/w/Java_Edition_protocol/Packets)。
+| ServerboundPlayerLoadedPacket | Serverbound | 通知玩家加载完成。 | (空) 
