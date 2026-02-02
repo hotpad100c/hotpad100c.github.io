@@ -1,7 +1,37 @@
 ---
 permalink: /RyansRenderingKit/Transformer/
 ---
-# Transformer 系统
+
+# 形状构建器与变换器
+
+## 形状目录与构建器
+
+所有的构建器都继承自 `BaseBuilder`，并共享以下公共方法：
+
+* `.pos(Vec3)` — 设置形状在世界中的基准位置。
+* `.color(Color)` — 设置基础颜色。
+* `.alpha(float)` — 设置透明度 (0.0 - 1.0)。如果小于 1.0，则启用透明度并触发三角形形状的深度排序渲染。
+* `.seeThrough(boolean)` — 当为 `true` 时，禁用深度测试。
+* `.transform(Consumer<T>)` — 附加一个在每一帧运行的回调函数，用于更新形状的状态。
+
+### 常用形状构建器：
+
+* **Face Circle（面圆形）**: 一个由三角形填充的平面圆。
+* **Line Circle（线圆形）**: 一个线框圆（空心）。
+* **Box Face（面立方体）**: 一个实心的、由 6 个面组成的 3D 立方体。
+* **Box Wireframe（线框立方体）**: 一个由 12 条边组成的线框立方体。
+* **Sphere（球体）**: 一个由三角形组成的 UV 球体。
+* **Line（线段）**: 两个坐标之间的一条线。第一个和最后一个顶点会自动获得一个透明的“端盖”顶点，以避免在末端出现渲染伪影。
+* **Cylinder Wireframe（线框圆柱体）**: 一个带有顶部/底部圆圈和纵向连接线的线框圆柱体。
+* **Block（方块）**: 使用 Minecraft 的 `BlockRenderDispatcher` 渲染一个特定的 `BlockState`。你可以自定义光照水平（使用 `LightTexture.FULL_BRIGHT` 以获得最大亮度）。
+* **Item（物品）**: 使用 Minecraft 的 `ItemRenderer` 渲染一个 `ItemStack`。
+* **Entity（实体）**: 在世界中渲染一个实时的、`Entity` 实例。
+* **OBJ Model（OBJ 模型）**: 渲染一个外部加载的 `.obj` 文件。
+* **Text（文本）**: 在 3D 世界中渲染 `Component` 文本。
+
+
+
+## Transformer 系统
 
 在本库中，**Transformer 系统** 是核心组件之一，它负责处理形状的所有变换操作，包括位置、旋转、缩放，以及可能的模型信息改变。
 这个系统支持世界（world）、本地（local）和视觉（matrix）三种变换层级、
@@ -74,48 +104,6 @@ DefaultTransformer 被扩展以支持形状特定逻辑：
 - **LineCircleTransformer**：添加 CircleModelInfo 和 LineModelInfo。
 - **SimpleLineTransformer**：添加 LineModelInfo（用于线宽）。
 - **TwoPointsLineTransformer**：添加 TwoPointLineModelInfo（起点、终点、线宽）。
-
-# 用法详解
-
-## 基本用法：设置变换
-
-```java
-Shape shape = /* 创建形状 */;
-DefaultTransformer t = shape.transformer;
-
-// 设置目标世界位置
-t.setShapeWorldPivot(new Vec3(100, 64, 100));
-
-// 设置目标旋转（度数，绕 XYZ 轴）
-t.setShapeWorldRotationDegrees(45, 90, 0);
-
-// 设置目标缩放
-t.setShapeWorldScale(new Vec3(2, 1, 2));
-
-// 设置新的世界位置（立即生效，无插值动画）
-shape.forceSetShapeWorldPivot(new Vec3(0, 0, 0));
-```
-
-## 通过构建器应用
-
-```java
-ShapeGenerator.generateBox()
-    .transform(t -> {
-        t.setShapeWorldPivot(new Vec3(50, 70, 50));
-        t.setShapeWorldScale(new Vec3(3, 3, 3));
-    })
-    .build(...);
-```
-
-## 形状特定参数动画
-
-```java
-BoxShape box = (BoxShape) shape;
-BoxTransformer t = shape.transformer;
-t.setDimension(new Vec3(11, 45, 14));  // 平滑变化尺寸
-box.setDimension(new Vec3(191, 98, 10)); 
-box.forceSetDimension(new Vec3(5, 5, 5));  // 立即变化
-```
 
 ## 注意事项
 
