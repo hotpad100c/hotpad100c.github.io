@@ -2,9 +2,8 @@
 permalink: /RyansRenderingKit/Transformer/
 ---
 
-# 形状构建器与变换器
 
-## 形状目录与构建器
+# 构建器
 
 所有的构建器都继承自 `BaseBuilder`，并共享以下公共方法：
 
@@ -31,7 +30,7 @@ permalink: /RyansRenderingKit/Transformer/
 
 
 
-## Transformer 系统
+# Transformer 系统
 
 在本库中，**Transformer 系统** 是核心组件之一，它负责处理形状的所有变换操作，包括位置、旋转、缩放，以及可能的模型信息改变。
 这个系统支持世界（world）、本地（local）和视觉（matrix）三种变换层级、
@@ -39,8 +38,6 @@ permalink: /RyansRenderingKit/Transformer/
 它封装了 Minecraft 的 PoseStack 和矩阵操作，让开发者能以高抽象级别控制形状的几何变换，而无需直接处理底层矩阵计算。
 
 Transformer 是每个 Shape 的内部属性（`shape.transformer`），通过构建器（Builder）的 `.transform(Consumer<Transformer>)` 方法或直接访问进行配置。
-
-# 核心类和架构
 
 ## 1. DefaultTransformer（默认变换器）
 - **关键字段**：
