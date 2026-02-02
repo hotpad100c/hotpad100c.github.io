@@ -39,7 +39,7 @@ Ryan's Rendering Kit 是一个为 Minecraft 开发的 Fabric 模组库，它提�
 
 
 <LinkCard title="快速开始" href="https://hotpad100c.github.io/RyansRenderingKit/QuickStart" description="前往快速入手教程" />
-<LinkCard title="使用案例" href="https://hotpad100c.github.io/RyansRenderingKit/Examples" description="一些现成的使用案例" />
+<LinkCard title="参考与案例" href="https://hotpad100c.github.io/RyansRenderingKit/Examples" description="一些现成的使用案例" />
 
 ## 适用性
 
