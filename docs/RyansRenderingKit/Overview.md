@@ -9,20 +9,23 @@ import RepoCard from 'vuepress-theme-plume/features/RepoCard.vue'
 
 <RepoCard repo="hotpad100c/ryansrenderingkit" />
 
-**RyansRenderingKit** 是一个为 Minecraft Fabric 模组开发的世界渲染库，极大简化了在游戏世界中绘制自定义 3D 图形、线框、文字、模型等需求。它封装了 Minecraft 底层的渲染操作，让你可以较为轻松地轻松绘制与控制各种形状。
+##概述与目的
+
+Ryan's Rendering Kit 是一个为 Minecraft 开发的 Fabric 模组库，它提供了一种声明式的、面向对象的方式，直接在游戏世界中渲染任意 3D 几何图形。 其主要目的是让你能够定义各种几何形状——如立方体、球体、线段、圆柱体、OBJ 模型、文本，甚至是原生的 Minecraft 方块、物品和实体——并使它们在每一帧都得到渲染，且完整支持平滑动画、父子变换、透视（禁用深度测试）渲染以及 GPU 缓冲绘图调用。
+
+该库可以在 1.17 到 26.1 版本的 Minecraft 中运行。 作为使用此库的模组作者，你无需担心任何渲染相关的细节，你只需与此处描述的稳定且与版本无关的公开 API 交互即可。
+
+##基础工作流
+
+工作流程始终相同：
+1.使用链式构建器构建一个形状。
+2.使用 ResourceLocation 标识符将其注册到 ShapeManagers 系统中。
+3.若有需要，在外部，或图形的 transformer 回调函数内修改图形的信息。
+4.在图形不再使用时，调用其 discard 方法 或 直接将其从 ShapeManagers 中移除。
+
 
 <LinkCard title="快速开始" href="https://hotpad100c.github.io/RyansRenderingKit/QuickStart" description="前往快速入手教程" />
 <LinkCard title="使用案例" href="https://hotpad100c.github.io/RyansRenderingKit/Examples" description="一些现成的使用案例" />
-
-## 特性一览
-
-- 盒子、圆柱、圆锥、球体、圆面、线框、任意折线、OBJ 模型等常见几何体
-- 三种渲染模式：即时、批处理、顶点缓冲区
-- 自动半透明排序、可控的透视
-- 平滑动画差值管理
-- 层次化变换、父子结构管理
-- 图形生命周期管理
-- 射线检测
 
 ## 适用性
 
