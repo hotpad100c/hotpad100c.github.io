@@ -43,12 +43,6 @@ dependencies {
 要向世界中添加形状，请调用 `ShapeManagers.addShape(...)`，并传入一个 `ResourceLocation` 标识符和构建好的形状：
 
 ```java
-import ml.mypals.ryansrenderingkit.shapeManagers.ShapeManagers;
-import ml.mypals.ryansrenderingkit.builders.shapeBuilders.ShapeGenerator;
-import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.phys.Vec3;
-import java.awt.Color;
-
 // 创建并添加一个酷炫的球体
 SphereShape coolSphere =
 		ShapeGenerator.sphere()
