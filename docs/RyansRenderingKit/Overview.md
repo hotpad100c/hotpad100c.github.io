@@ -23,6 +23,20 @@ Ryan's Rendering Kit 是一个为 Minecraft 开发的 Fabric 模组库，它提�
 3.若有需要，在外部，或图形的 transformer 回调函数内修改图形的信息。
 4.在图形不再使用时，调用其 discard 方法 或 直接将其从 ShapeManagers 中移除。
 
+## 核心概念
+- 形状 (Shape)
+> 最基本的单元。此库中所有可渲染的对象都是 Shape 的子类。 一个形状持有自己的顶点数据 (model_vertexes)、索引缓冲区、以及一个控制其在世界中位置，旋转，大小和其它信息的 变换器（transformer）。
+
+- 构建器 (Builder)
+> 流式辅助类（如 BoxFaceBuilder、SphereBuilder 等），让你能通过可读的、可链式调用的方法来构造形状。 ShapeGenerator 类是唯一的入口点，它为你提供任何形状类型的全新构建器。
+
+- 变换器 (Transformer)
+> 动画系统的核心。每个形状都拥有一个 DefaultTransformer（或其子类，如 BoxTransformer、CylinderTransformer 等）。
+
+- 形状管理器 (ShapeManagers)
+> 全局注册表。它根据形状的几何类型（线段、三角形或“空网格”形状，如使用 Minecraft 自身渲染器的文本和方块）将每个形状路由到正确的内部绘制管道
+
+
 
 <LinkCard title="快速开始" href="https://hotpad100c.github.io/RyansRenderingKit/QuickStart" description="前往快速入手教程" />
 <LinkCard title="使用案例" href="https://hotpad100c.github.io/RyansRenderingKit/Examples" description="一些现成的使用案例" />
