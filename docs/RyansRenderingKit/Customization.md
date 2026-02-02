@@ -12,7 +12,7 @@ permalink: /RyansRenderingKit/Customization/
 
 `Shape` 是本渲染库中**所有可绘制图形的抽象基类**。它定义了一种图形的统一结构，自定义图形需通过继承该类来实现。
 
-### 一、整体职责划分
+### 一、职责划分
 
 `Shape` 主要负责四个行为：
 
@@ -22,3 +22,21 @@ permalink: /RyansRenderingKit/Customization/
 4. **参与并控制渲染流程**
 
 一般，在自定义图形时，需要自行定义`第1`与`第4`部分的行为。
+
+### 定义几何数据
+
+`Shape`的子类通常通过`generateRawGeometry`生成几何数据。
+当自定义图形的几何结构可以通过程序化方式自动生成时，考虑应优先使用该方法。
+```java
+protected abstract void generateRawGeometry(boolean lerp);
+```
+在该方法中，需要负责填充图形的几何信息，包括顶点列表与索引缓冲：
+```java
+public List<Vec3> model_vertexes;
+public int[] indexBuffer;
+```
+* `model_vertexes`：图形的**原始模型顶点**
+* `indexBuffer`：索引缓冲，用于定义顶点绘制顺序
+  
+> 需要注意的是，此处定义的模型顶点均应使用以 (0, 0, 0) 为中心的局部坐标，而非世界空间中的绝对坐标。
+这些顶点将在渲染阶段由 Shape 的变换系统统一应用父子层级与空间变换后，映射到最终的世界坐标中。
