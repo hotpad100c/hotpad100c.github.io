@@ -9,13 +9,13 @@ import RepoCard from 'vuepress-theme-plume/features/RepoCard.vue'
 
 <RepoCard repo="hotpad100c/ryansrenderingkit" />
 
-##概述与目的
+## 概述与目的
 
 Ryan's Rendering Kit 是一个为 Minecraft 开发的 Fabric 模组库，它提供了一种声明式的、面向对象的方式，直接在游戏世界中渲染任意 3D 几何图形。 其主要目的是让你能够定义各种几何形状——如立方体、球体、线段、圆柱体、OBJ 模型、文本，甚至是原生的 Minecraft 方块、物品和实体——并使它们在每一帧都得到渲染，且完整支持平滑动画、父子变换、透视（禁用深度测试）渲染以及 GPU 缓冲绘图调用。
 
 该库可以在 1.17 到 26.1 版本的 Minecraft 中运行。 作为使用此库的模组作者，你无需担心任何渲染相关的细节，你只需与此处描述的稳定且与版本无关的公开 API 交互即可。
 
-##基础工作流
+## 基础工作流
 
 工作流程始终相同：
 1.使用链式构建器构建一个形状。
