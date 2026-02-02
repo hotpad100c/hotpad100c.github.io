@@ -12,8 +12,6 @@ permalink: /RyansRenderingKit/Customization/
 
 `Shape` 是本渲染库中**所有可绘制图形的抽象基类**。它定义了一种图形的统一结构，自定义图形需通过继承该类来实现。
 
-### 一、职责划分
-
 `Shape` 主要负责四个行为：
 
 1. **描述图形的几何数据**
