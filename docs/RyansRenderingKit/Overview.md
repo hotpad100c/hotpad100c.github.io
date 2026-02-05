@@ -3,14 +3,9 @@ pageLayout: home
 home: true
 permalink: /RyansRenderingKit/Overview
 config:
-  - type: banner
-    banner: 
-    bannerMask:
-      light: 0.2
-      dark: 0.4
   - type: hero
     full: false
-    backgroundImage: /
+    backgroundImage: https://i.imgur.com/7mQOEHj.png
     hero:
       name: Ryan'sRenderingKit
       text: 对象化的渲染支持库
@@ -48,17 +43,17 @@ Ryan's Rendering Kit 是一个为 Minecraft 开发的 Fabric 模组库，它提�
 
 使用该库的工作流程相当简单。
 
-::: steps
+::: timeline
 
-1. 申明
+- 申明
 
   使用链式构建器构建一个形状，将其注册到 ShapeManagers 系统中。
 
-2. 操纵
+- 操纵
 
   在外部，或图形的 transformer 回调函数内自由地修改图形的信息，定义它的行为！
 
-3. 释放
+- 释放
 
   在图形不再使用时，调用其 discard 方法 或 直接将其从 ShapeManagers 中移除。
 
