@@ -1,7 +1,7 @@
 ---
 pageLayout: home
 home: true
-permalink: /RyansRenderingKit/
+permalink: /RyansRenderingKit/Overview
 ---
 <script setup>
 import RepoCard from 'vuepress-theme-plume/features/RepoCard.vue'
