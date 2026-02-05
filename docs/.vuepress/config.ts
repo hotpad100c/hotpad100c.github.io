@@ -18,7 +18,13 @@ export default defineUserConfig({
       { 
         type: 'post',
         dir: 'posts',
-        title: '博客' 
+        title: '博客',
+        tags: true,
+        archives: true,
+        categories: true,
+        postList: true,
+        postCover: 'right',
+        pagination: 10,
       },
       {
         type: 'doc',
