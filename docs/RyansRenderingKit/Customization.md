@@ -39,13 +39,13 @@ public int[] indexBuffer;
 > 需要注意的是，此处定义的模型顶点均应使用以 (0, 0, 0) 为中心的局部坐标，而非世界空间中的绝对坐标。
 这些顶点将在渲染阶段由 Shape 的变换系统统一应用父子层级与空间变换后，映射到最终的世界坐标中。
 
-基于 `Shape` 的设计，自定义图形在几何生成与渲染方式上通常可以归纳为以下几种方案。  
+基于 `Shape` 的设计，这里展示一些自定义图形的例子。
 
-#### 1，仅修改顶点生成
+#### 1，四边形图形：仅修改顶点生成
 ```java
-public class CustomCubeShape extends Shape {
+public class CustomQuadShape extends Shape {
 
-    public CubeShape(...) {
+    public CustomQuadShape(...) {
         super(...);
     }
 
@@ -53,23 +53,14 @@ public class CustomCubeShape extends Shape {
     protected void generateRawGeometry(boolean lerp) {
         model_vertexes.clear();
 
-        model_vertexes.add(new Vec3(-0.5, -0.5, -0.5));
-        model_vertexes.add(new Vec3( 0.5, -0.5, -0.5));
-        model_vertexes.add(new Vec3( 0.5,  0.5, -0.5));
-        model_vertexes.add(new Vec3(-0.5,  0.5, -0.5));
-        model_vertexes.add(new Vec3(-0.5, -0.5,  0.5));
-        model_vertexes.add(new Vec3( 0.5, -0.5,  0.5));
-        model_vertexes.add(new Vec3( 0.5,  0.5,  0.5));
-        model_vertexes.add(new Vec3(-0.5,  0.5,  0.5));
-        //所有顶点
+        model_vertexes.add(new Vec3(-0.5, -0.5, 0)); //0
+        model_vertexes.add(new Vec3( 0.5, -0.5, 0)); //1
+        model_vertexes.add(new Vec3( 0.5,  0.5, 0)); //2
+        model_vertexes.add(new Vec3(-0.5,  0.5, 0)); //3
+        //所有顶点（0～3号）
 
         indexBuffer = new int[]{
-            0,1,2, 2,3,0,
-            4,5,6, 6,7,4,
-            0,4,7, 7,3,0,
-            1,5,6, 6,2,1,
-            3,2,6, 6,7,3,
-            0,1,5, 5,4,0
+            0,1,2, 2,3,0
         };
         //连接顶点的顺序
     }
