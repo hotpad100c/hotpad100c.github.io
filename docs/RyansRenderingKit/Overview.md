@@ -3,6 +3,11 @@ pageLayout: home
 home: true
 permalink: /RyansRenderingKit/Overview
 config:
+  - type: banner
+    banner: 
+    bannerMask:
+      light: 0.2
+      dark: 0.4
   - type: hero
     full: false
     backgroundImage: /
@@ -29,19 +34,36 @@ import RepoCard from 'vuepress-theme-plume/features/RepoCard.vue'
 
 <RepoCard repo="hotpad100c/ryansrenderingkit" />
 
-## 概述与目的
+:::: demo-wrapper
 
-Ryan's Rendering Kit 是一个为 Minecraft 开发的 Fabric 模组库，它提供了一种声明式的、面向对象的方式，直接在游戏世界中渲染任意 3D 几何图形。 其主要目的是让你能够定义各种几何形状——如立方体、球体、线段、圆柱体、OBJ 模型、文本，甚至是原生的 Minecraft 方块、物品和实体——并使它们在每一帧都得到渲染，且完整支持平滑动画、父子变换、透视（禁用深度测试）渲染以及 GPU 缓冲绘图调用。
+Ryan's Rendering Kit 是一个为 Minecraft 开发的 Fabric 模组库，它提供了一套声明式的、面向对象的图形管理方式方式。
 
-该库可以在 1.17 到 26.1 版本的 Minecraft 中运行。 作为使用此库的模组作者，你无需担心任何渲染相关的细节，你只需与此处描述的稳定且与版本无关的公开 API 交互即可。
+这将复杂的三维图形渲染过程抽象成简单直观的对象操作，让开发者能够无需关心图形行为之外的其它细节。
+
+该库可以在 1.17 到 26.1 版本的所有 Minecraft 中运行。 
+
+::::
 
 ## 基础工作流
 
-工作流程始终相同：
-1.使用链式构建器构建一个形状。
-2.使用 ResourceLocation 标识符将其注册到 ShapeManagers 系统中。
-3.若有需要，在外部，或图形的 transformer 回调函数内修改图形的信息。
-4.在图形不再使用时，调用其 discard 方法 或 直接将其从 ShapeManagers 中移除。
+使用该库的工作流程相当简单。
+
+::: steps
+
+1. 申明
+
+  使用链式构建器构建一个形状，将其注册到 ShapeManagers 系统中。
+
+2. 操纵
+
+  在外部，或图形的 transformer 回调函数内自由地修改图形的信息，定义它的行为！
+
+3. 释放
+
+  在图形不再使用时，调用其 discard 方法 或 直接将其从 ShapeManagers 中移除。
+
+:::
+
 
 ## 核心概念
 - 形状 (Shape)
