@@ -77,21 +77,3 @@ Ryan's Rendering Kit 是一个为 Minecraft 开发的 Fabric 模组库，它提�
 
 <LinkCard title="快速开始" href="https://hotpad100c.github.io/RyansRenderingKit/QuickStart" description="前往快速入手教程" />
 <LinkCard title="参考与案例" href="https://hotpad100c.github.io/RyansRenderingKit/Examples" description="一些现成的使用案例" />
-
-## 适用性
-
-### 什么情况下，它适合我？
-
-这个渲染库为**简单的客户端渲染**设计。如过你以下条例是你寻找渲染库的目的，它大概适合你：
-
-* 我的模组需要在世界中绘制一些简单的立体图形。
-* 我不愿意在渲染系统上耗费太多时间。
-* 我对渲染方面并不熟悉。
-
-### 什么情况下，它不适合我？
-
-如过你以下条例是你寻找渲染库的目的，那么很遗憾，它大概不适合你：
-
-* 我的模组需要渲染复杂的图形或华丽的特效。
-* 我的模组需要处理模型光照，贴图处理等。
-* 我的模组需要一个2D的，UI上的渲染库。
