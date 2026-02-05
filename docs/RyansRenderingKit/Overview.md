@@ -2,6 +2,24 @@
 pageLayout: home
 home: true
 permalink: /RyansRenderingKit/Overview
+config:
+  - type: hero
+    full: false
+    backgroundImage: /
+    hero:
+      name: Ryan'sRenderingKit
+      text: 对象化的渲染支持库
+      actions:
+        - theme: brand
+          text: 快速开始
+          link: /RyansRenderingKit/QuickStart/
+        - theme: alt
+          text: Github仓库
+          link: https://github.com/hotpad100c/ryansrenderingkit/tree/MultiVersion
+        - theme: alt
+          text: Maven仓库
+          link: https://mvnrepository.com/artifact/io.github.hotpad100c/ryansrenderingkit
+  - type: custom
 ---
 <script setup>
 import RepoCard from 'vuepress-theme-plume/features/RepoCard.vue'
