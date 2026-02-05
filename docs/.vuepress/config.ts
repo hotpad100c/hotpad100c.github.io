@@ -40,6 +40,7 @@ export default defineUserConfig({
       collapse: true, 
       field: true, 
       abbr: true, 
+      timeline: true, 
     },
     navbar: [
       { text: "首页", link: "/" },
