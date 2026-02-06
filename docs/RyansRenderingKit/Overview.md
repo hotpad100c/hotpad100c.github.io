@@ -5,7 +5,7 @@ permalink: /RyansRenderingKit/Overview
 config:
   - type: hero
     full: false
-    backgroundImage: https://i.imgur.com/7mQOEHj.png
+    backgroundImage: https://i.imgur.com/OV8wj8t.png
     hero:
       name: Ryan'sRenderingKit
       text: 对象化的渲染支持库
