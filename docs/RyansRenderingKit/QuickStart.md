@@ -36,7 +36,7 @@ dependencies {
 [https://mvnrepository.com/artifact/io.github.hotpad100c/ryansrenderingkit](https://mvnrepository.com/artifact/io.github.hotpad100c/ryansrenderingkit)
 
 
-## 3. 添加与移除形状
+## 3. 基础操作
 
 ### 注册形状
 
@@ -61,6 +61,49 @@ ShapeManagers.addShape(
 每个形状都需要一个唯一 ID（ResourceLocation 类型，格式如 modid:path/to/shape），这个 ID 确保形状不会重复注册或冲突，且可被追踪。
 :::
 调用 `addShape(id, Shape)`时，图形将长期保存，直到被移除。此外，也可以调`addShape(shape)` 进行**匿名形状**注册，这样的图形是一次性的，**会在首次渲染后被自动移除**。
+
+### 操作形状
+
+#### 默认tick逻辑
+
+我们创建好了图形，并拿到了它的实例，是时候充分利用它提供的功能了。
+你现在可以认为，你持有的图形是一个真实存在于世界中的对象，就像实体，方块一样。
+
+这个是实例有自己的tick回调函数，它叫`transformer`,它每帧执行一次。
+
+:::info
+仅有渲染模式为非 `BUFFERED `模式的图形可以这样操作。
+:::
+
+为了使用这个回调，你需要在构建时加入这一行：
+
+```java
+SphereShape coolSphere =
+		ShapeGenerator.sphere()
+		//已有的其它构建参数...
+        .transform(transformer->{// [!code ++]
+								// [!code ++]
+		})						// [!code ++]
+        //已有的其它构建参数...
+        .build();
+```
+
+现在，你可以通过回调函数传入的`transformer`控制该图形每帧的逻辑。此外，你可以从`transformer.getShape()`拿到图形实例本身，进行更多的操控。
+
+:::info
+如果你持有图形实例，你也可以在其它逻辑循环环内自由地使用图形。
+:::
+#### 变位 / 变形
+
+每个图形都拥有一个对应的 `Transformer`（或其子类）实例，用于描述和控制图形自身的可变属性。  
+例如，正方体线框图形的 `Transformer` 可以控制线条粗细；球体图形的 `Transformer` 则可以控制分段数、半径等参数。
+
+只要你持有图形实例，就可以在任意逻辑体系中自由修改这些属性，从而实时影响图形在下一帧中的表现形式。
+
+#### 存储数据
+
+每个图形实例内部都维护了一个 `Map<String, Object>` 结构，用于存储自定义数据。  
+你可以通过 `putCustomData()` 与 `getCustomData()` 方法自由地写入和读取这些数据，其中 `String` 作为键，用于标识不同的数据项。
 
 ### 移除形状
 
