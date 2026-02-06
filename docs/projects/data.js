@@ -173,7 +173,7 @@ export const navData = [
         description: '简单的Minecraft，Fabric渲染库',
         detail: '是的。', 
         url: 'https://hotpad100c.github.io/RyansRenderingKit/Overview',
-        cover: ' '
+        cover: 'https://i.imgur.com/OV8wj8t.png'
       }   
     ]
   }
