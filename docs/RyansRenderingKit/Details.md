@@ -35,3 +35,31 @@ permalink: /RyansRenderingKit/Details/
 正因如此，本库试图提供一种面向对象的渲染操作抽象框架。  
 Shape 实例负责保存实际的空间坐标、顶点等几何数据，而库内的其它模块则根据这些数据完成变换、顶点计算、数据上传与绘制等具体流程，从而实现渲染逻辑与渲染内容之间的解耦。
 
+## Shape对象
+
+> 每一个渲染内容都被视为一个顶点与相关数据的集合，称作“图形”。
+
+## 图形的构成
+
+在本库中，每个形状对象内部维护着这样的数据：
+
+::: file-tree
+
+- Shape.class
+  - id  : ResourceLocation //图形的标识符
+  - transformer  : Transformer //图形的位置等信息
+  - transformFunction  : Consumer<Transformer> //每帧执行的特定逻辑
+  - parent  : Shape //可能的父图形
+  - children  : List<Shape> //可能的子图形
+     -…
+  - visible  : Boolean //图形逻辑是否被运算
+  - baseColor  : Color //图形的基础颜色
+  - seeThrough  : Boolean //图形是否穿墙可见
+  - modelVertexes  : List<Vec3> //图形的顶点
+  - indexBuffer  : int[]  //顶点的连接顺序
+  - customData  : Map<Object, Object> //图形存储的自定义数据
+    - …
+:::
+
+
+
