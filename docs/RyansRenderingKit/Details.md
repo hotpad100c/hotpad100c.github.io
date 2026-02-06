@@ -1,3 +1,6 @@
+---
+permalink: /RyansRenderingKit/Details/
+---
 # 概念与原理
 
 > 本篇文档记录本库的目的，概念与实现详细。以方便日后维护的进行。
