@@ -56,6 +56,6 @@
   --vp-nav-bg-color: rgba(29, 27, 31, 1);             /* 导航栏背景 */
   --vp-nav-screen-bg-color: rgba(29, 27, 31, 1);      /* 移动端导航栏 */
   --vp-local-nav-bg-color: rgba(30, 27, 31, 1);       /* 页面内导航栏 */
-  --vp-sidebar-bg-color: rgba(29, 25, 36, 1);         /* 侧边栏背景 */
+  --vp-sidebar-bg-color: rgba(23, 22, 24, 1);         /* 侧边栏背景 */
   --vp-code-block-bg: #202127;                        /* 代码块背景 */
 }
