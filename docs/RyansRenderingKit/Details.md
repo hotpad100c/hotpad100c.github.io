@@ -48,7 +48,7 @@ Shape 实例负责保存实际的空间坐标、顶点等几何数据，而库�
 - Shape.class
   - id   ResourceLocation类，图形的标识符
   - transformer  Transformer类，图形的位置等信息
-  - transformFunction  Consumer<Transformer>回调函数，每帧执行的特定逻辑
+  - transformFunction  Consumer类，回调函数，传入transformer并每帧执行的特定逻辑
   - parent  Shape类，可能的父图形
   - children  Shape类列表，可能的子图形
      - …
