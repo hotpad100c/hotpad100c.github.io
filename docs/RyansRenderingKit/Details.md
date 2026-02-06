@@ -51,7 +51,7 @@ Shape 实例负责保存实际的空间坐标、顶点等几何数据，而库�
   - transformFunction  : Consumer<Transformer> //每帧执行的特定逻辑
   - parent  : Shape //可能的父图形
   - children  : List<Shape> //可能的子图形
-     -…
+     - …
   - visible  : Boolean //图形逻辑是否被运算
   - baseColor  : Color //图形的基础颜色
   - seeThrough  : Boolean //图形是否穿墙可见
