@@ -3,12 +3,15 @@ pageLayout: home
 home: true
 permalink: /RyansRenderingKit/Overview
 config:
-  - type: hero
+  - type: doc-hero
     full: false
-    backgroundImage: https://i.imgur.com/OV8wj8t.png
     hero:
+
       name: Ryan'sRenderingKit
-      text: 对象化的渲染支持库
+      text: 一个面向对象的渲染支持库
+      tagline: 化繁为简
+      image: https://i.imgur.com/2FlFolC.png
+    
       actions:
         - theme: brand
           text: 快速开始
@@ -31,11 +34,11 @@ import RepoCard from 'vuepress-theme-plume/features/RepoCard.vue'
 
 :::: demo-wrapper
 
-Ryan's Rendering Kit 是一个为 Minecraft 开发的 Fabric 模组库，它提供了一套声明式的、面向对象的图形管理方式方式。
+Ryan's Rendering Kit 是一个为 Minecraft 开发的 Fabric 模组库，它提供了一套==声明式的、面向对象的图形管理方式。==
 
 这将复杂的三维图形渲染过程抽象成简单直观的对象操作，让开发者能够无需关心图形行为之外的其它细节。
 
-该库可以在 1.17 到 26.1 版本的所有 Minecraft 中运行。 
+该库可以在 ==1.17 到 26.1== 版本的所有 Minecraft 中运行。 
 
 ::::
 
@@ -51,7 +54,7 @@ Ryan's Rendering Kit 是一个为 Minecraft 开发的 Fabric 模组库，它提�
 
 - 操纵
 
-  在外部，或图形的 transformer 回调函数内自由地修改图形的信息，定义它的行为！
+  在外部，或图形的 transformer 回调函数内自由地修改图形的信息，定义它的行为。
 
 - 释放
 
@@ -65,10 +68,10 @@ Ryan's Rendering Kit 是一个为 Minecraft 开发的 Fabric 模组库，它提�
 > 最基本的单元。此库中所有可渲染的对象都是 Shape 的子类。 一个形状持有自己的顶点数据 (model_vertexes)、索引缓冲区、以及一个控制其在世界中位置，旋转，大小和其它信息的 变换器（transformer）。
 
 - 构建器 (Builder)
-> 流式辅助类（如 BoxFaceBuilder、SphereBuilder 等），让你能通过可读的、可链式调用的方法来构造形状。 ShapeGenerator 类是唯一的入口点，它为你提供任何形状类型的全新构建器。
+> 流式辅助类，让你能通过可读的、可链式调用的方法来构造形状。 ShapeGenerator 类是入口点，它为你提供任何形状类型的全新构建器。
 
 - 变换器 (Transformer)
-> 动画系统的核心。每个形状都拥有一个 DefaultTransformer（或其子类，如 BoxTransformer、CylinderTransformer 等）。
+> 图形对象核心之一。每个形状都拥有一个 DefaultTransformer（或其子类，如 BoxTransformer、CylinderTransformer 等）。它们存储图形的位置，旋转，缩放等重要信息。
 
 - 形状管理器 (ShapeManagers)
 > 全局注册表。它根据形状的几何类型（线段、三角形或“空网格”形状，如使用 Minecraft 自身渲染器的文本和方块）将每个形状路由到正确的内部绘制管道
