@@ -8,8 +8,8 @@ config:
     hero:
 
       name: Ryan'sRenderingKit
-      text: 一个面向对象的渲染支持库
-      tagline: 化繁为简
+      text: 化繁为简
+      tagline: 一个面向对象的渲染支持库
       image: https://i.imgur.com/2FlFolC.png
     
       actions:
