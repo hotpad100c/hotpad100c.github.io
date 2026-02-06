@@ -59,6 +59,7 @@ Shape 实例负责保存实际的空间坐标、顶点等几何数据，而库�
   - indexBuffer  整数列表，顶点的连接顺序
   - customData  Object对Object表，图形存储的自定义数据
     - …
+
 :::
 
 
