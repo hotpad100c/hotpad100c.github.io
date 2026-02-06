@@ -14,7 +14,7 @@ export default defineUserConfig({
 
   theme: theme({
     logo: 'https://i.postimg.cc/ZRHDmzH8/Untitled30-20251111074818.png',
-    appearanc: force-dark,
+    appearanc: 'force-dark',
     collections: [ 
       { 
         type: 'post',
