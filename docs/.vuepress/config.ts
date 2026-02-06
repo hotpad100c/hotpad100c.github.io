@@ -32,7 +32,7 @@ export default defineUserConfig({
         dir: 'RyansRenderingKit',
         linkPrefix: '/RyansRenderingKit/',
         title: 'Ryan\'sRenderingKit',
-        sidebar: ['Overview', 'QuickStart', 'Transformer', 'Examples', 'Customization'],
+        sidebar: ['Overview', 'QuickStart', 'Transformer', 'Examples', 'Customization', 'Details'],
       },
       
     ],
