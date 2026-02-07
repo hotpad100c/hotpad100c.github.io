@@ -90,7 +90,7 @@ SphereShape coolSphere =
 
 现在，你可以通过回调函数传入的`transformer`控制该图形每帧的逻辑。此外，你可以从`transformer.getShape()`拿到图形实例本身，进行更多的操控。
 
-:::info
+:::tip
 如果你持有图形实例，你也可以在其它逻辑循环内自由地操作图形。
 :::
 #### 变位 / 变形
