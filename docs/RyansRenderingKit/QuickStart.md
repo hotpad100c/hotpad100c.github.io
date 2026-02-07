@@ -91,7 +91,7 @@ SphereShape coolSphere =
 现在，你可以通过回调函数传入的`transformer`控制该图形每帧的逻辑。此外，你可以从`transformer.getShape()`拿到图形实例本身，进行更多的操控。
 
 :::info
-如果你持有图形实例，你也可以在其它逻辑循环环内自由地使用图形。
+如果你持有图形实例，你也可以在其它逻辑循环内自由地操作图形。
 :::
 #### 变位 / 变形
 
@@ -99,6 +99,9 @@ SphereShape coolSphere =
 例如，正方体线框图形的 `Transformer` 可以控制线条粗细；球体图形的 `Transformer` 则可以控制分段数、半径等参数。
 
 只要你持有图形实例，就可以在任意逻辑体系中自由修改这些属性，从而实时影响图形在下一帧中的表现形式。
+
+<LinkCard title="变换器" href="https://hotpad100c.github.io/RyansRenderingKit/Transformer" description="变换器特性介绍" />
+
 
 #### 存储数据
 
@@ -115,5 +118,3 @@ ShapeManagers.removeShape(ResourceLocation.fromNamespaceAndPath("my_mod", "cool_
 
 coolSphere.discard();
 ```
-
-<LinkCard title="变换器" href="https://hotpad100c.github.io/RyansRenderingKit/Transformer" description="变换器特性介绍" />
