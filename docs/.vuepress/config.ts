@@ -42,6 +42,7 @@ export default defineUserConfig({
       field: true, 
       abbr: true, 
       timeline: true, 
+      window: true
     },
     navbar: [
       { text: "首页", link: "/" },
