@@ -240,7 +240,7 @@ However, as of now (2026/6/26), no one has publicly proposed or implemented a si
 
 ## Takeaways:
 
-In the process of analyzing this mechanic, we also discovered two interesting mechanics and one unexplained Carpet mod issue:
+In the process of analyzing this mechanic, we also discovered two interesting mechanics and one Carpet mod issue:
 
 * **Normal entities**, when undergoing only **horizontal movement** (Y-axis momentum = 0), will have their `onGround` updated to `false`, regardless of whether they are actually standing on the ground.
 
