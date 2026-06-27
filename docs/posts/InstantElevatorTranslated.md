@@ -250,8 +250,15 @@ In the process of analyzing this mechanic, we also discovered two interesting me
 
   > Similarly, since entities are normally always affected by gravity, this mechanic is also not obvious during normal gameplay.
 
-* The entity controlled by **Carpet mod's fake player** cannot reproduce the second behavior; its performance differs from that of a vanilla player. The specific reason has not yet been identified and awaits further research. This is yet another behavioral difference discovered between Carpet fake players and vanilla players.
-  
+* **Carpet fake players** cannot reproduce the second behavior because Carpet injects into `Entity.java` and applies special handling for fake player riders. When a fake player is riding an entity on the server, `isLocalInstanceAuthoritative` returns `true`, allowing the ridden horse to pass the `isLocalInstanceAuthoritative` check and update its `onGround` state. As a result, the horse still cannot step up multiple times within the same game tick.
+```java
+@Inject(method = "isLocalInstanceAuthoritative", at = @At("HEAD"), cancellable = true)
+private void isFakePlayer(CallbackInfoReturnable<Boolean> cir)
+{
+    // getControllingPassenger() does not return the EntityPlayerMPFake if there are no passengers involved with it
+    if ((Object) this instanceof EntityPlayerMPFake || getControllingPassenger() instanceof EntityPlayerMPFake) cir.setReturnValue(!level.isClientSide());
+}  
+```  
  ---
  
 # Why Is This Elevator Only Possible in Versions 1.21.4 and Later?
