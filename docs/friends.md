@@ -21,6 +21,19 @@ list:
       -
         icon: youtube
         link: https://youtube.com/@zxbhello
+
+  -
+    name: Mulatram
+    link: https://mulatram.dev/
+    avatar: https://github.com/Mulatram-UwU.png
+    desc: 一个智力极高的人，，，
+    socials:
+      -
+        icon: github
+        link: https://github.com/Mulatram-UwU
+      -
+        icon: bilibili
+        link: https://space.bilibili.com/617459560
 ---
 
 也想交个朋友吗？向我发送[邮件](hotpad100c@gmail.com)或者向这个页面提交[Issue](https://github.com/hotpad100c/hotpad100c.github.io/issues)或[friends.md](https://github.com/hotpad100c/hotpad100c.github.io/blob/main/docs/friends.md)的[PR](https://github.com/hotpad100c/hotpad100c.github.io/pulls)!
