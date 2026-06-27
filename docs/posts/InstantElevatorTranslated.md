@@ -17,39 +17,39 @@ Recently, a design for an "[Instant Elevator](https://www.youtube.com/watch?v=If
 
 Unfortunately, the explanations provided by the original creator, Mingyue Zhuangzhu, and CraftyMasterMan regarding the elevator's principle are not sufficiently in-depth, leaving many details inadequately explained. To fill these gaps, this article will focus on the following questions:
 
-- At which phase of the game is the player actually teleported to the top of the elevator?
-    - Misconception: Must the left-side block not connect to the wall?
+- At which phase of the game is the player actually moved to the top of the elevator?
+    - Misconception: Must the left-side block not connect to the wall block?
 - What is the specific principle behind the player's movement?
 - Why can't other entities use this elevator like players can?
 - Why is this elevator only possible in versions 1.21.4 and later?
 
 ---
 
-# At Which Phase of the Game Is the Player Teleported to the Top of the Elevator?
+# At Which Phase of the Game Is the Player Moved to the Top of the Elevator?
 
 The explanatory videos mention that the elevator's principle involves alternating piston pushes from both sides within the same game tick, causing the player to continuously step up onto the already-extended piston on the opposite side:
 ==One side's piston first pushes the player, causing them to step onto the piston previously extended on the other side; then, the other side's piston pushes the player again, causing them to step onto the piston that just pushed them. Repeating this cycle, the player climbs all the way to the top of the elevator within a single game tick.=={.important}
 
-Since both videos simulate the process within a single game tick by artificially slowing down the piston activation speed, they can easily cause a misconception: ==the player's climbing seems to occur when the moving piston converts into a normal block, caused by block collision pushing the player=={.warning}. In reality, this is not the case.
+Since both videos simulate the process within a single game tick by artificially slowing down the piston activation speed, they can easily cause a misconception: ==the player's climbing seems to occur when the moving_piston converts into a normal block, caused by block collision pushing the player=={.warning}. In reality, this is not the case.
 
-In this elevator, the entire process of the player continuously climbing from the bottom to the top occurs during the ==block entity (moving piston) computation phase of the 2nd game tick after both pistons begin extending,=={.important} not after the moving pistons finish extending and convert into normal blocks.
-During the block entity phase, it is the "moving piston" block entity that actively calls the entity's `move(Vec 3)` method, thereby triggering the entity's automatic step-up logic and causing the upward climb.
+In this elevator, the entire process of the player continuously climbing from the bottom to the top occurs during the ==block entity (moving_piston) computation phase of the 2nd game tick after both pistons begin extending,=={.important} not after the moving_piston blocks finish extending and convert into normal blocks.
+During the block entity phase, it is the moving_piston block entity that actively calls the entity's `move(MoverType movertype, Vec3 vec3)` method, thereby triggering the entity's automatic step-up logic and causing the upward climb.
 
-## Misconception: Must the Left-Side Block Not Connect to the Wall?
+## Misconception: Must the Left-Side Block Not Connect to the Wall Block?
 
 Mingyue Zhuangzhu's video mentions:
 
-> If a full block is used on the left, the stone wall will connect to it, making the stone wall's collision area narrower (affecting the effective pushing range).
-> Therefore, blocks that don't connect to stone walls, such as stairs or slabs, should be used.
+> If a full block is used on the left, the wall block will connect to it, making the wall block's collision shape narrower (affecting the effective pushing range).
+> Therefore, blocks that don't connect to wall blocks, such as stairs or slabs, should be used.
 
-Combined with the conclusion from the previous section "**At Which Phase of the Game Is the Player Teleported to the Top of the Elevator?**", we can re-analyze this statement.
+Combined with the conclusion from the previous section "**At Which Phase of the Game Is the Player Moved to the Top of the Elevator?**", we can re-analyze this statement.
 
-First, according to the previous conclusion, the player's movement occurs during the ==block entity phase=={.important}. At this point, the wall block on one side is still just a "moving piston" disguised as a wall, and the same applies to the block on the other side. Therefore, no wall connection occurs between them, and naturally, there is no issue of reduced stone wall collision area due to connection.
+First, according to the previous conclusion, the player's movement occurs during the ==block entity phase=={.important}. At this point, the wall block on one side is still just a "moving_piston" disguised as a wall block, and the same applies to the block on the other side. Therefore, no wall connection occurs between them, and naturally, there is no issue of reduced wall block collision shape due to connection.
 
 Thus, this explanation does not hold up. As for why the original creator chose a design using stairs instead of a full block on the left side, we cannot be certain — it may have been due to concern about a similar issue.
 
 ## Corresponding Optimization:
-So in reality, the machine's size can be further reduced: a sticky piston + wall on one side, and a regular piston on the other. It looks like this:
+So in reality, the machine's size can be further reduced: a sticky piston + wall block on one side, and a regular piston on the other. It looks like this:
 
 (image to be added later)
 
@@ -90,11 +90,11 @@ Don't be afraid — here's a text-based pseudocode version:
 Calculate the movement result after normal collision: movementStep;
 
 If (
-    maxUpStep attribute > 0
+    `maxUpStep` value > 0
     AND (onGroundAfterCollision OR currently onGround)
     AND (X or Z direction collision occurred)
 ) {
-    Construct a collision area that allows step-up attempts;
+    Construct a collision shape that allows step-up attempts;
     Collect all colliders within that area;
     Calculate all possible step-up heights;
     For each candidate step-up height {
@@ -113,13 +113,13 @@ Otherwise, return the normal collision movement result;
 In short, when a player experiences a horizontal collision AND meets the auto-step conditions (onGroundAfterCollision OR currently onGround), the game attempts to simulate different step-up heights. If a particular option allows the player to move further horizontally, it adopts that option; otherwise, it keeps the original collision result.
 
 In the scenario where the elevator teleports players (note: **the player's scenario**, which will be detailed later):
-- The player's maxUpStep attribute > 0 (otherwise, like a boat, they couldn't step over even a 1-pixel-high collider)
+- The player's `maxUpStep` value > 0 (otherwise, like a boat, they couldn't step over even a 1-pixel-high collider)
 - The player experiences a horizontal collision with a collider 0.5 blocks above their feet on the opposite side, thus satisfying the "player experiences a horizontal collision" condition.
 - The player is standing firmly before being pushed, satisfying the "currently onGround" condition.
 - The "onGroundAfterCollision" condition is not met (since the piston only pushes the player horizontally, Y-axis movement is 0, so naturally, no downward vertical collision can occur).
 
 Since "currently onGround" and "onGroundAfterCollision" have an **OR** relationship, even if the latter is not met, the player can still enter the auto-step logic.
-The game then attempts to calculate the movement result after stepping up, causing the player to climb onto the top of the previously extended moving piston block on the other side.
+The game then attempts to calculate the movement result after stepping up, causing the player to climb onto the top of the previously extended moving_piston block on the other side.
 
 ---
 # Why Can't Other Entities Use This Elevator?
@@ -131,7 +131,7 @@ Upon careful observation, another discovery was made: ==although entities can st
 After an entity completes its first step-up, ==some condition must have changed=={.important}, causing it to **no longer meet the conditions required to enter the auto-step logic**.
 Let's revisit the four conditions mentioned earlier and eliminate them one by one:
 
-> - `Entity's maxUpStep attribute > 0`: Definitely true — for most entities like villagers, this attribute is greater than 0.
+> - `Entity's `maxUpStep` value > 0`: Definitely true — for most entities like villagers, this attribute is greater than 0.
 > - `Entity experiences a horizontal collision with a collider 0.5 blocks above its feet on the opposite side, satisfying the horizontal collision condition`: Definitely true — when pushed, the entity will inevitably be stopped by the other side.
 > - `onGroundAfterCollision condition is not met (since the piston only pushes horizontally, Y-axis movement is 0, so naturally, no downward vertical collision can occur)`: Definitely false, as described in parentheses.
 
@@ -168,21 +168,21 @@ Pseudocode:
 ```text
 Call collide() to calculate the actual movement result after collision: delta
 
-Calculate whether a horizontal collision occurred (whether the actual position after movement is the same as "pre-movement position + momentum")
+Calculate whether a horizontal collision occurred, i.e. whether the actual movement differs from the requested horizontal movement.
 
 If (
-    Y momentum is non-zero
+    Y movement is non-zero
     OR
     The local [server-side] entity has authority over its own position // Note this!
 ) {    
     Calculate whether a vertical collision occurred;
-    Set onGround to: "vertical collision occurred AND Y momentum < 0"
+    Set onGround to: "vertical collision occurred AND Y movement < 0"
 }
 ```
 
 We can also analyze the logical behavior of this section during horizontal piston pushing:
 
-- Y momentum non-zero: False — horizontal pushing provides no Y-axis momentum.
+- Y movement non-zero: False — horizontal pushing provides no Y-axis momentum.
 - The local [server-side] entity has authority over its own position: ==this.isLocalInstanceAuthoritative(), to be examined, let's assume it passes for now.==
 
 Therefore, for entities like villagers, they can enter this "set onGround" logic.
@@ -190,7 +190,7 @@ Therefore, for entities like villagers, they can enter this "set onGround" logic
 Next:
 
 - Vertical collision occurred: False — the piston provides no Y-axis momentum.
-- Vertical collision occurred AND Y momentum < 0: False ~~"the piston provides no Y-axis momentum" has been said n times already haha~~
+- Vertical collision occurred AND Y movement < 0: False ~~"the piston provides no Y-axis momentum" has been said n times already www~~
 
 Thus, the entity's `onGround` is set to `false`?!
 
@@ -220,7 +220,8 @@ As can be seen, this is essentially a **movement authority mechanism** (Authorit
 
 For the vast majority of entities, `isClientAuthoritative()` returns `false`, so in a server-side environment, `isLocalInstanceAuthoritative()` is **`true`**. This means their `onGround` is immediately updated after every movement, ==thus losing the opportunity to re-enter the auto-step logic after the first step-up.=={.important}
 
-However, for **player entities** and **vehicles being ridden by players**, `isClientAuthoritative()` returns, or returns `true` due to being controlled by a player, thereby making the server-side `isLocalInstanceAuthoritative()` return **`false`**. In this case, `onGround` is not immediately recalculated after each horizontal push, allowing it to remain `true`!
+However, for **player entities** and **vehicles controlled by a player**, `isClientAuthoritative()` returns `true` directly or via the controlling passenger.
+, thereby making the server-side `isLocalInstanceAuthoritative()` return **`false`**. In this case, `onGround` is not immediately recalculated after each horizontal push, allowing it to remain `true`!
 
 This allows the entity to repeatedly enter the auto-step logic within the same game tick, ultimately climbing all the way to the elevator top.
 
@@ -276,7 +277,7 @@ if (this.horizontalCollision) {
 } else {
     this.minorHorizontalCollision = false;
 }
-this.setOnGroundWithMovement(this.verticalCollisionBelow, this.horizontalCollision, vec32); //不受任何约束
+this.setOnGroundWithMovement(this.verticalCollisionBelow, this.horizontalCollision, vec32); //No condition
 BlockPos blockPos = this.getOnPosLegacy();
 BlockState blockState = this.level().getBlockState(blockPos);
 if (!this.level().isClientSide() || this.isControlledByLocalInstance()) {
@@ -297,7 +298,7 @@ if (this.horizontalCollision) {
 } else {
     this.minorHorizontalCollision = false;
 }
-this.setOnGroundWithMovement(this.verticalCollisionBelow, this.horizontalCollision, vec32); //不受任何约束
+this.setOnGroundWithMovement(this.verticalCollisionBelow, this.horizontalCollision, vec32); //No condition
 
 ```
 
@@ -317,25 +318,20 @@ if (Math.abs(vec3.y) > 0.0 || this.isControlledByOrIsLocalPlayer()) {// [!code +
 ```
 - 25w02a and later:
 ```java
-if (movedVertically || this.isControlledByOrIsLocalPlayer()) {// [!code --]
-if (movedVertically || this.isLocalInstanceAuthoritative()) {// [!code ++]
+if (Math.abs(vec3.y) > 0.0 || this.isControlledByOrIsLocalPlayer()) {// [!code --]
+if (Math.abs(vec3.y) > 0.0 || this.isLocalInstanceAuthoritative()) {// [!code ++]
     this.verticalCollision = delta.y != movement.y;
     this.verticalCollisionBelow = this.verticalCollision && delta.y < 0.0;
     this.setOnGroundWithMovement(this.verticalCollisionBelow, this.horizontalCollision, movement);
 }
 ```
-Thus, we can determine that the elevator's specific usable range begins from the `24w45a` snapshot.
+Thus, we can determine that the elevator's specific usable range begins from snapshot 24w45a onward, and therefore from the 1.21.4 release onward among stable releases.
 
 ---
 
 # Summary
 
-> **Summary:** The instant elevator became possible starting from the `24w45a` snapshot.
-> The root cause is that `setOnGroundWithMovement` in the `move` method added the condition
->  `movedVertically || this.isLocalInstanceAuthoritative()` in this version. Previously,
->  when moving an entity purely horizontally (e.g., horizontal piston pushing, Y momentum = 0),
-> `onGround` would always be updated to `false`, preventing the entity from utilizing auto-stepping
->  multiple times within the same game tick to continuously ascend. However, for players and player-controlled
-> entities, `isLocalInstanceAuthoritative()` is always `false`, so when only horizontal pushing is applied (`movedVertically == false`),
->  `setOnGroundWithMovement` is no longer executed, thus not resetting `onGround` to `false`. This allows players, etc., to repeatedly maintain
-> `onGround = true` within the same game tick and continuously trigger auto-stepping, thereby achieving unlimited step-up, i.e., the instant elevator.
+> **Summary:** The elevator became possible starting from 24w45a,
+>  where `setOnGroundWithMovement` stopped being called unconditionally and became gated by a
+> vertical-movement/client-controlled check. In later versions this logic was refactored into
+> `movedVertically || this.isLocalInstanceAuthoritative()`.
