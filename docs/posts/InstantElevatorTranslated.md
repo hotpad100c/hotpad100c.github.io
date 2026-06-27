@@ -51,7 +51,9 @@ Thus, this explanation does not hold up. As for why the original creator chose a
 ## Corresponding Optimization:
 So in reality, the machine's size can be further reduced: a sticky piston + wall block on one side, and a regular piston on the other. It looks like this:
 
-(image to be added later)
+> By **Tj-Redstone**
+> <img width="328" height="333" alt="image" src="https://github.com/user-attachments/assets/f68daa33-ee2c-4ba8-9ca1-8afaa8ccefdf" />
+> <img width="328" height="333" alt="image" src="https://github.com/user-attachments/assets/d7014733-8177-4ff4-bf1f-1b3d036db7dc" />
 
 ---
 
@@ -237,7 +239,14 @@ This discovery also leads to a more radical optimization idea.
 A horse's **maxUpStep** attribute reaches **1 full block**. This means that when a player rides a horse to use the elevator, both sides can use **regular pistons**, without needing the **sticky piston + wall** design to provide a 0.5-block-high collider.
 
 When riding a horse, this elevator can fully adopt a simpler dual regular piston structure.
-However, as of now (2026/6/26), no one has publicly proposed or implemented a similar design.
+> This is my [first design](https://www.bilibili.com/video/BV1mb7j6uEsQ/?spm_id_from=333.337.search-card.all.click&vd_source=166b9d51b9e39f8ff98a99489603c768)
+
+> Optimized by **Tj-Redstone**
+> <img width="328" height="333" alt="657e847798bcdcddbc6df3f593ecafd8" src="https://github.com/user-attachments/assets/ca7d8482-bd39-439a-8167-ae3bf4c5ddb2" />
+> <img width="328" height="333" alt="d28c5e03515da0275b8a5f2df5e4ce12" src="https://github.com/user-attachments/assets/631d01b7-37c7-44fa-8de1-bc78d634bfdc" />
+> <img width="328" height="333" alt="image" src="https://github.com/user-attachments/assets/c972cfab-8271-4550-8eec-bd43871d7260" />
+
+
 
 ## Takeaways:
 
