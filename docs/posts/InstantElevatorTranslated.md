@@ -1,6 +1,6 @@
 ---
 title: Analysis of the Instant Elevator
-date: 2026–7-26
+date: 2026–6-26
 permalink: /posts/InstantElevatorEn/
 tags: [TMC, Redstone, Entities]
 ---
