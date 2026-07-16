@@ -18,3 +18,55 @@ tags: [TMC, Redstone, BlockUpdate]
 
 因此，现在的方块更新被分为了以下4类基本单位：
 
+## 单次 形状更新（PP更新）
+```java
+
+private record ShapeUpdate(...) implements NeighborUpdates {
+    @Override
+    public boolean runNext(final Level level) {
+        NeighborUpdater.executeShapeUpdate(...);
+        return false;  
+    }
+}
+```
+
+## 单次 邻居更新（NC更新）
+```java
+private record SimpleNeighborUpdate(...) implements NeighborUpdates {
+    @Override
+    public boolean runNext(final Level level) {
+        BlockState state = level.getBlockState(this.pos);
+        NeighborUpdater.executeUpdate(...);
+        return false;  
+    }
+}
+```
+
+## 六向 邻居更新（NC更新）
+```java
+private record FullNeighborUpdate(...) implements NeighborUpdates {
+    @Override
+    public boolean runNext(final Level level) {
+        NeighborUpdater.executeUpdate(...);
+        return false;
+    }
+}
+```
+
+## 五向 邻居更新（NC更新）
+```java
+private static final class MultiNeighborUpdate implements NeighborUpdates {
+    private int idx = 0;
+    
+    @Override
+    public boolean runNext(final Level level) {
+        Direction direction = NeighborUpdater.UPDATE_ORDER[this.idx++];
+        // ...略...
+        NeighborUpdater.executeUpdate(level, state, neighborPos, this.sourceBlock, orientation, false);
+        if (this.idx < NeighborUpdater.UPDATE_ORDER.length && NeighborUpdater.UPDATE_ORDER[this.idx] == this.skipDirection) {
+            this.idx++;
+        }
+        return this.idx < NeighborUpdater.UPDATE_ORDER.length; 
+    }
+}
+```
