@@ -4,3 +4,7 @@ date: 2026–7-9
 permalink: /posts/NewUpdateStack/
 tags: [TMC, Redstone, BlockUpdate]
 ---
+
+栈溢出更新抑制器在1.19.2被修复。这期间，Minecraft引入了一套新的更新调度系统。
+虽然这个系统尽力模仿了更新的行为，但仍然存在严重的行为变动。由于原版红石元件的限制，
+这些问题没有过多体现，本文旨在分析新的更新系统，并指出其带来的问题。
