@@ -26,7 +26,7 @@ jobs:
         run: pnpm install --frozen-lockfile || pnpm install
 
       - name: Build VuePress site
-        run: pnpm run docs:build
+        run: NODE_OPTIONS="--max-old-space-size=8192 --stack-trace-limit=50" pnpm run docs:build
 
       - name: Deploy to GitHub Pages
         uses: crazy-max/ghaction-github-pages@v4
