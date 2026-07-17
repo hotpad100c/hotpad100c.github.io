@@ -22,8 +22,8 @@ jobs:
         with:
           node-version: '22.6.0'
           
-      - name: Generate pnpm-lock.yaml
-        run: pnpm install --no-frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
           
       - name: Build VuePress site
         run: NODE_OPTIONS="--max-old-space-size=4096" pnpm run docs:build
