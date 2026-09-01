@@ -54,7 +54,7 @@ tags: [Redstone, TMC]
 
 通过build.gradel中的 `https://modmuss50.me/versions/b1.2_02-20110517/b1.2_02-20110517-loom.json `可获取相关minecraft jar的链接：
 
-`https://vault.omniarchive.uk/archive/java/misc/b1.2_02-20110517.jar?utm_source=chatgpt.com`
+`https://vault.omniarchive.uk/archive/java/misc/b1.2_02-20110517.jar`
 
 > 门的充能检测(beta1.7)
 > 
