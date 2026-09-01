@@ -42,13 +42,19 @@ tags: [Redstone, TMC]
 
 更重要的是，反编译Beta 1.7版本中活塞与门的代码后可以发现，它们的充能检测逻辑完全不同，几乎看不出复制粘贴的痕迹。也就是说，QC并不是活塞带来的“bug”。
 
-> 发射器的充能检测(beta1.7)
+> 发射器的充能检测(beta1.2_02)
 > 
 > ```java
-> boolean var6 = 
-> var1.isBlockIndirectlyGettingPowered(var2, var3, var4) || 
-> var1.isBlockIndirectlyGettingPowered(var2, var3 + 1, var4); // [!code focus]
+> boolean var6 =
+>  var1.hasNeighborSignal(var2, var3, var4) 
+>  || var1.hasNeighborSignal(var2, var3 + 1, var4); // [!code focus]
 > ```
+
+这里的beta 1.2_02代码来自这个项目 ： `https://github.com/modmuss50/secret-example-mod/tree/main` ，其目的是使用fabric在beta1.2_02中制作模组。
+
+通过build.gradel中的 `https://modmuss50.me/versions/b1.2_02-20110517/b1.2_02-20110517-loom.json `可获取相关minecraft jar的链接：
+
+`https://vault.omniarchive.uk/archive/java/misc/b1.2_02-20110517.jar?utm_source=chatgpt.com`
 
 > 门的充能检测(beta1.7)
 > 
