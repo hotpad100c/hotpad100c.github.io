@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Camera Elliptical Track Generator</title>
+    <style>
+        :root {
+            --primary-light: #D7BDE2;
+            --secondary-light: #FFFFFF;
+            --accent-light: rgba(128, 128, 128, 0.5);
+            --text-light: #333333;
+            --bg-light: #F9F9F9;
+            --glow-light: linear-gradient(135deg, #E8DAEF, #D7BDE2);
+            --shadow-light: rgba(0, 0, 0, 0.1);
+
+            --primary-dark: #A569BD;
+            --secondary-dark: #2C3E50;
+            --accent-dark: rgba(211, 211, 211, 0.3);
+            --text-dark: #E0E0E0;
+            --bg-dark: #1E1E1E;
+            --glow-dark: linear-gradient(135deg, #8E44AD, #A569BD);
+            --shadow-dark: rgba(255, 255, 255, 0.1);
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --primary: var(--primary-dark);
+                --secondary: var(--secondary-dark);
+                --accent: var(--accent-dark);
+                --text: var(--text-dark);
+                --bg: var(--bg-dark);
+                --glow: var(--glow-dark);
+                --shadow: var(--shadow-dark);
+            }
+        }
+
+        @media (prefers-color-scheme: light) {
+            :root {
+                --primary: var(--primary-light);
+                --secondary: var(--secondary-light);
+                --accent: var(--accent-light);
+                --text: var(--text-light);
+                --bg: var(--bg-light);
+                --glow: var(--glow-light);
+                --shadow: var(--shadow-light);
+            }
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        .left, .right {
+            width: 50%;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .input-section, .output-section {
+            background-color: var(--secondary);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px var(--shadow);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+
+        input[type="text"], input[type="number"] {
+            width: 90%;
+            padding: 10px;
+            margin-bottom: 15px;
+            border: 1px solid var(--accent);
+            border-radius: 10px;
+            background-color: var(--bg);
+            color: var(--text);
+            box-shadow: inset 0 2px 5px var(--shadow);
+        }
+
+        button {
+            background: var(--glow);
+            color: var(--text);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 2px 5px var(--shadow);
+            transition: transform 0.2s;
+        }
+
+        button:hover {
+            transform: scale(1.05);
+        }
+
+        textarea {
+            width: 100%;
+            height: 100%;
+            padding: 10px;
+            border: 1px solid var(--accent);
+            border-radius: 10px;
+            background-color: var(--bg);
+            color: var(--text);
+            resize: none;
+            font-family: monospace;
+        }
+
+        .right {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        canvas {
+            background-color: var(--secondary);
+            border-radius: 15px;
+            box-shadow: 0 4px 10px var(--shadow);
+            margin-bottom: 20px;
+        }
+
+        #preview-slider {
+            width: 80%;
+            margin-bottom: 10px;
+        }
+
+        #playPauseBtn {
+            margin-top: 5px;
+            background: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="left">
+            <div class="input-section">
+                <label>Center Point (x, y, z):</label>
+                <input type="text" id="center" value="0,0,0">
+
+                <label>Ellipse Radius X (horizontal):</label>
+                <input type="number" id="radiusX" value="15">
+
+                <label>Ellipse Radius Z (depth):</label>
+                <input type="number" id="radiusZ" value="10">
+
+                <label>Starting Angle (degrees):</label>
+                <input type="number" id="startAngle" value="0">
+
+                <label>Rotation Duration (frames):</label>
+                <input type="number" id="duration" value="300">
+
+                <label>Keyframe Interval (frames):</label>
+                <input type="number" id="interval" value="30">
+
+                <label>Target Point (x, y, z) - default same as center:</label>
+                <input type="text" id="target" placeholder="e.g., 0,0,0">
+
+                <button onclick="generateJSON()">Generate JSON</button>
+            </div>
+            <div class="output-section">
+                <textarea id="jsonOutput" readonly></textarea>
+            </div>
+        </div>
+        <div class="right">
+            <canvas id="previewCanvas" width="400" height="400"></canvas>
+            <input type="range" id="preview-slider" min="0" max="1" step="1" value="0" oninput="updatePreview(this.value)">
+            <button id="playPauseBtn" onclick="togglePlayPause()">Pause</button>
+        </div>
+    </div>
+
+    <script>
+        let center = [0, 0, 0];
+        let target = [0, 0, 0];
+        let radiusX = 15;
+        let radiusZ = 10;
+        let startAngle = 0;
+        let duration = 300;
+        let interval = 30;
+        let keyframes = {};
+        let animationFrame;
+        let currentFrame = 0;
+        let playing = true;
+
+        function parseVector(input) {
+            return input.split(',').map(Number);
+        }
+
+        function generateJSON() {
+            center = parseVector(document.getElementById('center').value || '0,0,0');
+            radiusX = parseFloat(document.getElementById('radiusX').value) || 15;
+            radiusZ = parseFloat(document.getElementById('radiusZ').value) || 10;
+            startAngle = parseFloat(document.getElementById('startAngle').value) || 0;
+            duration = parseFloat(document.getElementById('duration').value) || 300;
+            interval = parseFloat(document.getElementById('interval').value) || 30;
+            const targetInput = document.getElementById('target').value;
+            target = targetInput ? parseVector(targetInput) : [...center];
+
+            keyframes = {};
+            const numKeyframes = Math.floor(duration / interval) + 1;
+
+            for (let i = 0; i < numKeyframes; i++) {
+                const frame = i * interval;
+                const t = frame / duration;
+                const angleDeg = startAngle + 360 * t;
+                const angleRad = angleDeg * Math.PI / 180;
+
+                const camX = center[0] + radiusX * Math.cos(angleRad);
+                const camY = center[1];
+                const camZ = center[2] + radiusZ * Math.sin(angleRad);
+
+                const deltaX = target[0] - camX;
+                const deltaY = target[1] - camY;
+                const deltaZ = target[2] - camZ;
+                
+                const yaw = -Math.atan2(deltaX, deltaZ) * 180 / Math.PI;
+                
+                const horizontalDist = Math.sqrt(deltaX * deltaX + deltaZ * deltaZ);
+                const pitch = -Math.atan2(deltaY, horizontalDist) * 180 / Math.PI;
+
+
+                keyframes[frame.toString()] = {
+                    position: [camX, camY, camZ],
+                    yaw, pitch,
+                    roll: 0.0,
+                    type: "camera",
+                    interpolation_type: "SMOOTH"
+                };
+            }
+
+            document.getElementById('jsonOutput').value = JSON.stringify({
+                savedTracks: [{
+                    type: "CAMERA",
+                    track: 0,
+                    copiedFromDisabled: false,
+                    keyframes: keyframes
+                }]
+            }, null, 2);
+
+            const slider = document.getElementById('preview-slider');
+            slider.max = duration;
+            slider.step = interval;
+            slider.value = 0;
+
+            currentFrame = 0;
+            drawPreview(0);
+            startAnimation();
+        }
+
+        function drawPreview(currentFrame = 0) {
+            const canvas = document.getElementById('previewCanvas');
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width, h = canvas.height;
+
+            ctx.setTransform(1, 0, 0, 1, 0, 0);
+            ctx.clearRect(0, 0, w, h);
+            ctx.translate(w / 2, h / 2);
+
+            const maxDiameter = Math.max(radiusX, radiusZ) * 2 + 20;
+            const scale = Math.min(w, h) / maxDiameter;
+            ctx.scale(scale, scale);
+
+            ctx.beginPath();
+            ctx.ellipse(0, 0, radiusX, radiusZ, 0, 0, 2 * Math.PI);
+            ctx.strokeStyle = 'purple';
+            ctx.lineWidth = 2 / scale;
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(0, 0, 2 / scale, 0, 2 * Math.PI);
+            ctx.fillStyle = 'red';
+            ctx.fill();
+
+            const targetOffsetX = target[0] - center[0];
+            const targetOffsetZ = target[2] - center[2];
+            if (targetOffsetX || targetOffsetZ) {
+                ctx.beginPath();
+                ctx.arc(targetOffsetX, targetOffsetZ, 2 / scale, 0, 2 * Math.PI);
+                ctx.fillStyle = 'green';
+                ctx.fill();
+            }
+
+            Object.keys(keyframes).forEach(frameStr => {
+                const frame = parseInt(frameStr);
+                const t = frame / duration;
+                const angleDeg = startAngle + 360 * t;
+                const angleRad = angleDeg * Math.PI / 180;
+                const posX = radiusX * Math.cos(angleRad);
+                const posZ = radiusZ * Math.sin(angleRad);
+                ctx.beginPath();
+                ctx.arc(posX, posZ, 1.5 / scale, 0, 2 * Math.PI);
+                ctx.fillStyle = 'blue';
+                ctx.fill();
+            });
+
+            const currentT = currentFrame / duration;
+            const angle = (startAngle + 360 * currentT) * Math.PI / 180;
+            const currX = radiusX * Math.cos(angle);
+            const currZ = radiusZ * Math.sin(angle);
+
+            ctx.save();
+            ctx.translate(currX, currZ);
+
+            const targetX = targetOffsetX || 0;
+            const targetZ = targetOffsetZ || 0;
+            
+            const dx = targetX - currX;
+            const dy = targetZ - currZ;
+            let rotation = 0;
+            if (dx !== 0 || dy !== 0) {
+                rotation = Math.atan2(dy, dx);
+            }
+            ctx.rotate(rotation);
+            
+            ctx.beginPath();
+            ctx.moveTo(0, -3 / scale);
+            ctx.lineTo(2 / scale, 2 / scale);
+            ctx.lineTo(-2 / scale, 2 / scale);
+            ctx.closePath();
+            ctx.fillStyle = 'yellow';
+            ctx.fill();
+
+            ctx.restore();
+        }
+
+        function updatePreview(value) {
+            currentFrame = parseInt(value);
+            drawPreview(currentFrame);
+        }
+
+        function startAnimation() {
+            cancelAnimationFrame(animationFrame);
+            function animate() {
+                if (playing) {
+                    drawPreview(currentFrame);
+                    currentFrame += 2;
+                    if (currentFrame > duration) currentFrame = 0;
+                    document.getElementById('preview-slider').value = currentFrame;
+                }
+                animationFrame = requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        function togglePlayPause() {
+            playing = !playing;
+            document.getElementById('playPauseBtn').textContent = playing ? 'Pause' : 'Play';
+        }
+    </script>
+</body>
+</html>
