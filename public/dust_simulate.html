@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>红石粉更新顺序 · 颜色映射</title>
+<style>
+  :root{
+    --bg:#1a1a2e;
+    --panel:#16213e;
+    --info:#0f3460;
+    --field:#1a1a3e;
+    --accent:#f0a500;
+    --text:#eeeeee;
+    --dim:#aaaaaa;
+    --dim2:#888888;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",-apple-system,BlinkMacSystemFont,sans-serif;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #app{
+    max-width:1000px;
+    margin:0 auto;
+    padding:16px 14px 24px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  h1{
+    font-size:20px;
+    font-weight:400;
+    color:var(--accent);
+    margin:4px 0 14px;
+    text-align:center;
+  }
+  .round{
+    background:var(--panel);
+    border-radius:22px;
+    padding:10px 16px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px 18px;
+    align-items:center;
+    justify-content:center;
+    width:100%;
+  }
+  .round.info{ background:var(--info); border-radius:16px; padding:8px 16px; }
+  .field-group{ display:flex; align-items:center; gap:6px; position:relative; }
+  .field-group label{ font-size:14px; color:var(--text); }
+  .layertag{
+    font-size:10px;
+    color:#1a1a2e;
+    background:var(--accent);
+    border-radius:6px;
+    padding:1px 5px;
+    margin-left:-2px;
+    visibility:hidden;
+    font-weight:700;
+    line-height:1.4;
+  }
+  .stepper{
+    display:flex; align-items:center; gap:3px;
+  }
+  .stepper button{
+    width:22px; height:22px;
+    border:1px solid var(--info);
+    background:var(--field);
+    color:var(--dim);
+    border-radius:5px;
+    font-size:11px;
+    line-height:1;
+    cursor:pointer;
+    padding:0;
+    touch-action:manipulation;
+  }
+  .stepper button:active{ background:var(--info); color:var(--text); }
+  .coord-input{
+    width:64px;
+    text-align:center;
+    font-size:14px;
+    background:var(--field);
+    color:#fff;
+    border:1px solid var(--info);
+    border-radius:6px;
+    padding:4px 4px;
+    font-family:inherit;
+  }
+  .coord-input:focus{ outline:1px solid var(--accent); }
+  .pair{ display:flex; align-items:center; gap:6px; font-size:14px; white-space:nowrap; }
+  .pair .k{ color:#cccccc; }
+  .pair .v{ color:#fff; min-width:1ch; font-variant-numeric: tabular-nums; }
+  .switchgroup{ display:flex; align-items:center; gap:6px; }
+  .switchgroup .lbl{ font-size:14px; color:#cccccc; }
+  .switchgroup button{
+    font-size:13px;
+    background:var(--field);
+    color:var(--text);
+    border:1px solid var(--info);
+    border-radius:7px;
+    padding:5px 12px;
+    cursor:pointer;
+    touch-action:manipulation;
+    white-space:nowrap;
+  }
+  .switchgroup button.active{
+    background:var(--accent);
+    color:#1a1a2e;
+    border-color:var(--accent);
+    font-weight:600;
+  }
+  .canvas-wrap{
+    width:100%;
+    margin-top:10px;
+    border:2px solid var(--info);
+    background:#111;
+    line-height:0;
+    touch-action:none;
+    overflow:hidden;
+    border-radius:2px;
+  }
+  #canvas{
+    width:100%;
+    height:clamp(300px, 56vh, 560px);
+    display:block;
+    cursor:grab;
+  }
+  #canvas.dragging{ cursor:grabbing; }
+  .legend{
+    margin-top:10px;
+    width:100%;
+    background:var(--panel);
+    border-radius:18px;
+    padding:10px 16px;
+    display:none;
+    flex-wrap:wrap;
+    gap:8px 20px;
+    align-items:center;
+    justify-content:center;
+    font-size:12px;
+  }
+  .legend.show{ display:flex; }
+  .legend .item{ display:flex; align-items:center; gap:7px; white-space:nowrap; }
+  .legend .sw{ width:13px; height:13px; border-radius:4px; flex:none; }
+  .orderPanel{
+    margin-top:10px;
+    width:100%;
+    min-height:46px;
+    background:var(--info);
+    border-radius:20px;
+    padding:10px 16px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px 8px;
+    align-items:center;
+    justify-content:center;
+  }
+  .orderPanel .placeholder{ color:var(--dim); font-size:14px; }
+  .orderPanel .head{ color:var(--accent); font-weight:700; font-size:14px; margin-right:4px; }
+  .orderPanel .sub, .orderPanel .arrow{ color:var(--dim2); font-size:14px; margin:0 2px; }
+  .orderPanel .chip{
+    background:var(--field);
+    border-radius:14px;
+    padding:5px 12px;
+    font-size:14px;
+    display:flex; align-items:baseline; gap:5px;
+    white-space:nowrap;
+  }
+  .orderPanel .chip .a{ color:var(--accent); font-weight:700; }
+  .orderPanel .chip .b{ color:var(--dim); font-size:12px; }
+  .orderPanel .flag{
+    background:var(--field);
+    border-radius:14px;
+    padding:5px 14px 5px 10px;
+    font-size:14px;
+    display:flex; align-items:center; gap:8px;
+    white-space:nowrap;
+  }
+  .orderPanel .flag .dot{ width:10px; height:10px; border-radius:3px; flex:none; }
+  .hint,.status{
+    text-align:center;
+    font-size:12.5px;
+    margin-top:8px;
+    line-height:1.6;
+  }
+  .hint{ color:var(--dim); }
+  .status{ color:var(--dim2); }
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>红石粉更新顺序 · 颜色映射</h1>
+
+  <div class="round" id="controls">
+    <div class="field-group">
+      <label>X:</label>
+      <span class="layertag" id="tagX">层</span>
+      <div class="stepper">
+        <button data-axis="x" data-step="-16">−16</button>
+        <button data-axis="x" data-step="-1">−1</button>
+      </div>
+      <input class="coord-input" id="tfX" inputmode="decimal" value="0">
+      <div class="stepper">
+        <button data-axis="x" data-step="1">+1</button>
+        <button data-axis="x" data-step="16">+16</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <label>Y:</label>
+      <span class="layertag" id="tagY">层</span>
+      <div class="stepper">
+        <button data-axis="y" data-step="-16">−16</button>
+        <button data-axis="y" data-step="-1">−1</button>
+      </div>
+      <input class="coord-input" id="tfY" inputmode="decimal" value="0">
+      <div class="stepper">
+        <button data-axis="y" data-step="1">+1</button>
+        <button data-axis="y" data-step="16">+16</button>
+      </div>
+    </div>
+    <div class="field-group">
+      <label>Z:</label>
+      <span class="layertag" id="tagZ">层</span>
+      <div class="stepper">
+        <button data-axis="z" data-step="-16">−16</button>
+        <button data-axis="z" data-step="-1">−1</button>
+      </div>
+      <input class="coord-input" id="tfZ" inputmode="decimal" value="0">
+      <div class="stepper">
+        <button data-axis="z" data-step="1">+1</button>
+        <button data-axis="z" data-step="16">+16</button>
+      </div>
+    </div>
+    <div class="pair"><span class="k">缩放</span><span class="v" id="lbScale">1.00</span></div>
+    <div class="switchgroup">
+      <span class="lbl">视角</span>
+      <button id="btnPlaneXZ" class="active" title="俯视：X 为横轴，Z 为纵轴，Y 为层">俯视 X-Z</button>
+      <button id="btnPlaneXY" title="正视：X 为横轴，Y 为纵轴，Z 为层">正视 X-Y</button>
+      <button id="btnPlaneZY" title="侧视：Z 为横轴，Y 为纵轴，X 为层">侧视 Z-Y</button>
+    </div>
+    <div class="switchgroup">
+      <span class="lbl">模式</span>
+      <button id="btnModeOrder" class="active">更新顺序</button>
+      <button id="btnModeGroup">3 组分组</button>
+    </div>
+  </div>
+
+  <div class="round info" id="infoBar">
+    <div class="pair"><span class="k">中心:</span><span class="v" id="lbCenter">(X 0.00, Z 0.00)</span></div>
+    <div class="pair"><span class="k">坐标:</span><span class="v" id="lbCoord">(0, 0, 0)</span></div>
+    <div class="pair"><span class="k">范围:</span><span class="v" id="lbRange">±32</span></div>
+    <div class="pair"><span class="k">渲染:</span><span class="v" id="lbTime">0.0 ms</span></div>
+    <div class="pair" id="hitBox" style="display:none;"><span class="k">视野内符合:</span><span class="v" id="lbHit">—</span></div>
+  </div>
+
+  <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+
+  <div class="legend" id="legend"></div>
+
+  <div class="orderPanel" id="orderPanel">
+    <span class="placeholder">点击 / 点触方块查看更新顺序</span>
+  </div>
+
+  <div class="hint">点击或点触任意方块，显示其周围 7 个方向的 bucketIndex 排序（与视角无关，永远是真实的 6 邻 + 自身）</div>
+  <div class="status">拖动平移 · 滚轮 / 双指缩放 · 输入框内滚轮 ±1（Shift ±16）· 两侧按钮 ±1 / ±16 · “层”标记的输入框是当前视角下被固定的那根轴</div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ================= 常量：与 Java 版 DustSimulate.java 完全一致 =================
+  const DIR_NAMES = ["自身", "下 -Y", "上 +Y", "北 -Z", "南 +Z", "西 -X", "东 +X"];
+  const OFFSETS = [
+    [0,0,0],
+    [0,-1,0], // DOWN
+    [0,1,0],  // UP
+    [0,0,-1], // NORTH
+    [0,0,1],  // SOUTH
+    [-1,0,0], // WEST
+    [1,0,0]   // EAST
+  ];
+
+  const G_SELF = "自身", G_PLUS = "下南东", G_MINUS = "上北西";
+  const PATTERN_NAMES = [
+    G_SELF+" → "+G_PLUS+" → "+G_MINUS,
+    G_SELF+" → "+G_MINUS+" → "+G_PLUS,
+    G_PLUS+" → "+G_SELF+" → "+G_MINUS,
+    G_PLUS+" → "+G_MINUS+" → "+G_SELF,
+    G_MINUS+" → "+G_SELF+" → "+G_PLUS,
+    G_MINUS+" → "+G_PLUS+" → "+G_SELF
+  ];
+  const PATTERN_COLORS = [0xFF3B30,0x8E1B18,0xFF9A3D,0xA85200,0xFF5FA8,0xA81B63];
+  const PATTERN_SHARE = ["12.5%","12.5%","25%","12.5%","25%","12.5%"];
+  const COLOR_BAD = 0x6E6E6E;
+
+  const MODE_ORDER = 0, MODE_GROUP = 1;
+
+  // ================= 1. 排列 -> 颜色（傅里叶嵌入，预计算全部 5040 种排列） =================
+  function permToRgb(seq){
+    const n = 7;
+    let sum = 0;
+    for(let i=0;i<n;i++) sum += seq[i];
+    const mean = sum/n;
+    let sqSum = 0;
+    for(let i=0;i<n;i++){ const d = seq[i]-mean; sqSum += d*d; }
+    const std = Math.sqrt(sqSum/n);
+    if (std < 1e-12) return 0x808080;
+
+    let R=0,G=0,B=0;
+    for(let i=0;i<n;i++){
+      const x = (seq[i]-mean)/std;
+      const angle = 2*Math.PI*i/n;
+      R += x*Math.cos(angle);
+      G += x*Math.sin(angle);
+      B += x*Math.cos(2*angle);
+    }
+    const scale = 6.0;
+    const r = clip255((R/scale)*127+128);
+    const g = clip255((G/scale)*127+128);
+    const b = clip255((B/scale)*127+128);
+    return (r<<16)|(g<<8)|b;
+  }
+  function clip255(v){ return Math.round(Math.max(0, Math.min(255, v))); }
+
+  // 7^7 = 823543，以 7 进制排列编码为下标的颜色表
+  const PERM_RGB = new Int32Array(823543);
+  function buildColorTable(){
+    const arr = [0,1,2,3,4,5,6];
+    const len = arr.length;
+    const c = new Array(len).fill(0);
+    store(arr);
+    let i = 0;
+    while(i < len){
+      if (c[i] < i){
+        if (i % 2 === 0) swap(arr,0,i); else swap(arr,c[i],i);
+        store(arr);
+        c[i]++;
+        i = 0;
+      } else {
+        c[i] = 0;
+        i++;
+      }
+    }
+  }
+  function swap(a,i,j){ const t=a[i]; a[i]=a[j]; a[j]=t; }
+  function store(perm){
+    let key = 0;
+    for(let i=0;i<perm.length;i++) key = key*7 + perm[i];
+    PERM_RGB[key] = permToRgb(perm);
+  }
+  buildColorTable();
+
+  // ================= 2. 核心：坐标 -> bucketIndex / 顺序 / 颜色 =================
+  // Java: int hashCode = x + 31*(y + 31*z);  int 溢出行为
+  // JS 用 |0 复现 32 位有符号整数环绕（在世界坐标范围内运算不失精度，环绕效果与逐步取模等价）
+  function computeBucketIndex(x,y,z){
+    const hashCode = (x + 31*(y + 31*z)) | 0;
+    const hash = hashCode ^ (hashCode >>> 16);
+    return 15 & hash;
+  }
+
+  const bi = new Int32Array(7);   // 复用缓冲
+  const ord = new Int32Array(7);
+
+  function fillBuckets(x,y,z){
+    for(let i=0;i<7;i++){
+      bi[i] = computeBucketIndex(x+OFFSETS[i][0], y+OFFSETS[i][1], z+OFFSETS[i][2]);
+    }
+  }
+
+  // 复现 HashSet 遍历顺序：按 bucketIndex 升序做稳定排序
+  function sortDirections(x,y,z){
+    fillBuckets(x,y,z);
+    for(let i=0;i<7;i++) ord[i]=i;
+    for(let i=1;i<7;i++){
+      const cur = ord[i];
+      const v = bi[cur];
+      let j = i-1;
+      while(j>=0 && bi[ord[j]] > v){
+        ord[j+1]=ord[j];
+        j--;
+      }
+      ord[j+1]=cur;
+    }
+  }
+
+  function colorOf(x,y,z){
+    sortDirections(x,y,z);
+    let key = 0;
+    for(let i=0;i<7;i++) key = key*7 + ord[i];
+    return PERM_RGB[key];
+  }
+
+  // bi 下标：0=自身 1=-Y 2=+Y 3=-Z 4=+Z 5=-X 6=+X
+  function groupPattern(x,y,z){
+    fillBuckets(x,y,z);
+    const bO=bi[0], bP=bi[1], bM=bi[2];
+    if (bi[4]!==bP || bi[6]!==bP) return -1;
+    if (bi[3]!==bM || bi[5]!==bM) return -1;
+    if (bO===bP || bO===bM || bP===bM) return -1;
+    if (bO<bP && bO<bM) return bP<bM ? 0 : 1;
+    if (bP<bO && bP<bM) return bO<bM ? 2 : 3;
+    return bO<bP ? 4 : 5;
+  }
+
+  function blockColor(x,y,z){
+    if (mode === MODE_ORDER) return colorOf(x,y,z);
+    const p = groupPattern(x,y,z);
+    return p < 0 ? COLOR_BAD : PATTERN_COLORS[p];
+  }
+
+  function orderOf(x,y,z){
+    sortDirections(x,y,z);
+    const idx = new Array(7), vals = new Array(7);
+    for(let i=0;i<7;i++){ idx[i]=ord[i]; vals[i]=bi[ord[i]]; }
+    return [idx, vals];
+  }
+
+  // ================= 3. 视角平面（新增）=================
+  // 三种切片方式：
+  //  XZ（俯视，原版行为）：横=X 纵=Z 层=Y，纵轴向下屏幕坐标增大（对应南方 +Z，符合原版/Minecraft地图习惯）
+  //  XY（正视）        ：横=X 纵=Y 层=Z，纵轴向上增大（符合"高度朝上"的直觉）
+  //  ZY（侧视）        ：横=Z 纵=Y 层=X，纵轴向上增大
+  const PLANES = {
+    XZ: { h:'x', v:'z', w:'y', vSign: 1, hLabel:'X', vLabel:'Z', wLabel:'Y' },
+    XY: { h:'x', v:'y', w:'z', vSign:-1, hLabel:'X', vLabel:'Y', wLabel:'Z' },
+    ZY: { h:'z', v:'y', w:'x', vSign:-1, hLabel:'Z', vLabel:'Y', wLabel:'X' }
+  };
+  const IDX = { x:0, y:1, z:2 };
+  let viewPlane = 'XZ';
+  function currentCfg(){ return PLANES[viewPlane]; }
+
+  // ================= 4. 视图状态 =================
+  // cx/cy/cz：三根世界坐标轴各自当前的"焦点值"，始终都保留，切换视角时互不清零。
+  // 当某根轴是当前视角的"层"轴时，其值会被吸附为整数（方块层不允许小数）。
+  let cx = 0, cy = 0, cz = 0;
+  let scale = 1.0;
+  let mode = MODE_ORDER;
+  let hasSel = false, selX=0, selY=0, selZ=0;
+  let syncing = false;
+
+  function getAxis(a){ return a==='x'?cx : a==='y'?cy : cz; }
+  function setAxis(a,v){ if(a==='x') cx=v; else if(a==='y') cy=v; else cz=v; }
+  function axisOfPoint(a,x,y,z){ return a==='x'?x : a==='y'?y : z; }
+
+  // ================= 5. DOM =================
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d', {alpha:false});
+  const tfX = document.getElementById('tfX');
+  const tfY = document.getElementById('tfY');
+  const tfZ = document.getElementById('tfZ');
+  const tagX = document.getElementById('tagX');
+  const tagY = document.getElementById('tagY');
+  const tagZ = document.getElementById('tagZ');
+  const lbScale = document.getElementById('lbScale');
+  const lbCoord = document.getElementById('lbCoord');
+  const lbCenter = document.getElementById('lbCenter');
+  const lbRange = document.getElementById('lbRange');
+  const lbTime = document.getElementById('lbTime');
+  const lbHit = document.getElementById('lbHit');
+  const hitBox = document.getElementById('hitBox');
+  const legend = document.getElementById('legend');
+  const orderPanel = document.getElementById('orderPanel');
+  const btnModeOrder = document.getElementById('btnModeOrder');
+  const btnModeGroup = document.getElementById('btnModeGroup');
+  const btnPlaneXZ = document.getElementById('btnPlaneXZ');
+  const btnPlaneXY = document.getElementById('btnPlaneXY');
+  const btnPlaneZY = document.getElementById('btnPlaneZY');
+
+  // ---- 图例 ----
+  function buildLegend(){
+    legend.innerHTML = '';
+    for(let i=0;i<PATTERN_NAMES.length;i++){
+      const item = document.createElement('div');
+      item.className = 'item';
+      const sw = document.createElement('div');
+      sw.className = 'sw';
+      sw.style.background = '#' + PATTERN_COLORS[i].toString(16).padStart(6,'0');
+      const label = document.createElement('span');
+      label.textContent = PATTERN_NAMES[i] + '  ' + PATTERN_SHARE[i];
+      item.appendChild(sw); item.appendChild(label);
+      legend.appendChild(item);
+    }
+    const item = document.createElement('div');
+    item.className = 'item';
+    const sw = document.createElement('div');
+    sw.className = 'sw';
+    sw.style.background = '#' + COLOR_BAD.toString(16).padStart(6,'0');
+    const label = document.createElement('span');
+    label.textContent = '不符合 3 组分组  ≈2.93%';
+    item.appendChild(sw); item.appendChild(label);
+    legend.appendChild(item);
+  }
+  buildLegend();
+
+  // ================= 6. 模式 / 视角 切换 =================
+  function setMode(m){
+    if (mode === m) return;
+    mode = m;
+    btnModeOrder.classList.toggle('active', m===MODE_ORDER);
+    btnModeGroup.classList.toggle('active', m===MODE_GROUP);
+    legend.classList.toggle('show', m===MODE_GROUP);
+    hitBox.style.display = m===MODE_GROUP ? 'flex' : 'none';
+    requestRender();
+  }
+  btnModeOrder.addEventListener('click', ()=>setMode(MODE_ORDER));
+  btnModeGroup.addEventListener('click', ()=>setMode(MODE_GROUP));
+
+  function updatePlaneButtons(){
+    btnPlaneXZ.classList.toggle('active', viewPlane==='XZ');
+    btnPlaneXY.classList.toggle('active', viewPlane==='XY');
+    btnPlaneZY.classList.toggle('active', viewPlane==='ZY');
+    const cfg = currentCfg();
+    tagX.style.visibility = cfg.w==='x' ? 'visible':'hidden';
+    tagY.style.visibility = cfg.w==='y' ? 'visible':'hidden';
+    tagZ.style.visibility = cfg.w==='z' ? 'visible':'hidden';
+  }
+
+  function setViewPlane(p){
+    if (viewPlane === p) return;
+    viewPlane = p;
+    const cfg = currentCfg();
+    setAxis(cfg.w, Math.round(getAxis(cfg.w))); // 新的层轴吸附为整数
+    updatePlaneButtons();
+    syncInputsFromView();
+    requestRender();
+  }
+  btnPlaneXZ.addEventListener('click', ()=>setViewPlane('XZ'));
+  btnPlaneXY.addEventListener('click', ()=>setViewPlane('XY'));
+  btnPlaneZY.addEventListener('click', ()=>setViewPlane('ZY'));
+  updatePlaneButtons();
+
+  // ================= 7. 输入框：数值 + 步进按钮 + 滚轮 =================
+  function trimNum(v){
+    if (v === Math.round(v) && Math.abs(v) < 1e15) return String(Math.round(v));
+    return v.toFixed(4);
+  }
+  function syncInputsFromView(){
+    syncing = true;
+    tfX.value = trimNum(cx);
+    tfY.value = trimNum(cy);
+    tfZ.value = trimNum(cz);
+    syncing = false;
+    updateReadouts();
+  }
+  function updateReadouts(){
+    const cfg = currentCfg();
+    const hVal = getAxis(cfg.h), vVal = getAxis(cfg.v);
+    lbCenter.textContent = '(' + cfg.hLabel + ' ' + hVal.toFixed(2) + ', ' + cfg.vLabel + ' ' + vVal.toFixed(2) + ')';
+    lbCoord.textContent = '(' + Math.round(cx) + ', ' + Math.round(cy) + ', ' + Math.round(cz) + ')';
+  }
+
+  // 若当前视角的"层"轴变化，且已有选中方块，让选中格跟到新的一层（保持另外两个坐标不变）
+  function followSelectionToLayer(){
+    if (!hasSel) return;
+    const cfg = currentCfg();
+    const curW = Math.round(getAxis(cfg.w));
+    const selW = axisOfPoint(cfg.w, selX, selY, selZ);
+    if (selW !== curW){
+      let nx=selX, ny=selY, nz=selZ;
+      if (cfg.w==='x') nx=curW; else if (cfg.w==='y') ny=curW; else nz=curW;
+      showOrderForBlock(nx, ny, nz);
+    }
+  }
+
+  function updateFromInputs(){
+    if (syncing) return;
+    const x = parseFloat(tfX.value);
+    const y = parseFloat(tfY.value);
+    const z = parseFloat(tfZ.value);
+    if (Number.isFinite(x)) cx = x;
+    if (Number.isFinite(y)) cy = y;
+    if (Number.isFinite(z)) cz = z;
+    const cfg = currentCfg();
+    setAxis(cfg.w, Math.round(getAxis(cfg.w))); // 层轴永远吸附为整数
+    followSelectionToLayer();
+    updateReadouts();
+    requestRender();
+  }
+  [tfX,tfY,tfZ].forEach(f=>f.addEventListener('input', updateFromInputs));
+
+  function stepAxis(axisName, delta){
+    setAxis(axisName, getAxis(axisName) + delta);
+    const cfg = currentCfg();
+    if (axisName === cfg.w){
+      setAxis(axisName, Math.round(getAxis(axisName)));
+      followSelectionToLayer();
+    }
+    syncInputsFromView();
+    requestRender();
+  }
+  document.querySelectorAll('.stepper button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const axis = btn.dataset.axis;
+      const step = parseFloat(btn.dataset.step);
+      stepAxis(axis, step);
+    });
+  });
+
+  // 输入框内滚轮：±1，Shift ±16（16 是 (x-y+z) mod 16 的天然周期，对任意单轴平移同样成立）
+  function addWheelStep(field, axisName){
+    field.addEventListener('wheel', (e)=>{
+      e.preventDefault();
+      const notches = -Math.sign(e.deltaY);
+      if (notches === 0) return;
+      const step = e.shiftKey ? 16 : 1;
+      stepAxis(axisName, notches*step);
+    }, {passive:false});
+  }
+  addWheelStep(tfX, 'x');
+  addWheelStep(tfY, 'y');
+  addWheelStep(tfZ, 'z');
+
+  // ================= 8. 画布：渲染 =================
+  let imageData = null, pixels32 = null;
+  let renderPending = false;
+
+  function resizeCanvasIfNeeded(){
+    const rect = canvas.getBoundingClientRect();
+    const w = Math.max(1, Math.round(rect.width));
+    const h = Math.max(1, Math.round(rect.height));
+    if (canvas.width !== w || canvas.height !== h){
+      canvas.width = w;
+      canvas.height = h;
+      imageData = ctx.createImageData(w, h);
+      pixels32 = new Uint32Array(imageData.data.buffer);
+      return true;
+    }
+    return false;
+  }
+
+  function requestRender(){
+    if (renderPending) return;
+    renderPending = true;
+    requestAnimationFrame(()=>{
+      renderPending = false;
+      renderNow();
+    });
+  }
+
+  function clampScale(s){ return Math.max(0.02, Math.min(20, s)); }
+
+  function renderNow(){
+    resizeCanvasIfNeeded();
+    const W = canvas.width, H = canvas.height;
+    if (W<=0 || H<=0) return;
+    const t0 = performance.now();
+
+    const cfg = currentCfg();
+    const hi = IDX[cfg.h], vi = IDX[cfg.v], wi = IDX[cfg.w];
+    const hVal0 = getAxis(cfg.h), vVal0 = getAxis(cfg.v);
+    const wVal = Math.round(getAxis(cfg.w));
+    const vSign = cfg.vSign;
+
+    const halfW = W/2, halfH = H/2;
+    const hs = new Int32Array(W);
+    for(let px=0; px<W; px++){
+      hs[px] = Math.round((px-halfW)*scale + hVal0);
+    }
+
+    let bad = 0;
+    const isGroup = (mode===MODE_GROUP);
+    const coord = [0,0,0];
+    coord[wi] = wVal;
+
+    for(let py=0; py<H; py++){
+      const v = Math.round(vVal0 + (py-halfH)*scale*vSign);
+      coord[vi] = v;
+      const rowOff = py*W;
+      let prevH = Number.NaN, prevColor = 0, prevRgb = 0;
+      for(let px=0; px<W; px++){
+        const h = hs[px];
+        if (h !== prevH){
+          coord[hi] = h;
+          prevRgb = blockColor(coord[0], coord[1], coord[2]);
+          const r = (prevRgb>>16)&255, g=(prevRgb>>8)&255, b=prevRgb&255;
+          prevColor = (255<<24)|(b<<16)|(g<<8)|r;
+          prevH = h;
+        }
+        pixels32[rowOff+px] = prevColor;
+        if (isGroup && prevRgb === COLOR_BAD) bad++;
+      }
+    }
+
+    if (mode === MODE_GROUP){
+      const total = W*H;
+      lbHit.textContent = (100*(total-bad)/total).toFixed(2) + '%';
+    }
+
+    const left = hVal0-halfW*scale, right = hVal0+halfW*scale;
+    const top = vVal0-halfH*scale, bottom = vVal0+halfH*scale;
+    const range = Math.max(Math.abs(left),Math.abs(right),Math.abs(top),Math.abs(bottom));
+    lbRange.textContent = '±' + range.toFixed(1);
+    lbTime.textContent = (performance.now()-t0).toFixed(1) + ' ms';
+
+    draw();
+  }
+
+  // 只重绘（贴图 + 高亮覆盖层），不重算像素颜色 —— 与 Java 的 canvas.repaint() 对应
+  function draw(){
+    if (!imageData) return;
+    ctx.putImageData(imageData, 0, 0);
+    if (hasSel) drawSelection();
+  }
+
+  function drawSelection(){
+    const cfg = currentCfg();
+    const curW = Math.round(getAxis(cfg.w));
+    const selW = axisOfPoint(cfg.w, selX, selY, selZ);
+    if (selW !== curW) return; // 选中格不在当前这一层 / 这个切片上，不显示高亮
+
+    const W = canvas.width, H = canvas.height;
+    const halfW = W/2, halfH = H/2;
+    const hVal0 = getAxis(cfg.h), vVal0 = getAxis(cfg.v);
+    const selH = axisOfPoint(cfg.h, selX, selY, selZ);
+    const selV = axisOfPoint(cfg.v, selX, selY, selZ);
+
+    const px0 = (selH-0.5-hVal0)/scale + halfW;
+    const px1 = (selH+0.5-hVal0)/scale + halfW;
+    // v = vVal0 + (py-halfH)*scale*vSign  =>  py = halfH + (v-vVal0)/(scale*vSign)
+    const py0 = halfH + (selV-0.5-vVal0)/(scale*cfg.vSign);
+    const py1 = halfH + (selV+0.5-vVal0)/(scale*cfg.vSign);
+    const pz0 = Math.min(py0,py1), pz1 = Math.max(py0,py1);
+
+    const cx2=(px0+px1)/2, cy2=(pz0+pz1)/2;
+    const w = Math.max(px1-px0, 9), h = Math.max(pz1-pz0, 9);
+    const rx = cx2-w/2, ry = cy2-h/2;
+
+    if (rx+w<0 || ry+h<0 || rx>W || ry>H) return;
+
+    ctx.save();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#000000';
+    ctx.strokeRect(rx, ry, w, h);
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = '#ffffff';
+    ctx.strokeRect(rx, ry, w, h);
+    ctx.restore();
+  }
+
+  // ================= 9. 更新顺序展示面板 =================
+  function renderOrderPanel(){
+    orderPanel.innerHTML = '';
+    if (!hasSel){
+      const span = document.createElement('span');
+      span.className = 'placeholder';
+      span.textContent = '点击 / 点触方块查看更新顺序';
+      orderPanel.appendChild(span);
+      return;
+    }
+    const [idx, vals] = orderOf(selX, selY, selZ);
+    const pattern = groupPattern(selX, selY, selZ);
+
+    const head = document.createElement('span');
+    head.className = 'head';
+    head.textContent = '方块 (' + selX + ', ' + selY + ', ' + selZ + ')';
+    orderPanel.appendChild(head);
+
+    const sub = document.createElement('span');
+    sub.className = 'sub';
+    sub.textContent = '更新顺序';
+    orderPanel.appendChild(sub);
+
+    for(let i=0;i<idx.length;i++){
+      if (i>0){
+        const arrow = document.createElement('span');
+        arrow.className = 'arrow';
+        arrow.textContent = '→';
+        orderPanel.appendChild(arrow);
+      }
+      const chip = document.createElement('div');
+      chip.className = 'chip';
+      const a = document.createElement('span');
+      a.className = 'a';
+      a.textContent = DIR_NAMES[idx[i]];
+      const b = document.createElement('span');
+      b.className = 'b';
+      b.textContent = '(' + vals[i] + ')';
+      chip.appendChild(a); chip.appendChild(b);
+      orderPanel.appendChild(chip);
+    }
+
+    const flag = document.createElement('div');
+    flag.className = 'flag';
+    const dot = document.createElement('span');
+    dot.className = 'dot';
+    dot.style.background = '#' + (pattern>=0?PATTERN_COLORS[pattern]:COLOR_BAD).toString(16).padStart(6,'0');
+    const text = document.createElement('span');
+    text.textContent = pattern>=0 ? ('符合 3 组分组：' + PATTERN_NAMES[pattern]) : '不符合 3 组分组';
+    flag.appendChild(dot); flag.appendChild(text);
+    orderPanel.appendChild(flag);
+  }
+
+  function showOrderForBlock(bx, by, bz){
+    hasSel = true;
+    selX = bx; selY = by; selZ = bz;
+    renderOrderPanel();
+    draw();
+  }
+
+  // ================= 10. 画布交互：鼠标 + 触摸（Pointer Events 统一处理） =================
+  function screenToWorldHV(px, py){
+    const cfg = currentCfg();
+    const halfW = canvas.width/2, halfH = canvas.height/2;
+    return {
+      h: (px-halfW)*scale + getAxis(cfg.h),
+      v: getAxis(cfg.v) + (py-halfH)*scale*cfg.vSign
+    };
+  }
+  function pixelToXYZ(px, py){
+    const cfg = currentCfg();
+    const {h, v} = screenToWorldHV(px, py);
+    const hR = Math.round(h), vR = Math.round(v);
+    const wR = Math.round(getAxis(cfg.w));
+    let x=0,y=0,z=0;
+    const assign=(axis,val)=>{ if(axis==='x') x=val; else if(axis==='y') y=val; else z=val; };
+    assign(cfg.h,hR); assign(cfg.v,vR); assign(cfg.w,wR);
+    return [x,y,z];
+  }
+  function canvasPos(e){
+    const rect = canvas.getBoundingClientRect();
+    const sx = canvas.width / rect.width;
+    const sy = canvas.height / rect.height;
+    return { x:(e.clientX-rect.left)*sx, y:(e.clientY-rect.top)*sy };
+  }
+
+  const pointers = new Map(); // id -> {x,y}
+  let dragStart = null;       // {x,y,ch,cv,hAxis,vAxis,vSign,t,moved}
+  let pinch = null;           // {dist0, worldH, worldV, scale0, hAxis, vAxis, vSign}
+
+  function zoomAt(px, py, factor){
+    const cfg = currentCfg();
+    const halfW = canvas.width/2, halfH = canvas.height/2;
+    const hVal0 = getAxis(cfg.h), vVal0 = getAxis(cfg.v);
+    const worldH = (px-halfW)*scale + hVal0;
+    const worldV = vVal0 + (py-halfH)*scale*cfg.vSign;
+    const newScale = clampScale(scale*factor);
+    const newHVal0 = worldH - (px-halfW)*newScale;
+    const newVVal0 = worldV - (py-halfH)*newScale*cfg.vSign;
+    setAxis(cfg.h, newHVal0);
+    setAxis(cfg.v, newVVal0);
+    scale = newScale;
+    lbScale.textContent = scale.toFixed(2);
+    syncInputsFromView();
+    requestRender();
+  }
+
+  canvas.addEventListener('wheel', (e)=>{
+    e.preventDefault();
+    const p = canvasPos(e);
+    const factor = e.deltaY > 0 ? 1.1 : 1/1.1;
+    zoomAt(p.x, p.y, factor);
+  }, {passive:false});
+
+  canvas.addEventListener('pointerdown', (e)=>{
+    canvas.setPointerCapture(e.pointerId);
+    const p = canvasPos(e);
+    pointers.set(e.pointerId, p);
+    const cfg = currentCfg();
+    if (pointers.size === 1){
+      dragStart = {
+        x:p.x, y:p.y,
+        ch:getAxis(cfg.h), cv:getAxis(cfg.v),
+        hAxis:cfg.h, vAxis:cfg.v, vSign:cfg.vSign,
+        t:performance.now(), moved:0
+      };
+      pinch = null;
+      canvas.classList.add('dragging');
+    } else if (pointers.size === 2){
+      const pts = Array.from(pointers.values());
+      const dx = pts[0].x-pts[1].x, dy = pts[0].y-pts[1].y;
+      const dist0 = Math.hypot(dx,dy);
+      const midX = (pts[0].x+pts[1].x)/2, midY=(pts[0].y+pts[1].y)/2;
+      const w = screenToWorldHV(midX, midY);
+      pinch = { dist0, worldH:w.h, worldV:w.v, scale0:scale, hAxis:cfg.h, vAxis:cfg.v, vSign:cfg.vSign };
+      dragStart = null;
+    }
+  });
+
+  canvas.addEventListener('pointermove', (e)=>{
+    if (!pointers.has(e.pointerId)) {
+      if (pointers.size===0){
+        const p = canvasPos(e);
+        const xyz = pixelToXYZ(p.x, p.y);
+        lbCoord.textContent = '(' + xyz[0] + ', ' + xyz[1] + ', ' + xyz[2] + ')';
+      }
+      return;
+    }
+    const p = canvasPos(e);
+    pointers.set(e.pointerId, p);
+
+    if (pointers.size === 2 && pinch){
+      const pts = Array.from(pointers.values());
+      const dx = pts[0].x-pts[1].x, dy = pts[0].y-pts[1].y;
+      const dist = Math.hypot(dx,dy) || 1e-6;
+      const midX = (pts[0].x+pts[1].x)/2, midY=(pts[0].y+pts[1].y)/2;
+      const halfW = canvas.width/2, halfH = canvas.height/2;
+      const newScale = clampScale(pinch.scale0 * (pinch.dist0/dist));
+      const newHVal0 = pinch.worldH - (midX-halfW)*newScale;
+      const newVVal0 = pinch.worldV - (midY-halfH)*newScale*pinch.vSign;
+      setAxis(pinch.hAxis, newHVal0);
+      setAxis(pinch.vAxis, newVVal0);
+      scale = newScale;
+      lbScale.textContent = scale.toFixed(2);
+      syncInputsFromView();
+      requestRender();
+    } else if (pointers.size === 1 && dragStart){
+      const dh = (p.x-dragStart.x)*scale;
+      const dv = (p.y-dragStart.y)*scale*dragStart.vSign;
+      setAxis(dragStart.hAxis, dragStart.ch - dh);
+      setAxis(dragStart.vAxis, dragStart.cv - dv);
+      dragStart.moved = Math.max(dragStart.moved, Math.hypot(p.x-dragStart.x, p.y-dragStart.y));
+      syncInputsFromView();
+      requestRender();
+      const xyz = pixelToXYZ(p.x, p.y);
+      lbCoord.textContent = '(' + xyz[0] + ', ' + xyz[1] + ', ' + xyz[2] + ')';
+    }
+  });
+
+  function endPointer(e){
+    const had = pointers.has(e.pointerId);
+    pointers.delete(e.pointerId);
+    try{ canvas.releasePointerCapture(e.pointerId); }catch(err){}
+
+    if (pointers.size === 0){
+      canvas.classList.remove('dragging');
+      if (had && dragStart){
+        const dt = performance.now() - dragStart.t;
+        if (dragStart.moved < 5 && dt < 400){
+          const xyz = pixelToXYZ(dragStart.x, dragStart.y);
+          showOrderForBlock(xyz[0], xyz[1], xyz[2]);
+        }
+      }
+      dragStart = null;
+      pinch = null;
+    } else if (pointers.size === 1){
+      const cfg = currentCfg();
+      const [[,p]] = pointers.entries();
+      dragStart = {
+        x:p.x, y:p.y,
+        ch:getAxis(cfg.h), cv:getAxis(cfg.v),
+        hAxis:cfg.h, vAxis:cfg.v, vSign:cfg.vSign,
+        t:performance.now(), moved:999
+      };
+      pinch = null;
+    }
+  }
+  canvas.addEventListener('pointerup', endPointer);
+  canvas.addEventListener('pointercancel', endPointer);
+
+  canvas.addEventListener('contextmenu', (e)=>e.preventDefault());
+  canvas.addEventListener('gesturestart', (e)=>e.preventDefault());
+
+  // ================= 11. 窗口尺寸变化 =================
+  const ro = new ResizeObserver(()=>{ requestRender(); });
+  ro.observe(canvas);
+
+  // ================= 启动 =================
+  syncInputsFromView();
+  showOrderForBlock(0,0,0);
+  requestRender();
+})();
+</script>
+</body>
+</html>
