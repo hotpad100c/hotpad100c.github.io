@@ -10,7 +10,7 @@ export const profile = {
   /** 标题下方第一行 */
   text: '记录开发日志、灵感、与 Minecraft 技术研究',
   /** 标题下方第二行 */
-  motto: '让他人看见那些平时看不见的游戏逻辑。',
+  motto: '没有什么是我们无法理解的',
 }
 
 /** 首屏的两个按钮 */
@@ -38,4 +38,4 @@ export const recentCount = 5
  * 首页展示的项目，填 docs/projects/data.js 里的 id，按顺序显示。
  * 留空数组则自动取前 4 个有封面的项目。横屏下建议保持 4 个。
  */
-export const featuredProjects: string[] = ['TMWIN', 'Lucidity', 'YetAnotherCarpetAddition', 'Trajectory']
+export const featuredProjects: string[] = ['GTMC Wiki', 'Lucidity', 'YetAnotherCarpetAddition', 'RyansRenderingKit']
