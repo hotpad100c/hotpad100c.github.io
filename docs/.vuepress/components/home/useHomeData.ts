@@ -12,28 +12,7 @@ export interface HomePost {
   cover?: string
 }
 
-export const profile = {
-  name: 'Ryan100c',
-  tagline: '编程 · Minecraft · 创造',
-  text: '记录开发日志、灵感、与 Minecraft 技术研究',
-  motto: '让他人看见那些平时看不见的游戏逻辑。',
-  avatar: 'https://i.postimg.cc/ZRHDmzH8/Untitled30-20251111074818.png',
-  banner: 'https://i.imgur.com/uTPkgAY.png',
-}
-
-export const navLinks = [
-  { text: '文章', link: '/posts/', en: 'posts' },
-  { text: '项目', link: '/projects/', en: 'projects' },
-  { text: '关于', link: '/about/', en: 'about' },
-  { text: '友链', link: '/friends/', en: 'friends' },
-]
-
-export const socials = [
-  { text: 'GitHub', link: 'https://github.com/hotpad100c', handle: 'hotpad100c' },
-  { text: 'Bilibili', link: 'https://b23.tv/gR2fZk3', handle: 'Ryan100c' },
-  { text: 'YouTube', link: 'https://youtube.com/@ryan100c', handle: '@ryan100c' },
-  { text: 'Discord', link: 'https://discord.gg/r25t6cQpDP', handle: 'server' },
-]
+export { actions, featuredProjects, profile, recentCount, socials } from './homeConfig'
 
 function normalizeDate(raw: string): string {
   const m = String(raw || '').match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/)
@@ -61,6 +40,7 @@ export function useHomeTags() {
 }
 
 export interface HomeProject {
+  id: string
   title: string
   description: string
   url: string
@@ -70,6 +50,7 @@ export interface HomeProject {
 
 export const projects: HomeProject[] = (navData as any[]).flatMap(group =>
   group.items.map((item: any) => ({
+    id: item.id,
     title: item.title,
     description: item.description,
     url: item.url,
@@ -77,6 +58,12 @@ export const projects: HomeProject[] = (navData as any[]).flatMap(group =>
     category: group.category,
   })),
 )
+
+/** 首页展示的项目：homeConfig.ts 中 featuredProjects 指定的，未指定时取前 4 个有封面的 */
+export function pickFeaturedProjects(ids: string[]): HomeProject[] {
+  if (!ids.length) return projects.filter(p => p.cover).slice(0, 4)
+  return ids.map(id => projects.find(p => p.id === id)).filter((p): p is HomeProject => !!p)
+}
 
 // bg-cube 背景图（docs/images/Bg.png 的压缩版）
 // @ts-ignore 图片由打包器处理

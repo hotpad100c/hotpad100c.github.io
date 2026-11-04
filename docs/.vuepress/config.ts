@@ -11,7 +11,7 @@ function dateToCreateTime(d: unknown): string | undefined {
 }
 
 /**
- * 为首页样式候选生成文章数据（@temp/home-posts.js）。
+ * 为首页生成文章数据（@temp/home-posts.js），供 HomeSlant 使用。
  * 直接读取 frontmatter 的 date 与正文开头，不依赖主题的 createTime / excerpt。
  */
 const homePostsPlugin = (): Plugin => ({
@@ -51,10 +51,10 @@ export default defineUserConfig({
       // 配置站点图标
       ['link', { rel: 'icon', type: 'image/png', href: 'https://i.postimg.cc/ZRHDmzH8/Untitled30-20251111074818.png' }],
       ['script', { src: 'https://code.iconify.design/2/2.1.2/iconify.min.js', async: 'true' }],
-      // 首页样式候选所用字体
+      // 首页与全站标题所用字体（Playfair Display / Noto Serif SC / JetBrains Mono）
       ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
       ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
-      ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;600;800&family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=Space+Grotesk:wght@400;600;700&display=swap' }],
+      ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&display=swap' }],
   ],
 
   theme: theme({

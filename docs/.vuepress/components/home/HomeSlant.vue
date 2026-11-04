@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouteLink, withBase } from 'vuepress/client'
-import { bgCube, navLinks, profile, projects, socials, useHomePosts, useHomeTags } from './useHomeData'
+import { actions, bgCube, featuredProjects, pickFeaturedProjects, profile, projects, recentCount, socials, useHomePosts, useHomeTags } from './useHomeData'
 
 /**
  * 作为 Plume 首页区块使用：docs/README.md 中
@@ -12,13 +12,12 @@ import { bgCube, navLinks, profile, projects, socials, useHomePosts, useHomeTags
  * 图片放在 docs/.vuepress/public/ 下，以 / 开头引用；也可以填完整的 https:// 地址。
  * 两者都不填时使用 bg-cube。
  *
- * standalone: 独立页面（自带导航），仅用于 /home-styles/ 预览页。
+ * 文字、链接、数量等内容在 homeConfig.ts 中修改；布局与样式说明见仓库根目录 CUSTOMIZING.md。
  */
-const props = withDefaults(defineProps<{
-  standalone?: boolean
+const props = defineProps<{
   background?: string
   cover?: string
-}>(), { standalone: false })
+}>()
 
 const resolveImg = (src?: string) => (!src ? bgCube : src.startsWith('/') ? withBase(src) : src)
 const bgImg = computed(() => `url(${resolveImg(props.background)})`)
@@ -27,29 +26,13 @@ const coverImg = computed(() => `url(${resolveImg(props.cover ?? props.backgroun
 const posts = useHomePosts()
 const tags = useHomeTags()
 const latest = computed(() => posts.value[0])
-const recent = computed(() => posts.value.slice(1, 6))
-const mods = computed(() => projects.filter(p => p.cover).slice(0, 4))
-
-const socialIcon: Record<string, string> = {
-  GitHub: 'mdi:github',
-  Bilibili: 'ri:bilibili-fill',
-  YouTube: 'mdi:youtube',
-  Discord: 'ic:baseline-discord',
-}
+const recent = computed(() => posts.value.slice(1, 1 + recentCount))
+const mods = pickFeaturedProjects(featuredProjects)
 </script>
 
 <template>
-  <div class="sl-page" :class="{ embedded: !standalone }" :style="{ '--bg-img': bgImg, '--cover-img': coverImg }">
+  <div class="sl-page" :style="{ '--bg-img': bgImg, '--cover-img': coverImg }">
     <div class="backdrop" aria-hidden="true" />
-
-    <nav v-if="standalone" class="topbar">
-      <RouteLink to="/" class="brand"><span class="mark" />RYAN100C</RouteLink>
-      <div class="links">
-        <RouteLink v-for="n in navLinks" :key="n.link" :to="n.link" class="nav-item">
-          <span>{{ n.text }}</span>
-        </RouteLink>
-      </div>
-    </nav>
 
     <!-- 横屏：两列两行，一屏装下；竖屏：依次堆叠 -->
     <div class="stage">
@@ -58,8 +41,9 @@ const socialIcon: Record<string, string> = {
         <h1>Ryan<em>100c</em></h1>
         <p class="lede">{{ profile.text }}。<br>{{ profile.motto }}</p>
         <div class="actions">
-          <RouteLink to="/posts/" class="btn solid"><span>阅读文章</span></RouteLink>
-          <RouteLink to="/projects/" class="btn"><span>查看项目</span></RouteLink>
+          <RouteLink v-for="a in actions" :key="a.link" :to="a.link" class="btn" :class="{ solid: a.primary }">
+            <span>{{ a.text }}</span>
+          </RouteLink>
         </div>
         <p class="topics">
           <span class="label">话题</span>
@@ -83,7 +67,7 @@ const socialIcon: Record<string, string> = {
         </RouteLink>
 
         <!-- 方正：计数 + 社交小按钮 -->
-        <div class="panel quick">
+        <div class="panel quick" :style="{ '--quick-cols': 2 + socials.length }">
           <RouteLink to="/posts/" class="sq stat">
             <strong>{{ String(posts.length).padStart(2, '0') }}</strong><span>文章</span>
           </RouteLink>
@@ -97,10 +81,10 @@ const socialIcon: Record<string, string> = {
             target="_blank"
             rel="noopener"
             class="sq social"
-            :class="s.text.toLowerCase()"
-            :title="`${s.text} · ${s.handle}`"
+            :style="s.color ? { '--brand-c': s.color } : undefined"
+            :title="s.text"
           >
-            <Icon :name="socialIcon[s.text]" class="s-icon" />
+            <Icon :name="s.icon" class="s-icon" />
             <span>{{ s.text }}</span>
           </a>
         </div>
@@ -125,7 +109,7 @@ const socialIcon: Record<string, string> = {
         </section>
 
         <!-- 斜切（反向）：上方方框之上是左斜的封面窗口，所以这里换成右斜 -->
-        <div class="proj-strip">
+        <div class="proj-strip" :style="{ '--proj-cols': mods.length }">
           <a v-for="p in mods" :key="p.url" :href="p.url" target="_blank" rel="noopener" class="tile proj rev">
             <div class="in img-in">
               <img :src="p.cover" :alt="p.title" loading="lazy">
@@ -187,8 +171,8 @@ const socialIcon: Record<string, string> = {
 
 /* 平行四边形：外层 skew，内容反向 skew 保持文字直立。
  * 规则：同一列里，方正面板上下两侧的斜切块方向相反（.rev 为反向）。 */
-.tile, .btn, .nav-item, .hero-window, .mark { transform: skewX(var(--skew)); }
-.tile > .in, .btn > span, .nav-item > span { display: block; transform: skewX(var(--unskew)); }
+.tile, .btn, .hero-window { transform: skewX(var(--skew)); }
+.tile > .in, .btn > span { display: block; transform: skewX(var(--unskew)); }
 .rev { transform: skewX(var(--unskew)); }
 .rev > .in { transform: skewX(var(--skew)); }
 
@@ -196,14 +180,6 @@ const socialIcon: Record<string, string> = {
 .muted { color: var(--fg-2); font-size: 13px; line-height: 1.7; margin: 0; }
 .more { font-family: var(--mono); font-size: 12px; color: var(--fg-2); text-decoration: none; }
 .more:hover { color: var(--accent); }
-
-/* 独立预览页的导航 */
-.topbar { position: relative; max-width: 1280px; margin: 0 auto; padding-inline: max(16px, 3vw); display: flex; justify-content: space-between; align-items: center; height: 64px; font-family: var(--mono); font-size: 13px; }
-.brand { display: flex; align-items: center; gap: 10px; color: var(--fg); text-decoration: none; letter-spacing: 0.2em; font-weight: 700; }
-.mark { width: 14px; height: 14px; background: var(--accent); }
-.links { display: flex; gap: 4px; }
-.nav-item { padding: 6px 14px; color: var(--fg-2); text-decoration: none; border: 1px solid transparent; }
-.nav-item:hover { color: var(--fg); border-color: var(--line); background: var(--tile); }
 
 /* ---------- 舞台 ---------- */
 .stage {
@@ -247,15 +223,12 @@ a.tile:hover { background: var(--tile-hover); border-color: var(--accent); }
 a.sq { transition: background 0.2s; }
 a.sq:hover { background: var(--tile-hover); }
 
-.quick { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.quick { grid-template-columns: repeat(var(--quick-cols, 6), minmax(0, 1fr)); }
 .quick .sq { padding: 10px 8px; align-items: center; justify-content: center; gap: 4px; min-height: 62px; text-align: center; }
 .stat strong { font-family: var(--display); font-size: 26px; line-height: 1; font-weight: 900; color: var(--accent); }
 .stat span, .social span { font-family: var(--mono); font-size: 10px; letter-spacing: 0.06em; color: var(--fg-2); }
 .social .s-icon, .social :deep(svg) { width: 22px; height: 22px; font-size: 22px; color: var(--fg-2); transition: color 0.2s; }
-.social.github:hover :deep(svg), .social.github:hover .s-icon { color: var(--fg); }
-.social.bilibili:hover :deep(svg), .social.bilibili:hover .s-icon { color: #fb7299; }
-.social.youtube:hover :deep(svg), .social.youtube:hover .s-icon { color: #ff3b3b; }
-.social.discord:hover :deep(svg), .social.discord:hover .s-icon { color: #7289ff; }
+.social:hover :deep(svg), .social:hover .s-icon { color: var(--brand-c, var(--fg)); }
 
 .recent .head { display: flex; justify-content: space-between; align-items: baseline; }
 .recent ol { list-style: none; margin: 0; padding: 0; counter-reset: r; }
@@ -266,7 +239,7 @@ a.sq:hover { background: var(--tile-hover); }
 .recent .t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .recent time { font-family: var(--mono); font-size: 11px; color: var(--fg-2); font-variant-numeric: tabular-nums; padding-top: 3px; }
 
-.proj-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; padding-inline: 8px; }
+.proj-strip { display: grid; grid-template-columns: repeat(var(--proj-cols, 4), minmax(0, 1fr)); gap: 12px; padding-inline: 8px; }
 .proj .img-in { padding: 0; gap: 0; position: relative; }
 .proj img { display: block; width: 100%; aspect-ratio: 2 / 1; object-fit: cover; transform: scale(1.18); filter: saturate(0.7); transition: filter 0.3s; }
 .proj:hover img { filter: none; }
@@ -282,7 +255,6 @@ a.sq:hover { background: var(--tile-hover); }
     box-sizing: border-box;
     padding-block: 24px 28px;
   }
-  .sl-page:not(.embedded) .stage { min-height: calc(100vh - 64px); }
   .intro { align-self: center; }
   .intro h1 { font-size: clamp(48px, min(5.6vw, 10vh), 96px); margin: 6px 0 10px; }
   .lede { margin-bottom: 14px; }
@@ -291,9 +263,9 @@ a.sq:hover { background: var(--tile-hover); }
   .hero-window { aspect-ratio: auto; height: auto; min-height: 200px; max-height: 560px; align-self: stretch; }
   .col-left, .col-right { align-self: stretch; }
 }
-/* 嵌入 Plume 首页：在桌面端延伸到透明导航栏之下 */
+/* 在桌面端延伸到 Plume 透明导航栏之下 */
 @media (min-width: 960px) {
-  .sl-page.embedded { margin-top: calc(-1 * var(--nav-h)); padding-top: var(--nav-h); }
+  .sl-page { margin-top: calc(-1 * var(--nav-h)); padding-top: var(--nav-h); }
 }
 
 /* ---------- 竖屏 / 手机 ---------- */
@@ -304,7 +276,5 @@ a.sq:hover { background: var(--tile-hover); }
   .recent time { display: none; }
   .recent .row { grid-template-columns: 2.4em minmax(0, 1fr); }
   .proj-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .links { gap: 0; }
-  .nav-item { padding: 6px 8px; }
 }
 </style>
