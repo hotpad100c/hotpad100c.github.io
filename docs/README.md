@@ -1,25 +1,8 @@
 ---
-home: true   
-pageClass: layout-landing 
+home: true
 title: Ryan100c
+# 首页使用自定义的「斜切」区块（docs/.vuepress/components/home/HomeSlant.vue），
+# 导航栏、搜索、深浅色切换、页脚仍由 Plume 主题提供。
 config:
-  - type: banner
-    banner: https://i.imgur.com/uTPkgAY.png 
-    bannerMask:
-      light: 0.2
-      dark: 0.4
-    hero:
-      name: Ryan100c
-      tagline: 编程 · Minecraft · 创造
-      text: 记录开发日志、灵感、与 Minecraft 技术研究
-      actions:
-        - text: 关于我
-          link: /about/
-          theme: brand
-        - text: 项目
-          link: /projects/
-          theme: alt
-        - text: 文章
-          link: /posts/
-          theme: alt
+  - type: HomeSlant
 ---

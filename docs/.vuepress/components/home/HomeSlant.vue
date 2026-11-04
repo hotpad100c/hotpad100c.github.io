@@ -3,6 +3,12 @@ import { computed } from 'vue'
 import { RouteLink } from 'vuepress/client'
 import { bgCube, navLinks, profile, projects, socials, useHomePosts, useHomeTags } from './useHomeData'
 
+/**
+ * standalone: 独立页面（自带导航与页脚）。
+ * 作为 Plume 首页区块使用时（config: - type: HomeSlant）保持 false，导航、搜索、深浅色切换、页脚都由主题提供。
+ */
+withDefaults(defineProps<{ standalone?: boolean }>(), { standalone: false })
+
 const posts = useHomePosts()
 const tags = useHomeTags()
 const latest = computed(() => posts.value[0])
@@ -11,10 +17,10 @@ const mods = computed(() => projects.filter(p => p.cover).slice(0, 4))
 </script>
 
 <template>
-  <div class="sl-page" :style="{ '--bg-img': `url(${bgCube})` }">
+  <div class="sl-page" :class="{ embedded: !standalone }" :style="{ '--bg-img': `url(${bgCube})` }">
     <div class="backdrop" aria-hidden="true" />
 
-    <nav class="topbar">
+    <nav v-if="standalone" class="topbar">
       <RouteLink to="/" class="brand"><span class="mark" />RYAN100C</RouteLink>
       <div class="links">
         <RouteLink v-for="n in navLinks" :key="n.link" :to="n.link" class="nav-item">
@@ -87,7 +93,7 @@ const mods = computed(() => projects.filter(p => p.cover).slice(0, 4))
       </a>
     </main>
 
-    <footer class="foot">© Ryan100c · VuePress + Plume</footer>
+    <footer v-if="standalone" class="foot">© Ryan100c · VuePress + Plume</footer>
   </div>
 </template>
 
@@ -100,6 +106,9 @@ const mods = computed(() => projects.filter(p => p.cover).slice(0, 4))
   --fg: #efe9fd;
   --fg-2: #a197bd;
   --accent: #b59cf2;
+  --on-accent: #0b0910;
+  --veil-1: rgba(11, 9, 16, 0.5);
+  --veil-2: rgba(11, 9, 16, 0.92);
   --skew: -10deg;
   --unskew: 10deg;
   --serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
@@ -115,10 +124,29 @@ const mods = computed(() => projects.filter(p => p.cover).slice(0, 4))
 .backdrop {
   position: absolute;
   inset: 0;
-  background: linear-gradient(180deg, rgba(11, 9, 16, 0.5), rgba(11, 9, 16, 0.92) 55%, var(--bg)), var(--bg-img) center top / cover no-repeat;
+  background: linear-gradient(180deg, var(--veil-1), var(--veil-2) 55%, var(--bg)), var(--bg-img) center top / cover no-repeat;
   filter: blur(2px);
   transform: scale(1.03);
 }
+/* 浅色模式（Plume 在 <html> 上设置 data-theme） */
+[data-theme='light'] .sl-page {
+  --bg: #efe9fb;
+  --tile: rgba(250, 247, 255, 0.9);
+  --tile-hover: #ffffff;
+  --line: rgba(93, 59, 153, 0.28);
+  --fg: #1d1534;
+  --fg-2: #5b5078;
+  --accent: #5d3b99;
+  --on-accent: #ffffff;
+  --veil-1: rgba(239, 233, 251, 0.8);
+  --veil-2: rgba(239, 233, 251, 0.94);
+}
+
+/* 嵌入 Plume 首页：在桌面端延伸到透明导航栏之下 */
+@media (min-width: 960px) {
+  .sl-page.embedded { margin-top: calc(-1 * var(--vp-nav-height, 64px)); padding-top: var(--vp-nav-height, 64px); }
+}
+
 .topbar, .hero, .tiles, .foot { position: relative; max-width: 1200px; margin: 0 auto; padding-inline: max(16px, 3vw); }
 
 /* 平行四边形：外层 skew，内容反向 skew 保持文字直立 */
@@ -139,8 +167,9 @@ const mods = computed(() => projects.filter(p => p.cover).slice(0, 4))
 .lede { color: var(--fg-2); font-size: 16px; line-height: 1.85; margin: 0 0 28px; }
 .actions { display: flex; gap: 14px; padding-left: 8px; }
 .btn { padding: 10px 24px; border: 1px solid var(--accent); color: var(--fg); text-decoration: none; font-size: 14px; }
-.btn.solid { background: var(--accent); color: var(--bg); font-weight: 700; }
+.btn.solid { background: var(--accent); color: var(--on-accent); font-weight: 700; }
 .btn:hover { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+.tiles { padding-bottom: 56px; }
 
 .hero-window { aspect-ratio: 16 / 10; overflow: hidden; border: 1px solid var(--line); box-shadow: 24px 24px 0 rgba(181, 156, 242, 0.08); max-width: 100%; }
 .window-img { width: 100%; height: 100%; background: var(--bg-img) center 40% / cover no-repeat; transform: skewX(var(--unskew)) scale(1.2); }

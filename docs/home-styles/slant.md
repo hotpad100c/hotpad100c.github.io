@@ -5,4 +5,4 @@ pageLayout: custom
 comments: false
 ---
 
-<HomeSlant />
+<HomeSlant standalone />
