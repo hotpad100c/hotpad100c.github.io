@@ -1,6 +1,47 @@
 import { defineUserConfig } from "vuepress";
 import theme from "vuepress-theme-plume";
 import { webpackBundler } from '@vuepress/bundler-webpack'
+import type { Plugin } from 'vuepress/core'
+
+/** 把 frontmatter 的 date（Date 或 "2026–7-4" 之类的字符串）转成 Plume 的 createTime 格式 */
+function dateToCreateTime(d: unknown): string | undefined {
+  const s = d instanceof Date ? d.toISOString().slice(0, 10) : String(d ?? '')
+  const m = s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/)
+  return m ? `${m[1]}/${m[2].padStart(2, '0')}/${m[3].padStart(2, '0')} 00:00:00` : undefined
+}
+
+/**
+ * 为首页生成文章数据（@temp/home-posts.js），供 HomeSlant 使用。
+ * 直接读取 frontmatter 的 date 与正文开头，不依赖主题的 createTime / excerpt。
+ */
+const homePostsPlugin = (): Plugin => ({
+  name: 'home-posts-data',
+  onPrepared: async (app) => {
+    const plain = (md: string) => md
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/^[#>\-*|\s]+/gm, '')
+      .replace(/[*_`~|]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    const toDateString = (d: unknown) =>
+      d instanceof Date ? d.toISOString().slice(0, 10) : String(d ?? '')
+    const posts = app.pages
+      .filter(p => p.filePathRelative?.startsWith('posts/') && !p.frontmatter.draft)
+      .map(p => ({
+        title: p.title,
+        path: p.path,
+        date: toDateString(p.frontmatter.date ?? p.frontmatter.createTime),
+        tags: (p.frontmatter.tags as string[]) || [],
+        excerpt: plain(p.content.replace(/^---[\s\S]*?---/, ''))
+          .replace(new RegExp(`^${p.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`), '')
+          .slice(0, 160),
+      }))
+    await app.writeTemp('home-posts.js', `export const homePosts = ${JSON.stringify(posts)}`)
+  },
+})
 
 export default defineUserConfig({
   lang: "zh-CN",
@@ -9,7 +50,11 @@ export default defineUserConfig({
   head: [
       // 配置站点图标
       ['link', { rel: 'icon', type: 'image/png', href: 'https://i.postimg.cc/ZRHDmzH8/Untitled30-20251111074818.png' }],
-      ['script', { src: 'https://code.iconify.design/2/2.1.2/iconify.min.js', async: 'true' }]
+      ['script', { src: 'https://code.iconify.design/2/2.1.2/iconify.min.js', async: 'true' }],
+      // 首页与全站标题所用字体（Playfair Display / Noto Serif SC / JetBrains Mono）
+      ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
+      ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+      ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&display=swap' }],
   ],
 
   theme: theme({
@@ -26,6 +71,15 @@ export default defineUserConfig({
         postList: true,
         postCover: 'right',
         pagination: 10,
+        // 文章里写的是 date 字段，Plume 读取的是 createTime（缺省时用文件创建时间，
+        // 在 CI 上就是构建时间）。这里用 date 覆盖 createTime。
+        autoFrontmatter: {
+          transform: (data) => {
+            const t = dateToCreateTime(data.date)
+            if (t) data.createTime = t
+            return data
+          },
+        },
       },
       {
         type: 'doc',
@@ -82,6 +136,7 @@ export default defineUserConfig({
     },
     
   }),
+  plugins: [homePostsPlugin()],
   cache: 'filesystem',
   bundler: webpackBundler(),
 });
