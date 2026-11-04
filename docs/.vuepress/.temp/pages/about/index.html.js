@@ -1,3 +1,0 @@
-import comp from "/home/user/hotpad100c.github.io/docs/.vuepress/.temp/pages/about/index.html.vue"
-const data = JSON.parse("{\"path\":\"/about/\",\"title\":\"你好\",\"lang\":\"zh-CN\",\"frontmatter\":{\"title\":\"你好\"},\"readingTime\":{\"minutes\":2.52,\"words\":755},\"git\":{\"createdTime\":1787653280000,\"updatedTime\":1787653280000,\"contributors\":[{\"name\":\"hotpad100c\",\"username\":\"hotpad100c\",\"email\":\"46704388+hotpad100c@users.noreply.github.com\",\"commits\":1,\"avatar\":\"https://avatars.githubusercontent.com/hotpad100c?v=4\",\"url\":\"https://github.com/hotpad100c\"}]},\"filePathRelative\":\"about/README.md\",\"headers\":[]}")
-export { comp, data }
