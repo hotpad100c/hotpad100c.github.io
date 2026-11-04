@@ -25,7 +25,7 @@ export const navLinks = [
   { text: '文章', link: '/posts/', en: 'posts' },
   { text: '项目', link: '/projects/', en: 'projects' },
   { text: '关于', link: '/about/', en: 'about' },
-  { text: '友链', link: '/friends.html', en: 'friends' },
+  { text: '友链', link: '/friends/', en: 'friends' },
 ]
 
 export const socials = [
@@ -77,3 +77,8 @@ export const projects: HomeProject[] = (navData as any[]).flatMap(group =>
     category: group.category,
   })),
 )
+
+// bg-cube 背景图（docs/images/Bg.png 的压缩版）
+// @ts-ignore 图片由打包器处理
+import bgCubeUrl from '../../../images/bg-cube.jpg'
+export const bgCube: string = bgCubeUrl

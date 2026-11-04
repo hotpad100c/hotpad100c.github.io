@@ -6,6 +6,9 @@ import HomeTerminal from './components/home/HomeTerminal.vue'
 import HomeEditorial from './components/home/HomeEditorial.vue'
 import HomeBlueprint from './components/home/HomeBlueprint.vue'
 import HomeBento from './components/home/HomeBento.vue'
+import HomeGrid from './components/home/HomeGrid.vue'
+import HomeSlant from './components/home/HomeSlant.vue'
+import HomeCover from './components/home/HomeCover.vue'
 
 export default defineClientConfig({
   enhance({ app }) {
@@ -15,5 +18,8 @@ export default defineClientConfig({
     app.component('HomeEditorial', HomeEditorial)
     app.component('HomeBlueprint', HomeBlueprint)
     app.component('HomeBento', HomeBento)
+    app.component('HomeGrid', HomeGrid)
+    app.component('HomeSlant', HomeSlant)
+    app.component('HomeCover', HomeCover)
   },
 })
