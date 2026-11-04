@@ -1,0 +1,133 @@
+/**
+ * 全站「斜切」形状规则（只用 CSS 覆盖 Plume，不改主题源码）
+ *  - 方正：去掉所有圆角，列表与卡片用 1px 发丝线
+ *  - 斜切：按钮、标签、分页等小元素用平行四边形（clip-path，文字保持直立）
+ *  - 字体：标题用衬线，元信息与代码用等宽
+ */
+:root {
+  --sl-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  --sl-display: 'Playfair Display', 'Noto Serif SC', serif;
+  --sl-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  --sl-cut: 6px;                       /* 平行四边形的水平偏移 */
+  --vp-font-family-mono: var(--sl-mono);
+}
+
+/* ---------- 方正：全站无圆角 ---------- */
+.theme-plume *,
+.theme-plume *::before,
+.theme-plume *::after {
+  border-radius: 0 !important;
+}
+
+/* 平行四边形（不 skew 内容，只裁切外形） */
+.theme-plume .vp-button,
+.theme-plume .vp-pagination .btn,
+.theme-plume .vp-doc-meta .tag,
+.theme-plume .post-meta .tag,
+.theme-plume .pager-link,
+.theme-plume .vp-posts-nav .nav-link {
+  clip-path: polygon(var(--sl-cut) 0, 100% 0, calc(100% - var(--sl-cut)) 100%, 0 100%);
+}
+
+/* ---------- 标题字体 ---------- */
+.theme-plume .vp-doc-title,
+.theme-plume .vp-doc h1,
+.theme-plume .vp-doc h2,
+.theme-plume .vp-doc h3,
+.theme-plume .vp-post-item h3,
+.theme-plume .masonry-group-title {
+  font-family: var(--sl-serif);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+.theme-plume .vp-doc-title,
+.theme-plume .vp-doc h1 { font-weight: 900 !important; }
+
+/* h2：左侧一个斜切色块 */
+.theme-plume .vp-doc h2 {
+  padding-left: 0.95em;
+  background: linear-gradient(100deg, transparent 0 0.14em, var(--vp-c-brand-1) 0.14em 0.42em, transparent 0.42em) 0 52% / 0.6em 0.85em no-repeat;
+}
+
+/* 元信息、日期、目录：等宽 */
+.theme-plume .vp-doc-meta,
+.theme-plume .post-meta,
+.theme-plume .vp-doc-aside-outline,
+.theme-plume .vp-footer {
+  font-family: var(--sl-mono);
+  font-size: 12px;
+}
+
+/* ---------- 标签：统一用主题色 ---------- */
+.theme-plume .tag,
+.theme-plume .vp-tag {
+  --vp-tag-color: var(--vp-c-brand-1) !important;
+  --vp-tag-hover-color: var(--vp-c-brand-2) !important;
+  --vp-tag-bg: var(--vp-c-brand-soft) !important;
+}
+.theme-plume .post-meta .tag,
+.theme-plume .vp-doc-meta .tag {
+  padding: 1px 10px;
+  font-family: var(--sl-mono);
+}
+
+/* ---------- 文章列表：方正面板 + 发丝线 ---------- */
+.theme-plume .vp-post-list {
+  display: grid;
+  gap: 1px;
+  background: var(--vp-c-divider);
+  border: 1px solid var(--vp-c-divider);
+}
+.theme-plume .vp-post-item {
+  margin: 0 !important;
+  padding: 18px 22px !important;
+  background: var(--vp-c-bg-alt) !important;
+  box-shadow: none !important;
+}
+.theme-plume .vp-post-item:hover { background: var(--vp-c-bg-soft) !important; }
+.theme-plume .vp-post-item h3 { font-size: 19px; }
+
+/* 标签 / 分类 / 归档：斜切块 */
+.theme-plume .vp-posts-nav .nav-link {
+  background: var(--vp-c-brand-soft) !important;
+  box-shadow: none !important;
+  padding-inline: 20px !important;
+}
+.theme-plume .vp-posts-nav .nav-link:hover { background: var(--vp-c-brand-1) !important; color: var(--vp-c-bg) !important; }
+
+/* 分页 */
+.theme-plume .vp-pagination { box-shadow: none !important; background: transparent !important; }
+.theme-plume .vp-pagination .btn { padding-inline: 14px; font-family: var(--sl-mono); }
+.theme-plume .vp-pagination .btn.active { background: var(--vp-c-brand-1); color: var(--vp-c-bg); }
+
+/* ---------- 文章正文 ---------- */
+.theme-plume .vp-doc blockquote {
+  border-left: 3px solid var(--vp-c-brand-1);
+  background: var(--vp-c-bg-alt);
+  padding: 10px 16px;
+}
+.theme-plume .vp-doc div[class*='language-'] { border: 1px solid var(--vp-c-divider); }
+.theme-plume .vp-doc :not(pre) > code { border: 1px solid var(--vp-c-divider); }
+.theme-plume .vp-doc table { border: 1px solid var(--vp-c-divider); }
+
+/* 上一篇 / 下一篇 */
+.theme-plume .pager-link {
+  border: none !important;
+  background: var(--vp-c-bg-alt);
+  padding-inline: 22px !important;
+}
+.theme-plume .pager-link:hover { background: var(--vp-c-brand-soft); }
+
+/* 右侧目录：当前项用方块标记 */
+.theme-plume .vp-doc-aside-outline .outline-marker { width: 3px; }
+
+/* ---------- 项目页（NavPage.vue）与友链 ---------- */
+.theme-plume .masonry-card { box-shadow: none !important; border: 1px solid var(--vp-c-divider); }
+.theme-plume .masonry-card:hover { border-color: var(--vp-c-brand-1); }
+.theme-plume .vp-friend { border: 1px solid var(--vp-c-divider); background: var(--vp-c-bg-alt) !important; }
+
+/* 自定义块（提示、警告等） */
+.theme-plume .vp-doc .custom-block { border-left-width: 3px; }
+
+/* 页脚 */
+.theme-plume .vp-footer { border-top: 1px solid var(--vp-c-divider); }

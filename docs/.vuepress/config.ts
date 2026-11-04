@@ -3,6 +3,13 @@ import theme from "vuepress-theme-plume";
 import { webpackBundler } from '@vuepress/bundler-webpack'
 import type { Plugin } from 'vuepress/core'
 
+/** 把 frontmatter 的 date（Date 或 "2026–7-4" 之类的字符串）转成 Plume 的 createTime 格式 */
+function dateToCreateTime(d: unknown): string | undefined {
+  const s = d instanceof Date ? d.toISOString().slice(0, 10) : String(d ?? '')
+  const m = s.match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/)
+  return m ? `${m[1]}/${m[2].padStart(2, '0')}/${m[3].padStart(2, '0')} 00:00:00` : undefined
+}
+
 /**
  * 为首页样式候选生成文章数据（@temp/home-posts.js）。
  * 直接读取 frontmatter 的 date 与正文开头，不依赖主题的 createTime / excerpt。
@@ -47,7 +54,7 @@ export default defineUserConfig({
       // 首页样式候选所用字体
       ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
       ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
-      ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;600;800&family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Space+Grotesk:wght@400;600;700&display=swap' }],
+      ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;600;800&family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=Space+Grotesk:wght@400;600;700&display=swap' }],
   ],
 
   theme: theme({
@@ -64,6 +71,15 @@ export default defineUserConfig({
         postList: true,
         postCover: 'right',
         pagination: 10,
+        // 文章里写的是 date 字段，Plume 读取的是 createTime（缺省时用文件创建时间，
+        // 在 CI 上就是构建时间）。这里用 date 覆盖 createTime。
+        autoFrontmatter: {
+          transform: (data) => {
+            const t = dateToCreateTime(data.date)
+            if (t) data.createTime = t
+            return data
+          },
+        },
       },
       {
         type: 'doc',

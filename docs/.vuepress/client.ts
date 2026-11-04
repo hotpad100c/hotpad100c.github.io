@@ -1,6 +1,7 @@
 import { defineClientConfig } from 'vuepress/client'
 
 import './styles/index.css'
+import './styles/slant.css'
 import NavPage from './components/NavPage.vue'
 import HomeTerminal from './components/home/HomeTerminal.vue'
 import HomeEditorial from './components/home/HomeEditorial.vue'
