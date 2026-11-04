@@ -1,6 +1,40 @@
 import { defineUserConfig } from "vuepress";
 import theme from "vuepress-theme-plume";
 import { webpackBundler } from '@vuepress/bundler-webpack'
+import type { Plugin } from 'vuepress/core'
+
+/**
+ * 为首页样式候选生成文章数据（@temp/home-posts.js）。
+ * 直接读取 frontmatter 的 date 与正文开头，不依赖主题的 createTime / excerpt。
+ */
+const homePostsPlugin = (): Plugin => ({
+  name: 'home-posts-data',
+  onPrepared: async (app) => {
+    const plain = (md: string) => md
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, ' ')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/^[#>\-*|\s]+/gm, '')
+      .replace(/[*_`~|]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+    const toDateString = (d: unknown) =>
+      d instanceof Date ? d.toISOString().slice(0, 10) : String(d ?? '')
+    const posts = app.pages
+      .filter(p => p.filePathRelative?.startsWith('posts/') && !p.frontmatter.draft)
+      .map(p => ({
+        title: p.title,
+        path: p.path,
+        date: toDateString(p.frontmatter.date ?? p.frontmatter.createTime),
+        tags: (p.frontmatter.tags as string[]) || [],
+        excerpt: plain(p.content.replace(/^---[\s\S]*?---/, ''))
+          .replace(new RegExp(`^${p.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`), '')
+          .slice(0, 160),
+      }))
+    await app.writeTemp('home-posts.js', `export const homePosts = ${JSON.stringify(posts)}`)
+  },
+})
 
 export default defineUserConfig({
   lang: "zh-CN",
@@ -9,7 +43,11 @@ export default defineUserConfig({
   head: [
       // 配置站点图标
       ['link', { rel: 'icon', type: 'image/png', href: 'https://i.postimg.cc/ZRHDmzH8/Untitled30-20251111074818.png' }],
-      ['script', { src: 'https://code.iconify.design/2/2.1.2/iconify.min.js', async: 'true' }]
+      ['script', { src: 'https://code.iconify.design/2/2.1.2/iconify.min.js', async: 'true' }],
+      // 首页样式候选所用字体
+      ['link', { rel: 'preconnect', href: 'https://fonts.googleapis.com' }],
+      ['link', { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' }],
+      ['link', { rel: 'stylesheet', href: 'https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;700&family=IBM+Plex+Sans:wght@400;600;800&family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=Space+Grotesk:wght@400;600;700&display=swap' }],
   ],
 
   theme: theme({
@@ -82,6 +120,7 @@ export default defineUserConfig({
     },
     
   }),
+  plugins: [homePostsPlugin()],
   cache: 'filesystem',
   bundler: webpackBundler(),
 });
