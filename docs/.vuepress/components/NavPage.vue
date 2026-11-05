@@ -60,7 +60,10 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useRouter } from 'vuepress/client'
 import { navData } from '../../projects/data.js'
+
+const router = useRouter()
 
 const activeItem = ref(null)
 
@@ -69,7 +72,9 @@ function toggleItem(item) {
 }
 
 function openLink(url) {
-  window.open(url, '_blank', 'noopener noreferrer')
+  // 站内页面（/ 开头，例如镜像的工具页）在当前标签页打开
+  if (url.startsWith('/')) router.push(url)
+  else window.open(url, '_blank', 'noopener noreferrer')
 }
 </script>
 

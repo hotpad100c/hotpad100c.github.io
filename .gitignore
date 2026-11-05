@@ -3,3 +3,4 @@ docs/.vuepress/.temp/
 docs/.vuepress/.cache/
 docs/.vuepress/dist/
 filesystem/
+docs/.vuepress/mirror-dist/

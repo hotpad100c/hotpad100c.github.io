@@ -7,6 +7,7 @@
   "author": "Ryan100c <hotpad100c@gmail.com>",
   "license": "MIT",
   "scripts": {
+    "mirror": "node scripts/mirror.mjs",
     "docs:build": "vuepress build docs --clean-cache --clean-temp",
     "docs:dev": "vuepress dev docs",
     "docs:dev-clean": "vuepress dev docs --clean-cache --clean-temp",

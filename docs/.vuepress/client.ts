@@ -11,6 +11,7 @@ import SlantCell from './components/slant/SlantCell.vue'
 import SkillIcons from './components/slant/SkillIcons.vue'
 import SocialButtons from './components/slant/SocialButtons.vue'
 import ContactList from './components/slant/ContactList.vue'
+import MirrorFrame from './components/slant/MirrorFrame.vue'
 
 /**
  * 每次部署后，页面脚本的文件名（带哈希）都会变，旧文件会被删除。
@@ -44,6 +45,8 @@ export default defineClientConfig({
     app.component('SkillIcons', SkillIcons)
     app.component('SocialButtons', SocialButtons)
     app.component('ContactList', ContactList)
+    // 镜像站点（用法见 CUSTOMIZING.md「镜像站点」）
+    app.component('MirrorFrame', MirrorFrame)
 
     if (!__VUEPRESS_SSR__) {
       router.onError((err, to) => {

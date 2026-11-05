@@ -1,0 +1,30 @@
+[
+  {
+    "name": "modsite",
+    "url": "https://modsite-4x9.pages.dev/",
+    "entries": [
+      "index.html",
+      "mod.html"
+    ]
+  },
+  {
+    "name": "mcdeltasearch",
+    "url": "https://mcdeltasearch.hotpad100c.workers.dev/",
+    "entries": [
+      "index.html"
+    ],
+    "extra": [
+      "model.json"
+    ],
+    "follow": [
+      "blobs.json"
+    ]
+  },
+  {
+    "name": "redstone-modeler",
+    "url": "https://hotpad100c.github.io/Redstone-Modeler/",
+    "entries": [
+      "index.html"
+    ]
+  }
+]
