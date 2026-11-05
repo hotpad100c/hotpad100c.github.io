@@ -65,7 +65,7 @@ pageLayout: page
 
 </SlantCell>
 
-<SlantCell span="4" label="GTMC" title="技术 MC 文档" image="https://socialify.git.ci/tanhHeng/GraduateTextsInTechnicalMC/image?description=1&forks=1&issues=1&pulls=1&stargazers=1&theme=Dark" href="https://techmc.wiki/#/">
+<SlantCell span="4" label="GTMC" title="技术 MC 文档" image="https://socialify.git.ci/tanhHeng/GraduateTextsInTechnicalMC/image?description=1&forks=1&issues=1&pulls=1&stargazers=1&theme=Dark" href="https://de79d671.hotpad100c-github-io.pages.dev/tools/gtmc/">
 
 我正在参与撰写 GTMC（GraduateTextsInTechnicalMC）：一本面向萌新的技术红石入门教材，也是一本面向熟练者的文档。基于 CC BY-NC-SA 4.0 协议开源。
 
