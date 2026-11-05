@@ -19,6 +19,9 @@
  *   适合要把头像放进背景图里某个框的情况。
  *     image-x / image-y：前景图中心在背景图上的位置（百分比，默认 50 / 50）
  *     image-size：前景图宽度占背景图宽度的百分比
+ *     image-fill：（可选）前景图宽度占窗口宽度的百分比。写了它时窗口变成竖长的平行四边形，
+ *                 背景图以前景图为中心放大到这个比例，前景图始终在窗口正中、不会显得太小。
+ *     window-ratio：（可选，配合 image-fill）窗口的宽:高，默认 5/6；数字越小窗口越高。
  */
 import { computed, onMounted, ref } from 'vue'
 import { bgCube, resolveImage } from '../home/useHomeData'
@@ -30,6 +33,8 @@ const props = defineProps<{
   imageX?: number | string
   imageY?: number | string
   imageSize?: number | string
+  imageFill?: number | string
+  windowRatio?: string
 }>()
 const coverSrc = computed(() => resolveImage(props.cover, bgCube))
 const coverImg = computed(() => `url(${coverSrc.value})`)
@@ -44,6 +49,14 @@ onMounted(() => {
   img.onload = () => { if (img.naturalWidth && img.naturalHeight) ratio.value = img.naturalWidth / img.naturalHeight }
   img.src = coverSrc.value
 })
+const focused = computed(() => anchored.value && props.imageFill !== undefined && props.imageFill !== '')
+const sceneVars = computed(() => ({
+  '--ax': `${Number(props.imageX ?? 50)}%`,
+  '--ay': `${Number(props.imageY ?? 50)}%`,
+  '--fill': Number(props.imageFill ?? 0),
+  '--size': Number(props.imageSize ?? 1),
+  '--window-ratio': props.windowRatio || '5 / 6',
+}))
 const fgStyle = computed(() => ({
   left: `${Number(props.imageX ?? 50)}%`,
   top: `${Number(props.imageY ?? 50)}%`,
@@ -57,7 +70,7 @@ const fgStyle = computed(() => ({
       <p v-if="label" class="sl-label">{{ label }}</p>
       <slot />
     </div>
-    <div class="sl-window" :class="{ 'sl-window-anchored': anchored }" :style="{ '--cover-img': coverImg, '--ratio': ratio }" aria-hidden="true">
+    <div class="sl-window" :class="{ 'sl-window-anchored': anchored, 'sl-window-focused': focused }" :style="{ '--cover-img': coverImg, '--ratio': ratio, ...sceneVars }" aria-hidden="true">
       <div v-if="anchored" class="sl-scene">
         <img v-if="imageSrc" :src="imageSrc" alt="" class="sl-scene-fg" :style="fgStyle">
       </div>
@@ -119,6 +132,18 @@ const fgStyle = computed(() => ({
   background: var(--cover-img) center / 100% 100% no-repeat;
   transform: translate(-50%, -50%) skewX(var(--sl-unskew)) scale(1.2);
 }
+/* 放大模式（image-fill）：窗口竖长；场景宽度 = 窗口宽 × fill / size，使前景图占窗口宽度的 fill%；
+   以锚点为变换原点，锚点放在窗口正中，反向倾斜也绕锚点进行，所以头像不会偏离暗框。 */
+.sl-window-focused {
+  aspect-ratio: var(--window-ratio, 5 / 6);
+  width: min(100%, 340px);
+  justify-self: center;
+}
+.sl-window-focused .sl-scene {
+  width: calc(100cqw * var(--fill) / var(--size));
+  transform-origin: var(--ax) var(--ay);
+  transform: translate(calc(-1 * var(--ax)), calc(-1 * var(--ay))) skewX(var(--sl-unskew));
+}
 .sl-scene-fg {
   position: absolute;
   height: auto;
@@ -139,6 +164,7 @@ const fgStyle = computed(() => ({
 
 @media (min-width: 960px) {
   .sl-hero { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 48px; }
-  .sl-window { aspect-ratio: auto; height: clamp(300px, 46vh, 440px); }
+  .sl-window:not(.sl-window-focused) { aspect-ratio: auto; height: clamp(300px, 46vh, 440px); }
+  .sl-window-focused { width: clamp(240px, 24vw, 340px); }
 }
 </style>

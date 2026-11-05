@@ -280,7 +280,7 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 | 组件 | 作用 | 参数 |
 |---|---|---|
 | `SlantPage` | 整页容器：配色、模糊背景图、最大宽度 | `background`：背景图，可选，默认 `bg-main.jpg` |
-| `SlantHero` | 首屏：左边是插槽里的 Markdown，右边是斜切窗口 | `label`：小标签；`image`：窗口里的前景图（透明 PNG 最好）；`cover`：窗口背景图，默认 `bg-cube.jpg`；`image-x`、`image-y`、`image-size`：把前景图钉在背景图上的某个位置（见下） |
+| `SlantHero` | 首屏：左边是插槽里的 Markdown，右边是斜切窗口 | `label`：小标签；`image`：窗口里的前景图（透明 PNG 最好）；`cover`：窗口背景图，默认 `bg-cube.jpg`；`image-x`、`image-y`、`image-size`、`image-fill`：把前景图钉在背景图上的某个位置并放大（见下） |
 | `SlantRow` | 一行格子，横屏下是 12 列网格 | `kind`：`slant`（斜切 /）、`rev`（反向斜切 \）、`square`（方正面板） |
 | `SlantCell` | 一个格子，形状跟随所在的行 | `span`：占 12 列中的几列（默认 12）；`label`、`title`；`image`：顶部配图；`fit="contain"`：配图完整显示在深色底上；`max-height`：正文超出这个高度（像素）时在格子里滚动；`href`：整格变成链接 |
 | `SkillIcons` | 一排技能图标 | `list`：逗号分隔，可用 `csharp`、`java`、`python`、`javascript`、`blender`、`idea`、`unity`；其它写成 `图标集:图标名:显示名`，例如 `devicon-plain:rust:Rust` |
@@ -294,10 +294,14 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 - **把头像钉在背景图里**：`SlantHero` 写了 `image-size` 时，前景图的位置按**背景图**计算，而不是按窗口：`image-x` / `image-y` 是前景图中心在背景图上的位置（百分比），`image-size` 是前景图宽度占背景图宽度的百分比。窗口在不同屏幕上裁切的范围不同，但前景图始终停在背景图的同一位置。「关于」页的头像就是这样放进分形中央的暗框里的：
 
   ```md
-  <SlantHero label="关于" image="/about/pfp.png" cover="bg-main" image-x="49.95" image-y="47.6" image-size="15.8">
+  <SlantHero label="关于" image="/about/pfp.png" cover="bg-main" image-x="49.95" image-y="47.6" image-size="15.8" image-fill="80">
   ```
 
-  这三个数是按图量出来的（中央暗区的内切圆圆心约在 49.8% / 49.2%，直径约为图宽的 19.4%）。换了背景图或头像，需要重新调整。不写 `image-size` 时，前景图贴着窗口底部居中，高度为窗口的 92%。
+  `image-x`、`image-y`、`image-size` 是按图量出来的（中央暗区的内切圆圆心约在 49.8% / 49.2%，直径约为图宽的 19.4%；头像宽 15.8% 时整个头像都在圆内）。换了背景图或头像，需要重新调整。
+
+  `image-fill` 是头像占**窗口**宽度的百分比。写了它时，窗口变成竖长的平行四边形（宽:高默认 5:6，可以用 `window-ratio="4/5"` 之类调整，数字越小窗口越高），背景图以头像为中心放大，让头像占满窗口宽度的这个比例，暗框也跟着一起放大，头像始终在框里。想让头像再大一点或小一点，改这个数即可（不需要动另外三个）。
+
+  不写 `image-size` 时，前景图贴着窗口底部居中，高度为窗口的 92%。
 - **链接不能嵌套**：给 `SlantCell` 写了 `href` 后，它的正文里就不要再放链接。
 - **方向规则**：与首页相同，方正行上下两侧的斜切行方向相反。`SlantHero` 的窗口算作 `/`，所以它下面如果是 `square`，再下面的斜切行要用 `rev`。「关于」页的顺序是：首屏窗口（/）→ square → rev → square → slant → square。
 
