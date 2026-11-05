@@ -11,7 +11,9 @@
  *     "url": "https://example.pages.dev/",     原站地址
  *     "entries": ["index.html", "mod.html"],   入口页面
  *     "extra": ["model.json"],                 （可选）自动发现不了的文件，例如脚本里拼接出来的路径
- *     "follow": ["blobs.json"]                 （可选）这些 JSON 里出现的文件名也一并抓取
+ *     "follow": ["blobs.json"],                （可选）这些 JSON 里出现的文件名也一并抓取
+ *     "scanStrings": true                      （可选）代码里所有「像相对路径文件」的字符串也抓取，
+ *                                              例如脚本数据里的 src: "img/a.png"（找不到时只警告）
  *   }]
  *
  * 做法：
@@ -37,6 +39,8 @@ const OUT = path.join(VP, 'mirror-dist')
 const MIRRORS_DIR = path.join(VP, 'mirrors')
 
 const TEXT_EXT = /\.(html?|js|mjs|css|json|txt|svg|webmanifest)$/i
+// scanStrings：引号里的相对路径文件名（至少带一级目录，避免把普通单词当成文件）
+const STRING_FILE_RE = /["'`]((?:\.\/)?[\w.-]+(?:\/[\w.-]+)+\.(?:png|jpe?g|webp|gif|svg|avif|mp4|webm|mp3|ogg|wav|json|txt|bin|wasm|glb|gltf|ttf|woff2?))["'`]/g
 // 在文本里寻找的相对路径引用。
 // rel: 'file' 相对于引用它的文件解析（import、CSS url()、new URL(x, import.meta.url)）；
 //      'doc'  相对于页面解析（fetch()、new Worker() 等浏览器按页面地址解析的路径；HTML 里两者相同）。
@@ -89,6 +93,7 @@ async function mirrorOne(site) {
   const queue = [...(site.entries || ['index.html']), ...(site.extra || [])]
   const required = new Set(queue)
   const follow = new Set(site.follow || [])
+  const optional = new Set()
   // 页面所在目录下的一个虚拟文件名，用来解析「相对于页面」的路径
   const docBase = path.posix.join(path.posix.dirname((site.entries || ['index.html'])[0]), '__page__')
   const seen = new Set()
@@ -111,6 +116,13 @@ async function mirrorOne(site) {
           // 'doc' 类引用按入口页面所在目录解析（入口页面都在站点根目录时即根目录）
           const next = resolveRef(mode === 'doc' ? docBase : rel, m[1])
           if (next && !seen.has(next)) queue.push(next)
+        }
+      }
+      if (site.scanStrings && /\.(html?|m?js)$/i.test(rel)) {
+        STRING_FILE_RE.lastIndex = 0
+        for (const m of text.matchAll(STRING_FILE_RE)) {
+          const next = resolveRef(docBase, m[1])
+          if (next && !seen.has(next)) { queue.push(next); optional.add(next) }
         }
       }
       if (follow.has(rel)) {
@@ -139,7 +151,7 @@ async function mirrorOne(site) {
   for (const m of missing) console.log(`  ! 未找到 ${m}`)
   if (missingRequired.length) throw new Error(`${site.name} 的入口页面抓取失败：${missingRequired.join(', ')}`)
   // 被脚本 import 的文件缺失会导致页面无法运行，同样视为失败
-  const missingCode = missing.filter(m => /\.(m?js|css|json)\b/.test(m))
+  const missingCode = missing.filter(m => /\.(m?js|css|json)\b/.test(m) && !optional.has(m.split(' ')[0]))
   if (missingCode.length) throw new Error(`${site.name} 有脚本 / 样式 / 数据文件抓取失败：${missingCode.join(', ')}`)
 }
 

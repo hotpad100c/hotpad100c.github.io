@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { RouteLink, withBase } from 'vuepress/client'
-import { actions, bgCube, featuredProjects, pickFeaturedProjects, profile, projects, recentCount, socials, useHomePosts, useHomeTags } from './useHomeData'
+import { RouteLink } from 'vuepress/client'
+import { actions, bgCube, bgMain, featuredProjects, pickFeaturedProjects, profile, projects, recentCount, resolveImage, socials, useHomePosts, useHomeTags } from './useHomeData'
 
 /**
  * 作为 Plume 首页区块使用：docs/README.md 中
@@ -9,8 +9,10 @@ import { actions, bgCube, featuredProjects, pickFeaturedProjects, profile, proje
  *     - type: HomeSlant
  *       background: /images/home-bg.jpg   # 整页背景（可选）
  *       cover: /images/home-cover.jpg      # 首屏斜切窗口里的封面（可选）
- * 图片放在 docs/.vuepress/public/ 下，以 / 开头引用；也可以填完整的 https:// 地址。
- * 两者都不填时使用 bg-cube。
+ * 图片放在 docs/.vuepress/public/ 下，以 / 开头引用；也可以填完整的 https:// 地址，
+ * 或者 bg-main / bg-cube 两张内置图片。
+ * 默认：背景用 docs/images/bg-main.jpg（Bg.png 的压缩版），封面用 bg-cube。
+ * 只写 background 时，封面也用这张图。
  *
  * 文字、链接、数量等内容在 homeConfig.ts 中修改；布局与样式说明见仓库根目录 CUSTOMIZING.md。
  */
@@ -19,9 +21,8 @@ const props = defineProps<{
   cover?: string
 }>()
 
-const resolveImg = (src?: string) => (!src ? bgCube : src.startsWith('/') ? withBase(src) : src)
-const bgImg = computed(() => `url(${resolveImg(props.background)})`)
-const coverImg = computed(() => `url(${resolveImg(props.cover ?? props.background)})`)
+const bgImg = computed(() => `url(${resolveImage(props.background, bgMain)})`)
+const coverImg = computed(() => `url(${resolveImage(props.cover ?? props.background, bgCube)})`)
 
 const posts = useHomePosts()
 const tags = useHomeTags()

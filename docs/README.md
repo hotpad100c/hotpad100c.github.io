@@ -6,7 +6,7 @@ title: Ryan100c
 config:
   - type: HomeSlant
     # 整页背景 / 首屏封面。图片放进 docs/.vuepress/public/，以 / 开头引用；
-    # 也可以填 https:// 地址。不填则使用 bg-cube。
+    # 也可以填 https:// 地址。不填时背景用 docs/images/bg-main.jpg（Bg.png 的压缩版），封面用 bg-cube。
     # background: /images/home-bg.jpg
     # cover: /images/home-cover.jpg
 ---

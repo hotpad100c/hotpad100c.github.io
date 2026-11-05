@@ -2,7 +2,7 @@
 /**
  * 斜切页面的首屏：左边是 Markdown 正文（插槽），右边是斜切窗口。
  *
- *   <SlantHero label="关于" image="/about/pfp.png">
+ *   <SlantHero label="关于" image="/about/pfp.png" cover="bg-main" image-x="49.95" image-y="47.6" image-size="15.8">
  *
  *   # 你好，我是 Ryan100c
  *
@@ -10,16 +10,58 @@
  *
  *   </SlantHero>
  *
+ * cover：窗口的背景图，可选，默认 bg-cube；可以写 bg-main / bg-cube 或图片地址
  * image：窗口里的前景图（透明 PNG 效果最好），可选
- * cover：窗口的背景图，可选，默认 bg-cube
+ *
+ * 前景图的位置：
+ *   不写 image-size 时，前景图贴着窗口底部、水平居中，高度为窗口的 92%。
+ *   写了 image-size 时为「锚定」模式：前景图钉在背景图上的某一点，窗口怎么裁切都跟着背景图走，
+ *   适合要把头像放进背景图里某个框的情况。
+ *     image-x / image-y：前景图中心在背景图上的位置（百分比，默认 50 / 50）
+ *     image-size：前景图宽度占背景图宽度的百分比
+ *     image-fill：（可选）前景图宽度占窗口宽度的百分比。写了它时窗口变成竖长的平行四边形，
+ *                 背景图以前景图为中心放大到这个比例，前景图始终在窗口正中、不会显得太小。
+ *     window-ratio：（可选，配合 image-fill）窗口的宽:高，默认 5/6；数字越小窗口越高。
  */
-import { computed } from 'vue'
-import { withBase } from 'vuepress/client'
-import { bgCube } from '../home/useHomeData'
+import { computed, onMounted, ref } from 'vue'
+import { bgCube, resolveImage } from '../home/useHomeData'
 
-const props = defineProps<{ label?: string, image?: string, cover?: string }>()
-const resolve = (src?: string) => (!src ? '' : src.startsWith('/') ? withBase(src) : src)
-const coverImg = computed(() => `url(${resolve(props.cover) || bgCube})`)
+const props = defineProps<{
+  label?: string
+  image?: string
+  cover?: string
+  imageX?: number | string
+  imageY?: number | string
+  imageSize?: number | string
+  imageFill?: number | string
+  windowRatio?: string
+}>()
+const coverSrc = computed(() => resolveImage(props.cover, bgCube))
+const coverImg = computed(() => `url(${coverSrc.value})`)
+const imageSrc = computed(() => (props.image ? resolveImage(props.image, '') : ''))
+const anchored = computed(() => props.imageSize !== undefined && props.imageSize !== '')
+
+// 锚定模式需要背景图的宽高比，加载后读取（读到之前按 16:9）
+const ratio = ref(16 / 9)
+onMounted(() => {
+  if (!anchored.value) return
+  const img = new Image()
+  img.onload = () => { if (img.naturalWidth && img.naturalHeight) ratio.value = img.naturalWidth / img.naturalHeight }
+  img.src = coverSrc.value
+})
+const focused = computed(() => anchored.value && props.imageFill !== undefined && props.imageFill !== '')
+const sceneVars = computed(() => ({
+  '--ax': `${Number(props.imageX ?? 50)}%`,
+  '--ay': `${Number(props.imageY ?? 50)}%`,
+  '--fill': Number(props.imageFill ?? 0),
+  '--size': Number(props.imageSize ?? 1),
+  '--window-ratio': props.windowRatio || '5 / 6',
+}))
+const fgStyle = computed(() => ({
+  left: `${Number(props.imageX ?? 50)}%`,
+  top: `${Number(props.imageY ?? 50)}%`,
+  width: `${Number(props.imageSize)}%`,
+}))
 </script>
 
 <template>
@@ -28,9 +70,14 @@ const coverImg = computed(() => `url(${resolve(props.cover) || bgCube})`)
       <p v-if="label" class="sl-label">{{ label }}</p>
       <slot />
     </div>
-    <div class="sl-window" :style="{ '--cover-img': coverImg }" aria-hidden="true">
-      <div class="sl-window-bg" />
-      <img v-if="image" :src="resolve(image)" alt="" class="sl-window-fg">
+    <div class="sl-window" :class="{ 'sl-window-anchored': anchored, 'sl-window-focused': focused }" :style="{ '--cover-img': coverImg, '--ratio': ratio, ...sceneVars }" aria-hidden="true">
+      <div v-if="anchored" class="sl-scene">
+        <img v-if="imageSrc" :src="imageSrc" alt="" class="sl-scene-fg" :style="fgStyle">
+      </div>
+      <template v-else>
+        <div class="sl-window-bg" />
+        <img v-if="imageSrc" :src="imageSrc" alt="" class="sl-window-fg">
+      </template>
     </div>
   </header>
 </template>
@@ -73,6 +120,37 @@ const coverImg = computed(() => `url(${resolve(props.cover) || bgCube})`)
   transform: skewX(var(--sl-unskew)) scale(1.2);
   filter: brightness(0.7);
 }
+/* 锚定模式：背景图和前景图放在同一个「场景」里。场景保持背景图的宽高比，像 cover 一样铺满窗口，
+   前景图的位置和大小都是场景的百分比，所以窗口怎么裁切，前景图都停在背景图的同一位置。 */
+.sl-window-anchored { container-type: size; }
+.sl-scene {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: max(100cqw, 100cqh * var(--ratio));
+  aspect-ratio: var(--ratio);
+  background: var(--cover-img) center / 100% 100% no-repeat;
+  transform: translate(-50%, -50%) skewX(var(--sl-unskew)) scale(1.2);
+}
+/* 放大模式（image-fill）：窗口竖长；场景宽度 = 窗口宽 × fill / size，使前景图占窗口宽度的 fill%；
+   以锚点为变换原点，锚点放在窗口正中，反向倾斜也绕锚点进行，所以头像不会偏离暗框。 */
+.sl-window-focused {
+  aspect-ratio: var(--window-ratio, 5 / 6);
+  width: min(100%, 340px);
+  justify-self: center;
+}
+.sl-window-focused .sl-scene {
+  width: calc(100cqw * var(--fill) / var(--size));
+  transform-origin: var(--ax) var(--ay);
+  transform: translate(calc(-1 * var(--ax)), calc(-1 * var(--ay))) skewX(var(--sl-unskew));
+}
+.sl-scene-fg {
+  position: absolute;
+  height: auto;
+  max-width: none;
+  transform: translate(-50%, -50%);
+  filter: drop-shadow(0 6px 18px rgba(0, 0, 0, 0.6));
+}
 .sl-window-fg {
   position: absolute;
   left: 50%;
@@ -86,6 +164,7 @@ const coverImg = computed(() => `url(${resolve(props.cover) || bgCube})`)
 
 @media (min-width: 960px) {
   .sl-hero { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); gap: 48px; }
-  .sl-window { aspect-ratio: auto; height: clamp(300px, 46vh, 440px); }
+  .sl-window:not(.sl-window-focused) { aspect-ratio: auto; height: clamp(300px, 46vh, 440px); }
+  .sl-window-focused { width: clamp(240px, 24vw, 340px); }
 }
 </style>

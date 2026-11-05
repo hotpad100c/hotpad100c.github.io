@@ -8,6 +8,8 @@
  * title：顶部标题栏里的名称
  * source：原站地址，可选；有的话标题栏里会有「原站」按钮
  * fit：content（默认）高度跟随内容，整页一起滚动；screen 占满一屏，适合编辑器之类的应用
+ * sync-hash：博客地址的 #… 与镜像页面的 #… 双向同步。适合用 #… 切换内容的页面：
+ *            打开 /posts/xxx/#kappa 时镜像直接显示 kappa；在镜像里切换后，博客地址也跟着变，方便分享。
  *
  * 镜像与博客同域，所以这里可以读取 iframe 的内容高度；深浅色由镜像里的桥接脚本跟随博客切换。
  */
@@ -21,7 +23,8 @@ const props = withDefaults(defineProps<{
   label?: string
   fit?: 'content' | 'screen'
   minHeight?: number | string
-}>(), { label: '镜像', fit: 'content', minHeight: 480 })
+  syncHash?: boolean
+}>(), { label: '镜像', fit: 'content', minHeight: 480, syncHash: false })
 
 const frame = ref<HTMLIFrameElement>()
 const ready = ref(false)
@@ -29,6 +32,14 @@ const height = ref(Number(props.minHeight))
 const current = ref(withBase(props.src))
 let ro: ResizeObserver | null = null
 let loads = 0
+let unlistenHash: (() => void) | null = null
+
+/** 把镜像里的 #… 写回博客地址（不新增历史记录，不触发路由） */
+function pushHashToParent(hash: string) {
+  if (hash === window.location.hash) return
+  const url = window.location.pathname + window.location.search + hash
+  window.history.replaceState(window.history.state, '', url)
+}
 
 function measure(doc: Document) {
   // 用 <body> 的高度：<html> 的 scrollHeight 不会小于 iframe 本身的高度，用它的话页面变短后高度降不下来
@@ -49,7 +60,38 @@ function onLoad() {
   if (!doc || doc.URL === 'about:blank') return
   ready.value = true
   loads++
-  try { current.value = el.contentWindow!.location.pathname + el.contentWindow!.location.search } catch {}
+  const win0 = el.contentWindow!
+  try { current.value = win0.location.pathname + win0.location.search + win0.location.hash } catch {}
+
+  if (props.syncHash) {
+    // 第一次加载：博客地址带了 #… 就交给镜像；否则把镜像的默认 #… 写回博客地址
+    if (loads === 1 && window.location.hash && window.location.hash !== win0.location.hash) win0.location.hash = window.location.hash
+    else if (win0.location.hash) pushHashToParent(win0.location.hash)
+    unlistenHash?.()
+    const onHash = () => {
+      pushHashToParent(win0.location.hash)
+      current.value = win0.location.pathname + win0.location.search + win0.location.hash
+    }
+    win0.addEventListener('hashchange', onHash)
+    win0.addEventListener('popstate', onHash)
+    // 有的页面用 history.replaceState / pushState 改 #…，这不会触发 hashchange，所以也包一层
+    const h = win0.history
+    const wrap = (name: 'pushState' | 'replaceState') => {
+      const orig = h[name]
+      h[name] = function (this: History, ...args: Parameters<History['pushState']>) {
+        const r = orig.apply(this, args)
+        onHash()
+        return r
+      } as History['pushState']
+      return () => { h[name] = orig }
+    }
+    const restore = [wrap('pushState'), wrap('replaceState')]
+    unlistenHash = () => {
+      win0.removeEventListener('hashchange', onHash)
+      win0.removeEventListener('popstate', onHash)
+      restore.forEach(f => f())
+    }
+  }
   // 在镜像里点进了另一个页面：滚回到镜像顶部
   if (loads > 1) el.closest('.mf')?.scrollIntoView({ block: 'start' })
 
@@ -67,7 +109,7 @@ onMounted(() => {
   const doc = frame.value?.contentDocument
   if (doc && doc.readyState === 'complete') onLoad()
 })
-onBeforeUnmount(() => ro?.disconnect())
+onBeforeUnmount(() => { ro?.disconnect(); unlistenHash?.() })
 </script>
 
 <template>
@@ -96,7 +138,7 @@ onBeforeUnmount(() => ro?.disconnect())
 .mf {
   position: relative;
   background: var(--sl-bg);
-  border-bottom: 1px solid var(--sl-line);
+  border: 1px solid var(--sl-line);
 }
 .mf-bar {
   display: flex;

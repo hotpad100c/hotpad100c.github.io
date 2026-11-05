@@ -100,7 +100,7 @@ SphereShape coolSphere =
 
 只要你持有图形实例，就可以在任意逻辑体系中自由修改这些属性，从而实时影响图形在下一帧中的表现形式。
 
-<LinkCard title="变换器" href="https://hotpad100c.github.io/RyansRenderingKit/Transformer" description="变换器特性介绍" />
+<LinkCard title="变换器" href="/RyansRenderingKit/Transformer/" description="变换器特性介绍" />
 
 
 #### 存储数据
