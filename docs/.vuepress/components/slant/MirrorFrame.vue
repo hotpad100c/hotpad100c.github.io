@@ -8,6 +8,7 @@
  * title：顶部标题栏里的名称
  * source：原站地址，可选；有的话标题栏里会有「原站」按钮
  * fit：content（默认）高度跟随内容，整页一起滚动；screen 占满一屏，适合编辑器之类的应用
+ * 插槽（可选）：显示在镜像下方的底栏，例如署名和指向原站的链接。
  * sync-hash：博客地址的 #… 与镜像页面的 #… 双向同步。适合用 #… 切换内容的页面：
  *            打开 /posts/xxx/#kappa 时镜像直接显示 kappa；在镜像里切换后，博客地址也跟着变，方便分享。
  *
@@ -32,6 +33,8 @@ const height = ref(Number(props.minHeight))
 const current = ref(withBase(props.src))
 let ro: ResizeObserver | null = null
 let loads = 0
+// 防止「内容高度跟着 iframe 高度一起长」的循环（镜像页面里有跟视口挂钩的高度时会出现）
+let growth = { count: 0, since: 0 }
 let unlistenHash: (() => void) | null = null
 
 /** 把镜像里的 #… 写回博客地址（不新增历史记录，不触发路由） */
@@ -49,7 +52,18 @@ function measure(doc: Document) {
   const margin = style ? (parseFloat(style.marginTop) || 0) + (parseFloat(style.marginBottom) || 0) : 0
   const h = Math.max(body.scrollHeight, body.getBoundingClientRect().height) + margin
   const next = Math.max(Number(props.minHeight), Math.ceil(h))
-  if (Math.abs(next - height.value) > 1) height.value = next
+  if (Math.abs(next - height.value) <= 1) return
+  const now = Date.now()
+  if (next > height.value) {
+    if (now - growth.since > 2000) growth = { count: 0, since: now }
+    // 2 秒内连续变高 40 次，或者超过 10 万像素：判定为循环，停止跟随
+    if (++growth.count > 40 || next > 100000) {
+      ro?.disconnect()
+      console.warn('[MirrorFrame] 镜像页面的高度在不断增长，已停止自适应高度：', props.src)
+      return
+    }
+  }
+  height.value = next
 }
 
 function onLoad() {
@@ -131,6 +145,7 @@ onBeforeUnmount(() => { ro?.disconnect(); unlistenHash?.() })
       allow="clipboard-write; fullscreen"
       @load="onLoad"
     />
+    <div v-if="$slots.default" class="mf-foot"><slot /></div>
   </div>
 </template>
 
@@ -172,7 +187,19 @@ onBeforeUnmount(() => { ro?.disconnect(); unlistenHash?.() })
   transition: opacity 0.2s;
 }
 .mf-frame.ready { opacity: 1; }
+.mf-foot {
+  padding: 12px max(16px, 3vw);
+  background: var(--sl-panel);
+  border-top: 1px solid var(--sl-line);
+  font-family: var(--sl-mono);
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--sl-fg-2);
+}
+.mf-foot :deep(a) { color: var(--sl-accent); overflow-wrap: anywhere; }
+.mf-foot :deep(p) { margin: 0; }
 .mf-screen .mf-frame { height: calc(100vh - var(--vp-nav-height, 64px) - 49px); min-height: 420px; }
+.mf-screen:has(.mf-foot) .mf-frame { height: calc(100vh - var(--vp-nav-height, 64px) - 49px - 46px); }
 @media (max-width: 959px) {
   .mf-screen .mf-frame { height: calc(100vh - var(--vp-nav-height, 64px) - 49px - 40px); }
 }

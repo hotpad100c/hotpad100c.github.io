@@ -132,7 +132,7 @@ export const navData = [
         title: 'TMCWords-Search',
         description: '技术向Minecraft术语表',
         detail: '这个项目从https://github.com/DuskScorpio/TechMC-Glossary/blob/main/TechMC%20Glossary.csv拉取TMC术语并提供搜索功能', 
-        url: 'https://hotpad100c.github.io/TMCWords-Search/',
+        url: '/tools/tmcwords-search/',
         cover: 'https://i.postimg.cc/FzvDk0Qr/IMG-0767.jpg'
       },
       {
@@ -140,7 +140,7 @@ export const navData = [
         title: 'GTMC Wiki',
         description: '技术向Minecraft教程集',
         detail: '仍在编写的Minecraft技术教程集，欢迎你的贡献！', 
-        url: 'https://techmc.wiki',
+        url: '/tools/gtmc/',
         cover: 'https://i.postimg.cc/sxzwG5Rf/IMG-0766.jpg'
       },
       {
@@ -157,7 +157,7 @@ export const navData = [
         description: '什么？',
         detail: '什么，为什么要在博客里看博客?！', 
         url: '/app/blog-in-blog/',
-        cover: 'https://i.imgur.com/4cqHElU.jpeg'
+        cover: '/projects/blog-in-blog.webp'
       },
       {
         id: 'FlashbackCamGen',
