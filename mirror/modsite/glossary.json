@@ -1,0 +1,74 @@
+[
+  {
+    "term": "Redstone Dust",
+    "translation": "红石粉"
+  },
+  {
+    "term": "redstone dust",
+    "translation": "红石粉"
+  },
+  {
+    "term": "Dust",
+    "translation": "红石粉"
+  },
+  {
+    "term": "dust",
+    "translation": "红石粉"
+  },
+  {
+    "term": "Fake Players",
+    "translation": "假人"
+  },
+  {
+    "term": "Fake Player",
+    "translation": "假人"
+  },
+  {
+    "term": "fake players",
+    "translation": "假人"
+  },
+  {
+    "term": "fake player",
+    "translation": "假人"
+  },
+  {
+    "term": "ScheduledTick",
+    "translation": "计划刻 (ScheduledTick)"
+  },
+  {
+    "term": "Scheduled Ticks",
+    "translation": "计划刻"
+  },
+  {
+    "term": "Scheduled Tick",
+    "translation": "计划刻"
+  },
+  {
+    "term": "GameEvents",
+    "translation": "游戏事件 (GameEvents)"
+  },
+  {
+    "term": "GameEvent",
+    "translation": "游戏事件 (GameEvent)"
+  },
+  {
+    "term": "HUD",
+    "translation": "HUD 界面"
+  },
+  {
+    "term": "tick rate",
+    "translation": "游戏刻速率"
+  },
+  {
+    "term": "Tick",
+    "translation": "游戏刻"
+  },
+  {
+    "term": "ticks",
+    "translation": "游戏刻"
+  },
+  {
+    "term": "Comparator",
+    "translation": "红石比较器"
+  }
+]

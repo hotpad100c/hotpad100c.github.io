@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TechMC Glossary Search</title>
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <style>
+        @font-face {
+            font-family: 'PerfectlyScratchy';
+            src: url('fonts/perfectly-scratchy.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            padding: 40px 20px;
+            background-color: #0a4a7a;
+            background-image: 
+                repeating-linear-gradient(0deg, transparent, transparent 19px, rgba(255,255,255,0.08) 19px, rgba(255,255,255,0.08) 20px),
+                repeating-linear-gradient(90deg, transparent, transparent 19px, rgba(255,255,255,0.08) 19px, rgba(255,255,255,0.08) 20px),
+                repeating-linear-gradient(0deg, transparent, transparent 99px, rgba(255,255,255,0.15) 99px, rgba(255,255,255,0.15) 100px),
+                repeating-linear-gradient(90deg, transparent, transparent 99px, rgba(255,255,255,0.15) 99px, rgba(255,255,255,0.15) 100px);
+            background-size: 20px 20px, 20px 20px, 100px 100px, 100px 100px;
+            color: #e0f2ff;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+            background-size: 50px 50px;
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container {
+            position: relative;
+            z-index: 1;
+        }
+        
+        h1 {
+            font-family: 'Courier New', monospace;
+            font-size: clamp(2em, 6vw, 4.5em);
+            color: #fff;
+            text-align: center;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            font-weight: 700;
+            text-shadow: 0 0 10px rgba(102, 204, 255, 0.8),
+                         2px 2px 0 rgba(0,0,0,0.3);
+            border-top: 3px double #66ccff;
+            border-bottom: 3px double #66ccff;
+            padding: 20px 0;
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 0.9em;
+            color: #a0d0f0;
+            margin-bottom: 40px;
+            letter-spacing: 0.3em;
+            text-transform: uppercase;
+        }
+        
+        .search-container {
+            max-width: 1200px;
+            margin: 0 auto 30px;
+            display: grid;
+            grid-template-columns: 1fr auto auto;
+            gap: 15px;
+            align-items: center;
+        }
+        
+        @media (max-width: 768px) {
+            .search-container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        input[type="text"] {
+            padding: 12px 15px;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            border: 2px solid #66ccff;
+            background: #0d3a5f;
+            color: #e0f2ff;
+            transition: all 0.3s ease;
+            width: 100%;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3),
+                        0 0 0 1px rgba(102, 204, 255, 0.3);
+        }
+        
+        input[type="text"]::placeholder {
+            color: #6b9fcc;
+            font-style: italic;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #99ddff;
+            background: #0f4570;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3),
+                        0 0 0 2px #66ccff,
+                        0 0 15px rgba(102, 204, 255, 0.5);
+        }
+        
+        select {
+            padding: 12px 15px;
+            font-size: 16px;
+            font-family: 'Courier New', monospace;
+            border: 2px solid #66ccff;
+            background: #0d3a5f;
+            color: #e0f2ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            appearance: none;
+            background-image: 
+                linear-gradient(45deg, transparent 50%, #66ccff 50%),
+                linear-gradient(-45deg, #66ccff 50%, transparent 50%);
+            background-size: 6px 6px, 6px 6px;
+            background-repeat: no-repeat;
+            background-position: right 12px top 50%, right 7px top 50%;
+            padding-right: 35px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3),
+                        0 0 0 1px rgba(102, 204, 255, 0.3);
+        }
+        
+        select:hover {
+            border-color: #99ddff;
+            background-color: #0f4570;
+        }
+        
+        select:focus {
+            outline: none;
+            border-color: #99ddff;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3),
+                        0 0 0 2px #66ccff,
+                        0 0 15px rgba(102, 204, 255, 0.5);
+        }
+        
+        select option {
+            background: #0d3a5f;
+            color: #e0f2ff;
+            padding: 10px;
+        }
+        
+        #columnSelectors {
+            max-width: 1200px;
+            margin: 0 auto 30px;
+            padding: 20px;
+            background: #0d3a5f;
+            border: 2px solid #66ccff;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3),
+                        0 0 0 1px rgba(102, 204, 255, 0.3);
+            position: relative;
+        }
+        
+        #columnSelectors::before {
+            content: 'DISPLAY OPTIONS';
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #0a4a7a;
+            padding: 0 10px;
+            font-size: 0.75em;
+            color: #66ccff;
+            letter-spacing: 0.2em;
+            font-weight: 700;
+        }
+        
+        #columnSelectors p {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        #columnSelectors label {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            transition: color 0.3s ease;
+            padding: 5px 10px;
+            user-select: none;
+            font-size: 0.95em;
+            letter-spacing: 0.05em;
+        }
+        
+        #columnSelectors label:hover {
+            color: #66ccff;
+        }
+        
+        input[type="checkbox"] {
+            margin-right: 10px;
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+            appearance: none;
+            border: 2px solid #66ccff;
+            background: #0d3a5f;
+            position: relative;
+        }
+        
+        input[type="checkbox"]:checked::after {
+            content: '';
+            position: absolute;
+            left: 2px;
+            top: 2px;
+            right: 2px;
+            bottom: 2px;
+            background: #66ccff;
+        }
+        
+        input[type="checkbox"]:hover {
+            box-shadow: 0 0 5px rgba(102, 204, 255, 0.5);
+        }
+        
+        a {
+            color: #66ccff;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            border-bottom: 1px dashed #66ccff;
+        }
+        
+        a:hover {
+            color: #99ddff;
+            border-bottom-style: solid;
+        }
+        
+        .data-source {
+            text-align: center;
+            margin: 20px auto;
+            max-width: 1200px;
+            padding: 15px;
+            background: #0d3a5f;
+            border: 2px solid #66ccff;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3),
+                        0 0 0 1px rgba(102, 204, 255, 0.3);
+            font-size: 0.9em;
+            position: relative;
+        }
+        
+        .data-source::before {
+            content: 'DATA SOURCE';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #0a4a7a;
+            padding: 0 10px;
+            font-size: 0.85em;
+            color: #66ccff;
+            letter-spacing: 0.2em;
+            font-weight: 700;
+        }
+        
+        #loadingBar {
+            max-width: 1200px;
+            margin: 0 auto 20px;
+            height: 4px;
+            background: #0d3a5f;
+            border: 1px solid #66ccff;
+            overflow: hidden;
+            display: none;
+        }
+
+        .progress-bar {
+            width: 25%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                #66ccff,
+                #66ccff 10px,
+                #3498db 10px,
+                #3498db 20px
+            );
+            animation: indeterminate 1.5s infinite linear;
+        }
+
+        @keyframes indeterminate {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(400%); }
+        }
+        
+        .table-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            overflow-x: auto;
+            background: #0d3a5f;
+            border: 2px solid #66ccff;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3),
+                        0 0 0 1px rgba(102, 204, 255, 0.3);
+            position: relative;
+        }
+        
+        .table-container::before {
+            content: 'GLOSSARY DATABASE';
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: #0a4a7a;
+            padding: 0 10px;
+            font-size: 0.75em;
+            color: #66ccff;
+            letter-spacing: 0.2em;
+            font-weight: 700;
+            z-index: 10;
+        }
+        
+        table {
+            border-collapse: collapse;
+            width: 100%;
+            font-size: 0.95em;
+        }
+        
+        th {
+            background: #0a3555;
+            padding: 12px 15px;
+            text-align: left;
+            font-weight: 700;
+            border-bottom: 2px solid #66ccff;
+            border-right: 1px solid rgba(102, 204, 255, 0.3);
+            position: sticky;
+            top: 0;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.1em;
+            color: #99ddff;
+        }
+        
+        th:last-child {
+            border-right: none;
+        }
+        
+        td {
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(102, 204, 255, 0.2);
+            border-right: 1px solid rgba(102, 204, 255, 0.15);
+        }
+        
+        td:last-child {
+            border-right: none;
+        }
+        
+        tbody tr {
+            transition: all 0.2s ease;
+        }
+        
+        tbody tr:hover {
+            background: #0f4570;
+            box-shadow: inset 0 0 10px rgba(102, 204, 255, 0.2);
+        }
+        
+        .no-result {
+            text-align: center;
+            color: #6b9fcc;
+            padding: 40px;
+            font-style: italic;
+        }
+        
+        button {
+            margin-top: 20px;
+            padding: 12px 24px;
+            font-size: 1em;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            border: 2px solid #66ccff;
+            background: #0d3a5f;
+            color: #e0f2ff;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3),
+                        0 0 0 1px rgba(102, 204, 255, 0.3);
+        }
+
+        button:hover {
+            background: #0f4570;
+            border-color: #99ddff;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.3),
+                        0 0 0 2px #66ccff,
+                        0 0 15px rgba(102, 204, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+        
+        #category-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            max-width: 1200px;
+            margin: auto auto 0px;
+        }
+        
+        #category-buttons button {
+            padding: 8px 14px;
+            font-size: 0.85em;
+            margin-top: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>TechMC Glossary</h1>
+        <div class="subtitle">Multilingual Glossary of Minecraft Technical Terms</div>
+        
+        <div class="search-container">
+            <input type="text" id="searchBox" placeholder="Enter search keywords..." />
+            <select id="category-buttons"></select>
+            <select id="langSelector">
+                <option value="en">EN — English</option>
+                <option value="zh">ZH — 中文</option>
+                <option value="ar">AR — العربية</option>
+                <option value="fr">FR — Français</option>
+                <option value="de">DE — Deutsch</option>
+                <option value="it">IT — Italiano</option>
+                <option value="ja">JA — 日本語</option>
+                <option value="ko">KO — 한국어</option>
+                <option value="pt">PT — Português</option>
+                <option value="ru">RU — Русский</option>
+                <option value="es">ES — Español</option>
+            </select>
+        </div>
+
+        <div id="columnSelectors">
+            <p><label><input type="checkbox" data-col="short" checked> SHORT FORM</label></p>
+            <p><label><input type="checkbox" data-col="fullEnglish" checked> FULL FORM (ENGLISH)</label></p>
+            <p><label><input type="checkbox" data-col="full" checked> FULL FORM (LOCAL)</label></p>
+            <p><label><input type="checkbox" data-col="desc" checked> DESCRIPTION</label></p>
+        </div>
+
+        <div class="data-source">
+            <p>Repository: <a href="https://github.com/DuskScorpio/TechMC-Glossary" target="_blank">DuskScorpio/TechMC-Glossary</a></p>
+        </div>
+        
+        <div id="loadingBar">
+            <div class="progress-bar"></div>
+        </div>
+        
+        <div class="table-container">
+            <table id="resultTable">
+                <thead>
+                    <tr>
+                        <th>Short Form</th>
+                        <th>Full Form (English)</th>
+                        <th>Full Form (Local)</th>
+                        <th>Description</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="lang.js"></script>
+    <script src="main.js"></script>
+<link rel="stylesheet" href="./__blog-theme.css" data-blog-mirror><script src="./__blog-bridge.js" data-blog-mirror></script>
+</body>
+</html>

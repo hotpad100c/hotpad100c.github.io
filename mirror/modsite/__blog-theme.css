@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@0,900;1,900&display=swap');
+/*
+ * modsite（https://modsite-4x9.pages.dev/）的博客风格覆盖。
+ * 由 scripts/mirror.mjs 复制为镜像里的 __blog-theme.css，在原样式之后加载。
+ * 只替换原站的颜色变量、字体和少量形状，不改动布局。
+ */
+:root, :root[data-theme="dark"] {
+  --bg: #0b0910;
+  --surface: #100d18;
+  --surface-raised: #16121f;
+  --surface-overlay: #1d1828;
+  --text: #efe9fd;
+  --muted: #a197bd;
+  --line: #2a2340;
+  --line-bright: #4a3c70;
+  --accent: #b59cf2;
+  --accent-hover: #cbb8f8;
+  --accent-dim: #7a5cc0;
+  --accent-glow: rgba(181, 156, 242, 0.18);
+  --text-strong: #ffffff;
+  --text-soft: #ded4f2;
+  --on-accent: #0b0910;
+  --accent-soft: rgba(181, 156, 242, 0.16);
+  --code-bg: #120f1b;
+  --bg-glow: transparent;
+  --bg-glow-2: transparent;
+  --bg-rgb: 11, 9, 16;
+  --surface-rgb: 16, 13, 24;
+  --raised-rgb: 22, 18, 31;
+  --muted-rgb: 161, 151, 189;
+  --line-rgb: 181, 156, 242;
+  --accent-rgb: 181, 156, 242;
+  --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --blog-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  --blog-display: 'Playfair Display', 'Noto Serif SC', serif;
+  --blog-cut: 5px;
+}
+:root[data-theme="light"] {
+  --bg: #efe9fb;
+  --surface: #f8f5fe;
+  --surface-raised: #ebe4f8;
+  --surface-overlay: #e4dbf6;
+  --text: #1d1534;
+  --muted: #5b5078;
+  --line: #d6cbee;
+  --line-bright: #b3a0de;
+  --accent: #5d3b99;
+  --accent-hover: #4a2f7d;
+  --accent-dim: #9174c5;
+  --accent-glow: rgba(93, 59, 153, 0.14);
+  --text-strong: #120c1f;
+  --text-soft: #3b3050;
+  --on-accent: #ffffff;
+  --accent-soft: rgba(93, 59, 153, 0.12);
+  --code-bg: #e8e0f8;
+  --bg-rgb: 239, 233, 251;
+  --surface-rgb: 248, 245, 254;
+  --raised-rgb: 235, 228, 248;
+  --muted-rgb: 91, 80, 120;
+  --line-rgb: 93, 59, 153;
+  --accent-rgb: 93, 59, 153;
+}
+
+* { border-radius: 0 !important; }
+body { background: var(--bg) !important; }
+
+/* 标题用衬线 */
+h1, h2, h3,
+.mod-card h2,
+.mod-banner h1,
+.mod-introduction h2,
+.download-panel h2 {
+  font-family: var(--blog-serif) !important;
+  letter-spacing: 0 !important;
+}
+.home-intro h1 { font-weight: 900; }
+
+/* 平行四边形：切换按钮、标签、下载按钮、翻译按钮 */
+.lang-switch,
+.view-toggle,
+.tag,
+.download,
+.btn-toggle-trans,
+.mod-banner__source,
+.back-link,
+.content-trans-badge {
+  clip-path: polygon(var(--blog-cut) 0, 100% 0, calc(100% - var(--blog-cut)) 100%, 0 100%);
+}
+.tag { padding-inline: 10px !important; }
+.download, .btn-toggle-trans { padding-inline: 16px !important; }
+
+/* 原站的装饰光晕与卡片角标 */
+.mod-card::after { display: none !important; }
+
+/* 在博客里打开时：深浅色由博客控制，隐藏原站的主题按钮 */
+.blog-mirror-framed .theme-toggle,
+.blog-mirror-framed .brand__mark { display: none !important; }
+/* 在 iframe 里高度由内容决定，避免 100vh 造成循环增高 */
+.blog-mirror-framed body { min-height: 0 !important; }

@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@0,900;1,900&display=swap');
+/*
+ * shader-escape（https://shader-escape.github.io/emergency-exit/render-scale/）的博客风格覆盖。
+ * 由 scripts/mirror.mjs 复制为镜像里的 __blog-theme.css，在原样式之后加载。
+ * 只替换中性色（背景、文字、线、代码底色）、字体和圆角。
+ * --depth / --probe / --pack / --merge / --bad 和各泳道底色表示图里不同的步骤，保持原样。
+ */
+:root, :root[data-theme="light"] {
+  --bg: #efe9fb;
+  --surface: #f8f5fe;
+  --fg: #1d1534;
+  --muted: #5b5078;
+  --line: #d6cbee;
+  --code-bg: #e4dbf6;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Mono', Consolas, monospace;
+  --blog-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  --blog-cut: 5px;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #0b0910;
+  --surface: #100d18;
+  --fg: #efe9fd;
+  --muted: #a197bd;
+  --line: #2a2340;
+  --code-bg: #1d1828;
+  color-scheme: dark;
+}
+
+* { border-radius: 0 !important; }
+body { background: var(--bg) !important; }
+
+/* 标题用衬线 */
+h1, h2, h3 { font-family: var(--blog-serif); }
+h1 { font-weight: 900; }
+
+/* 标签与切换按钮组为平行四边形，选中项用博客的强调色 */
+.tag, .variants, #zoom-close {
+  clip-path: polygon(var(--blog-cut) 0, 100% 0, calc(100% - var(--blog-cut)) 100%, 0 100%);
+}
+.tag { padding-inline: 0.8em !important; }
+.variants { border: none !important; background: var(--code-bg); }
+.toolbar .variants button { padding-inline: 1em; }
+.toolbar .variants button[aria-pressed="true"] { background: #5d3b99 !important; color: #ffffff !important; }
+:root[data-theme="dark"] .toolbar .variants button[aria-pressed="true"] { background: #b59cf2 !important; color: #0b0910 !important; }
+
+/* 在 iframe 里高度由内容决定 */
+.blog-mirror-framed body { min-height: 0 !important; }

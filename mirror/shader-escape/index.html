@@ -1,0 +1,4024 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>EXIT 绕过光影的一帧</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+
+:root {
+  --bg: #f4f6fa;
+  --surface: #ffffff;
+  --fg: #1a2033;
+  --muted: #5b6478;
+  --line: #d8deea;
+  --depth: #2f4fc4;   /* EXIT 的深度处理 */
+  --probe: #c97a12;   /* 缩放测量 */
+  --pack: #6b4fa8;    /* 光影自己的步骤 */
+  --merge: #2c8a55;   /* 合并 */
+  --bad: #b8433a;
+  --code-bg: #e9edf5;
+  --lane-a: #f1edf9; --lane-b: #eaeffc; --lane-c: #f7f1e6; --lane-d: #e8f4ed;
+  --font-body: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #10131c; --surface: #181c28; --fg: #e3e7f1; --muted: #9aa3b8; --line: #2b3142;
+    --depth: #8ea4ff; --probe: #f0a845; --pack: #b79cf0; --merge: #6fcf97; --bad: #ef8a80; --code-bg: #20263a;
+    --lane-a: #1b1828; --lane-b: #161c2e; --lane-c: #211d17; --lane-d: #15221b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #10131c; --surface: #181c28; --fg: #e3e7f1; --muted: #9aa3b8; --line: #2b3142;
+  --depth: #8ea4ff; --probe: #f0a845; --pack: #b79cf0; --merge: #6fcf97; --bad: #ef8a80; --code-bg: #20263a;
+  --lane-a: #1b1828; --lane-b: #161c2e; --lane-c: #211d17; --lane-d: #15221b;
+  color-scheme: dark;
+}
+
+body { background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 16px; line-height: 1.75; }
+.page {
+  max-width: 76rem; margin: 0 auto; padding-block: 2.5rem 4rem;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid; gap: 2.75rem;
+}
+.prose { max-width: 46em; min-width: 0; }
+h1, h2, h3 { text-wrap: balance; line-height: 1.3; margin: 0; }
+h1 { font-size: 2rem; }
+h2 { font-size: 1.4rem; }
+h3 { font-size: 1.05rem; }
+p { margin: 0; }
+.stack { display: grid; gap: 1rem; }
+.eyebrow { font-family: var(--font-mono); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+code { font-family: var(--font-mono); font-size: 0.86em; background: var(--code-bg); padding: 0.1em 0.35em; border-radius: 4px; overflow-wrap: anywhere; }
+button:focus-visible, a:focus-visible, .node img:focus-visible { outline: 2px solid var(--probe); outline-offset: 2px; }
+ul.plain { margin: 0; padding-left: 1.2em; display: grid; gap: 0.35rem; }
+
+.pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+@media (max-width: 720px) { .pair { grid-template-columns: 1fr; } }
+figure { margin: 0; display: grid; gap: 0.5rem; min-width: 0; }
+figure img { display: block; width: 100%; aspect-ratio: 854 / 480; border-radius: 6px; border: 1px solid var(--line); background: #000; }
+figcaption { font-size: 0.88rem; color: var(--muted); line-height: 1.6; }
+.tag { display: inline-block; font-family: var(--font-mono); font-size: 0.72rem; font-weight: 500; letter-spacing: 0.04em;
+  padding: 0.05em 0.5em; border-radius: 999px; margin-right: 0.4em; border: 1px solid currentColor; }
+.tag.bad { color: var(--bad); }
+.tag.good { color: var(--merge); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 0.5rem 1.5rem; font-size: 0.88rem; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 0.45rem; }
+.swatch { width: 1.6rem; height: 0; border-top: 2.5px solid; display: inline-block; }
+.swatch.dash { border-top-style: dashed; }
+.chip { width: 0.9rem; height: 0.9rem; border-radius: 3px; display: inline-block; border: 1px solid var(--line); }
+
+.flow-scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); }
+.flow {
+  position: relative; min-width: 84rem; padding: 0.75rem;
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); column-gap: 5.5rem; row-gap: 2.2rem;
+}
+.lane-bg { border-radius: 8px; margin: -0.25rem -1.2rem; z-index: 0; }
+.lane-head {
+  grid-row: 1; z-index: 2; font-weight: 700; font-size: 0.95rem; padding: 0.35rem 0.25rem 0;
+  display: grid; gap: 0.1rem;
+}
+.lane-head small { font-weight: 400; color: var(--muted); font-size: 0.78rem; line-height: 1.5; }
+svg.edges { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; overflow: visible; }
+svg.edge-labels { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; overflow: visible; }
+svg.edges text, svg.edge-labels text { font-family: var(--font-body); font-size: 12px; }
+.node {
+  position: relative; z-index: 2; background: var(--surface); border: 1.5px solid var(--line); border-radius: 8px;
+  padding: 0.6rem 0.7rem 0.7rem; display: grid; gap: 0.45rem; align-content: start; align-self: start; min-width: 0;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.node[data-kind="pack"] { border-color: var(--pack); }
+.node[data-kind="depth"] { border-color: var(--depth); }
+.node[data-kind="probe"] { border-color: var(--probe); }
+.node[data-kind="channel"] { border-color: var(--line); border-left: 4px solid var(--depth); }
+.node[data-kind="merge"] { border-color: var(--merge); }
+.node .when { font-family: var(--font-mono); font-size: 0.7rem; color: var(--muted); letter-spacing: 0.02em; }
+.node h3 { font-size: 0.93rem; }
+.node p { font-size: 0.82rem; line-height: 1.6; color: var(--muted); }
+.node .imgs { display: grid; gap: 0.35rem; grid-template-columns: repeat(var(--n, 1), minmax(0, 1fr)); }
+.node .imgs figure { gap: 0.15rem; }
+.node .imgs img { cursor: zoom-in; border-radius: 4px; }
+.node .crop { position: relative; overflow: hidden; border-radius: 4px; border: 1px solid var(--line); background: #000; max-width: 100%; }
+.node .crop img { position: absolute; max-width: none; aspect-ratio: auto; height: auto; border: none; border-radius: 0; }
+.node .imgs figcaption { font-size: 0.7rem; line-height: 1.4; }
+.node code { font-size: 0.78em; }
+
+/* 放大查看 */
+dialog.zoom { border: none; padding: 0; background: transparent; max-width: min(96vw, 1300px); }
+dialog.zoom::backdrop { background: rgba(8, 10, 18, 0.82); }
+dialog.zoom figure { background: var(--surface); padding: 0.75rem; border-radius: 10px; }
+dialog.zoom img { width: 100%; height: auto; }
+dialog.zoom figcaption { color: var(--fg); font-size: 0.95rem; }
+dialog.zoom button { justify-self: end; font: inherit; font-size: 0.85rem; background: var(--code-bg); color: var(--fg);
+  border: 1px solid var(--line); border-radius: 6px; padding: 0.2rem 0.8rem; cursor: pointer; }
+
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem 0.75rem; }
+.toolbar button {
+  font: inherit; font-size: 0.88rem; color: var(--fg); background: var(--surface); border: 1px solid var(--line);
+  border-radius: 6px; padding: 0.3rem 0.9rem; cursor: pointer;
+}
+.toolbar button:hover { border-color: var(--depth); }
+.toolbar button[aria-pressed="true"] { background: var(--depth); border-color: var(--depth); color: var(--surface); }
+.variants { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; }
+.toolbar .variants button { border: none; border-radius: 0; }
+.toolbar .variants button + button { border-left: 1px solid var(--line); }
+.toolbar .variants button[aria-pressed="true"] { background: var(--fg); color: var(--surface); }
+.node .boxed { position: relative; }
+.node .region { position: absolute; border: 2px dashed var(--probe); pointer-events: none; box-sizing: border-box; }
+.flow-empty { grid-column: 1 / -1; grid-row: 2; z-index: 2; padding: 1.5rem; color: var(--muted); }
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; font-size: 0.9rem; font-variant-numeric: tabular-nums; min-width: 32rem; }
+th, td { text-align: left; padding: 0.4rem 0.9rem 0.4rem 0; border-bottom: 1px solid var(--line); }
+th { font-weight: 500; color: var(--muted); }
+td.num { font-family: var(--font-mono); }
+.note { border-left: 3px solid var(--line); padding: 0.25rem 0 0.25rem 1rem; color: var(--muted); font-size: 0.92rem; }
+@media (prefers-reduced-motion: no-preference) { .node { transition: box-shadow 0.15s; } .node:hover { box-shadow: 0 2px 10px rgba(0,0,0,0.12); } }
+html[data-lang="en"] [lang="zh-CN"], html[data-lang="zh"] [lang="en"] { display: none !important; }
+</style>
+</head>
+<body>
+
+<main class="page">
+
+  <header class="stack">
+    <div class="toolbar">
+      <div class="variants" id="langs" role="group" aria-label="Language"><button type="button" data-lang="en">English</button><button type="button" data-lang="zh">中文</button></div>
+    </div>
+  </header>
+
+  <section class="stack" aria-labelledby="flow-title">
+    <h2 id="flow-title"><span lang="en">Flowchart: one frame from start to end</span><span lang="zh-CN">流程图：一帧从头到尾</span></h2>
+    <div class="legend">
+      <span><i class="swatch" style="border-color: var(--pack)"></i><span lang="en">the pack's own steps</span><span lang="zh-CN">光影自己的步骤</span></span>
+      <span><i class="swatch" style="border-color: var(--depth)"></i><span lang="en">copying and using depth</span><span lang="zh-CN">深度的复制和使用</span></span>
+      <span><i class="swatch dash" style="border-color: var(--probe)"></i><span lang="en">scale measurement (once, after changing the pack or the window)</span><span lang="zh-CN">缩放测量（换光影或改窗口后一次）</span></span>
+      <span><i class="swatch" style="border-color: var(--merge)"></i><span lang="en">merge</span><span lang="zh-CN">合并</span></span>
+      <span><span lang="en">Depth map: nearer is whiter, far is dark blue; <span style="color: var(--probe)">orange</span> marks the area; the dashed orange box is where the pack actually drew; a checkerboard is transparent</span><span lang="zh-CN">深度图：越近越白，远处是深蓝；<span style="color: var(--probe)">橙色</span>是标出的区域；橙色虚线框是光影实际画到的区域；棋盘格是透明</span></span>
+    </div>
+    <div class="toolbar" role="toolbar" aria-label="Flowchart controls">
+      <div class="variants" id="variants" role="group" aria-label="Scene"></div>
+    </div>
+    <div class="flow-scroll">
+      <div class="flow" id="flow">
+        <svg class="edges" id="edges" aria-hidden="true"></svg>
+        <svg class="edge-labels" id="edge-labels" aria-hidden="true"></svg>
+      </div>
+    </div>
+    <p class="note" lang="en">Click a picture to enlarge it. On narrow screens the flowchart scrolls sideways. Pictures are exported from the same frame by <code>FrameDump</code> in the smoke test. Window 854×480: the normal pack uses <code>./gradlew :fabric:runSmokeClient</code> with BSL v8.4; Kappa uses <code>./gradlew :fabric:runSmokeClient</code> with Kappa v5.3; Super Resolution uses <code>./gradlew :fabric:runSmokeClient -Pexit.superResolution</code> with Sundial Lite 1.2 and FSR2 (upscale factor 1.21).</p>
+    <p class="note" lang="zh-CN">点图片可以放大。窄屏上流程图可以左右滑动。图片由冒烟测试里的 <code>FrameDump</code> 从同一帧导出，窗口 854×480：普通光影用 <code>./gradlew :fabric:runSmokeClient</code> 和 BSL v8.4；Kappa 用 <code>./gradlew :fabric:runSmokeClient</code> 和 Kappa v5.3；Super Resolution 用 <code>./gradlew :fabric:runSmokeClient -Pexit.superResolution</code>、Sundial Lite 1.2 和 FSR2（放大倍数 1.21）。</p>
+  </section>
+
+  <dialog class="zoom" id="zoom">
+    <figure>
+      <button type="button" id="zoom-close">关闭</button>
+      <img id="zoom-img" alt="">
+      <figcaption id="zoom-cap"></figcaption>
+    </figure>
+  </dialog>
+</main>
+
+<script type="application/json" id="flow-bsl-en">
+{
+  "lanes": [
+    {
+      "name": "Shader pack (Iris)",
+      "sub": "the pack draws the world with its own shaders"
+    },
+    {
+      "name": "Scene depth",
+      "sub": "depth EXIT copies while the pack is halfway through the frame"
+    },
+    {
+      "name": "EXIT channels",
+      "sub": "the mod's own objects, drawn with vanilla shaders"
+    },
+    {
+      "name": "Merge",
+      "sub": "at the end of the frame, blended back over the pack's image by depth"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "shadow",
+      "lane": 1,
+      "row": 2,
+      "kind": "pack",
+      "when": "frame start",
+      "title": "Shadow pass",
+      "text": "The pack draws its shadow map. EXIT draws nothing here.",
+      "imgs": []
+    },
+    {
+      "id": "collect",
+      "lane": 3,
+      "row": 2,
+      "kind": "channel",
+      "when": "throughout level rendering",
+      "title": "Mod submits draws",
+      "text": "<code>Exit.batch</code>, <code>draw</code> and <code>portal</code> collect what they need to draw first. Once the pack finishes, the mod draws it into EXIT's channels.",
+      "imgs": []
+    },
+    {
+      "id": "gbuf",
+      "lane": 1,
+      "row": 3,
+      "kind": "pack",
+      "when": "gbuffers",
+      "title": "Pack draws opaque world",
+      "text": "BSL doesn't reduce the resolution. The scene fills the whole depth buffer.",
+      "imgs": [
+        {
+          "src": "img/bsl/01-pack-depth-before-hand.png",
+          "caption": "pack depth"
+        }
+      ]
+    },
+    {
+      "id": "noHand",
+      "lane": 2,
+      "row": 3,
+      "kind": "depth",
+      "when": "Iris beginHand",
+      "title": "Copy: depth without hand",
+      "text": "The measured scale is full resolution, so this copy goes straight across without resampling.",
+      "imgs": [
+        {
+          "src": "img/bsl/02-no-hand-copy.png",
+          "caption": "copy"
+        }
+      ]
+    },
+    {
+      "id": "hand",
+      "lane": 1,
+      "row": 4,
+      "kind": "pack",
+      "when": "gbuffers_hand",
+      "title": "Pack draws the hand",
+      "text": "It just draws the hand.",
+      "imgs": [
+        {
+          "src": "img/bsl/03-pack-depth-before-translucents.png",
+          "caption": "depth with hand"
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "lane": 2,
+      "row": 4,
+      "kind": "probe",
+      "when": "first beginHand",
+      "title": "Measure the scale: probe",
+      "text": "The probe is drawn here as well. It lands where it should, at x 0.9992 with an offset of 0.33 pixels. That's just TAA jitter, so the pipeline treats it as full resolution.",
+      "imgs": [
+        {
+          "src": "img/bsl/05-probe-mask.png",
+          "caption": "probe landing (red); the dashed line is where it should be",
+          "box": [
+            42.7,
+            24,
+            768.6,
+            432
+          ]
+        }
+      ]
+    },
+    {
+      "id": "transl",
+      "lane": 1,
+      "row": 5,
+      "kind": "pack",
+      "when": "gbuffers_water etc.",
+      "title": "Pack draws translucents",
+      "text": "The pale blue glass is written to depth, but it isn't in the two copies above.",
+      "imgs": [
+        {
+          "src": "img/bsl/07-main-depth-end.png",
+          "caption": "depth with glass"
+        }
+      ]
+    },
+    {
+      "id": "opaque",
+      "lane": 2,
+      "row": 5,
+      "kind": "depth",
+      "when": "Iris beginTranslucents",
+      "title": "Copy: depth without translucents",
+      "text": "It includes the hand but not the glass. It's copied directly.",
+      "imgs": [
+        {
+          "src": "img/bsl/04-opaque-copy.png",
+          "caption": "copy"
+        }
+      ]
+    },
+    {
+      "id": "packframe",
+      "lane": 1,
+      "row": 6,
+      "kind": "pack",
+      "when": "deferred → composite → final",
+      "title": "Pack's finished frame",
+      "text": "Lighting, fog and TAA are finished. The mod's draw calls aren't in the image yet.",
+      "imgs": [
+        {
+          "src": "img/bsl/06-pack-frame.png",
+          "caption": "pack's finished image"
+        }
+      ]
+    },
+    {
+      "id": "mainEnd",
+      "lane": 2,
+      "row": 6,
+      "kind": "depth",
+      "when": "end of frame",
+      "title": "Use the final depth directly",
+      "text": "The final depth used to find the glass at merge time needs no processing. Its pixels line up one-to-one with the channels.",
+      "imgs": [
+        {
+          "src": "img/bsl/07-main-depth-end.png",
+          "caption": "final depth"
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "lane": 3,
+      "row": 7,
+      "kind": "channel",
+      "when": "end of frame, first use of the channel",
+      "title": "Seed the channel",
+      "text": "Clear the channel and seed it with \"depth without translucents\". The world in front then blocks the channel. The hand's position is set to nearest. The see-through channel (blue) isn't blocked by the world, and it only holds the hand.",
+      "imgs": [
+        {
+          "src": "img/bsl/10-main-seeded.png",
+          "caption": "main channel"
+        },
+        {
+          "src": "img/bsl/09-debug_xray-seeded.png",
+          "caption": "see-through channel"
+        }
+      ]
+    },
+    {
+      "id": "draw",
+      "lane": 3,
+      "row": 8,
+      "kind": "channel",
+      "when": "vanilla shaders",
+      "title": "Draw into the channel",
+      "text": "Green writes color and depth. Red is translucent: the stone cuts off its lower-right corner, and red doesn't write depth.",
+      "imgs": [
+        {
+          "src": "img/bsl/11-main-color.png",
+          "caption": "main channel color",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/bsl/12-main-depth.png",
+          "caption": "main channel depth"
+        }
+      ]
+    },
+    {
+      "id": "fold",
+      "lane": 3,
+      "row": 9,
+      "kind": "channel",
+      "when": "before merging",
+      "title": "Add the translucent depth",
+      "text": "The translucent objects are drawn again, this time writing only depth into a separate buffer. The nearer value is folded into the channel's depth, so several channels can be sorted front to back.",
+      "imgs": [
+        {
+          "src": "img/bsl/13-main-translucent-depth.png",
+          "caption": "translucent depth"
+        },
+        {
+          "src": "img/bsl/14-main-depth-folded.png",
+          "caption": "folded"
+        }
+      ]
+    },
+    {
+      "id": "others",
+      "lane": 3,
+      "row": 10,
+      "kind": "channel",
+      "when": "each channel",
+      "title": "Other channels, same treatment",
+      "text": "The yellow block is in the mix channel. The blue block and the cyan wireframe are in the see-through channel.",
+      "imgs": [
+        {
+          "src": "img/bsl/15-debug_mix-color.png",
+          "caption": "mix channel",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/bsl/19-debug_xray-color.png",
+          "caption": "see-through channel",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "handMask",
+      "lane": 2,
+      "row": 9,
+      "kind": "depth",
+      "when": "at merge",
+      "title": "Find the hand",
+      "text": "Pixels where the \"with hand\" and \"without hand\" depths differ belong to the hand (orange).",
+      "imgs": [
+        {
+          "src": "img/bsl/23-hand-mask.png",
+          "caption": "hand position"
+        }
+      ]
+    },
+    {
+      "id": "transMask",
+      "lane": 2,
+      "row": 10,
+      "kind": "depth",
+      "when": "at merge",
+      "title": "Find the translucents",
+      "text": "Where the final depth is nearer than \"depth without translucents\", that's the glass (orange). If a channel is behind the glass, it is darkened to 50%, which fakes the translucent blend.",
+      "imgs": [
+        {
+          "src": "img/bsl/24-translucent-in-front.png",
+          "caption": "glass position"
+        }
+      ]
+    },
+    {
+      "id": "layer1",
+      "lane": 4,
+      "row": 11,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "Blend the first channel",
+      "text": "The main channel drops the hand's pixels, and the lower half of the green behind the glass is darkened.",
+      "imgs": [
+        {
+          "src": "img/bsl/25-layer-after-main.png",
+          "caption": "blend layer",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/bsl/26-layer-depth-after-main.png",
+          "caption": "blend layer depth",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer2",
+      "lane": 4,
+      "row": 12,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "Blend the mix channel by depth",
+      "text": "Each pixel compares depths, and the closer one wins. The green covers the part of the yellow it overlaps.",
+      "imgs": [
+        {
+          "src": "img/bsl/27-layer-after-debug_mix.png",
+          "caption": "blend layer",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/bsl/28-layer-depth-after-debug_mix.png",
+          "caption": "blend layer depth",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer3",
+      "lane": 4,
+      "row": 13,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "Blend the see-through channel",
+      "text": "The blue block and the wireframe are added to the blend layer.",
+      "imgs": [
+        {
+          "src": "img/bsl/29-layer-after-debug_xray.png",
+          "caption": "blend layer",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/bsl/30-layer-depth-after-debug_xray.png",
+          "caption": "blend layer depth",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "final",
+      "lane": 4,
+      "row": 14,
+      "kind": "merge",
+      "when": "Composite",
+      "title": "Composite onto the pack's image",
+      "text": "The blend layer goes over the pack's finished image, using its transparency, to produce the final frame.",
+      "imgs": [
+        {
+          "src": "img/bsl/31-final.png",
+          "caption": "final frame"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "shadow",
+      "to": "gbuf",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "gbuf",
+      "to": "noHand",
+      "label": "copied directly",
+      "style": "depth"
+    },
+    {
+      "from": "gbuf",
+      "to": "hand",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "noHand",
+      "to": "probe",
+      "label": "first time: measure scale",
+      "style": "probe"
+    },
+    {
+      "from": "hand",
+      "to": "transl",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "hand",
+      "to": "opaque",
+      "label": "copied directly",
+      "style": "depth"
+    },
+    {
+      "from": "transl",
+      "to": "packframe",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "transl",
+      "to": "mainEnd",
+      "label": "read directly at end of frame",
+      "style": "depth"
+    },
+    {
+      "from": "collect",
+      "to": "seed",
+      "label": "after the pack finishes",
+      "style": "depth"
+    },
+    {
+      "from": "opaque",
+      "to": "seed",
+      "label": "world blocks the channel",
+      "style": "depth"
+    },
+    {
+      "from": "noHand",
+      "to": "handMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "opaque",
+      "to": "handMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "mainEnd",
+      "to": "transMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "seed",
+      "to": "draw",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "draw",
+      "to": "fold",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "fold",
+      "to": "others",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "fold",
+      "to": "layer1",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "handMask",
+      "to": "layer1",
+      "label": "hand pixels not drawn",
+      "style": "merge"
+    },
+    {
+      "from": "transMask",
+      "to": "layer1",
+      "label": "darkened behind glass",
+      "style": "merge"
+    },
+    {
+      "from": "others",
+      "to": "layer2",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer1",
+      "to": "layer2",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer2",
+      "to": "layer3",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer3",
+      "to": "final",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "packframe",
+      "to": "final",
+      "label": "laid over the pack's finished image",
+      "style": "merge"
+    }
+  ]
+}
+</script>
+<script type="application/json" id="flow-bsl">
+{
+  "lanes": [
+    {
+      "name": "光影（Iris）",
+      "sub": "光影用自己的着色器画世界"
+    },
+    {
+      "name": "场景深度",
+      "sub": "EXIT 在光影画到一半时复制的深度"
+    },
+    {
+      "name": "EXIT 通道",
+      "sub": "模组的东西，用原版着色器画"
+    },
+    {
+      "name": "合并",
+      "sub": "帧末按深度叠回光影画面"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "shadow",
+      "lane": 1,
+      "row": 2,
+      "kind": "pack",
+      "when": "帧开始",
+      "title": "阴影 pass",
+      "text": "光影画阴影贴图。EXIT 在这里不画任何东西。",
+      "imgs": []
+    },
+    {
+      "id": "collect",
+      "lane": 3,
+      "row": 2,
+      "kind": "channel",
+      "when": "整个关卡渲染期间",
+      "title": "模组提交绘制",
+      "text": "<code>Exit.batch</code>、<code>draw</code>、<code>portal</code> 先收集要画的东西，等光影画完，再画进 EXIT 的通道。",
+      "imgs": []
+    },
+    {
+      "id": "gbuf",
+      "lane": 1,
+      "row": 3,
+      "kind": "pack",
+      "when": "gbuffers",
+      "title": "光影画不透明世界",
+      "text": "BSL 不降分辨率。场景铺满整个深度缓冲。",
+      "imgs": [
+        {
+          "src": "img/bsl/01-pack-depth-before-hand.png",
+          "caption": "光影的深度"
+        }
+      ]
+    },
+    {
+      "id": "noHand",
+      "lane": 2,
+      "row": 3,
+      "kind": "depth",
+      "when": "Iris beginHand",
+      "title": "复制：没有手的深度",
+      "text": "测得的是全分辨率，直接复制，不用重采样。",
+      "imgs": [
+        {
+          "src": "img/bsl/02-no-hand-copy.png",
+          "caption": "复制"
+        }
+      ]
+    },
+    {
+      "id": "hand",
+      "lane": 1,
+      "row": 4,
+      "kind": "pack",
+      "when": "gbuffers_hand",
+      "title": "光影画手",
+      "text": "画手而已。",
+      "imgs": [
+        {
+          "src": "img/bsl/03-pack-depth-before-translucents.png",
+          "caption": "加上手的深度"
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "lane": 2,
+      "row": 4,
+      "kind": "probe",
+      "when": "第一次 beginHand",
+      "title": "量缩放：探针",
+      "text": "同样画一次探针。落点就在该在的位置，测得 x 0.9992、偏移 0.33 像素。这只是 TAA 抖动，按全分辨率处理即可。",
+      "imgs": [
+        {
+          "src": "img/bsl/05-probe-mask.png",
+          "caption": "探针落点（红），虚线是应在的位置",
+          "box": [
+            42.7,
+            24,
+            768.6,
+            432
+          ]
+        }
+      ]
+    },
+    {
+      "id": "transl",
+      "lane": 1,
+      "row": 5,
+      "kind": "pack",
+      "when": "gbuffers_water 等",
+      "title": "光影画半透明",
+      "text": "浅蓝色玻璃写进了深度，但不在上面两份复制里。",
+      "imgs": [
+        {
+          "src": "img/bsl/07-main-depth-end.png",
+          "caption": "带玻璃的深度"
+        }
+      ]
+    },
+    {
+      "id": "opaque",
+      "lane": 2,
+      "row": 5,
+      "kind": "depth",
+      "when": "Iris beginTranslucents",
+      "title": "复制：没有半透明的深度",
+      "text": "有手，没有玻璃，直接复制。",
+      "imgs": [
+        {
+          "src": "img/bsl/04-opaque-copy.png",
+          "caption": "复制"
+        }
+      ]
+    },
+    {
+      "id": "packframe",
+      "lane": 1,
+      "row": 6,
+      "kind": "pack",
+      "when": "deferred → composite → final",
+      "title": "光影的成品画面",
+      "text": "光照、雾和 TAA 都已经做完。画面里还没有模组的绘制。",
+      "imgs": [
+        {
+          "src": "img/bsl/06-pack-frame.png",
+          "caption": "光影成品"
+        }
+      ]
+    },
+    {
+      "id": "mainEnd",
+      "lane": 2,
+      "row": 6,
+      "kind": "depth",
+      "when": "帧末",
+      "title": "最终深度直接用",
+      "text": "合并时找玻璃用的最终深度不用处理，它的像素和通道一一对应。",
+      "imgs": [
+        {
+          "src": "img/bsl/07-main-depth-end.png",
+          "caption": "最终深度"
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "lane": 3,
+      "row": 7,
+      "kind": "channel",
+      "when": "帧末， 通道第一次使用",
+      "title": "通道打底",
+      "text": "清空通道，用“没有半透明的深度”打底，前面的世界就会挡住通道。手的位置设为最近。透视通道（蓝）不会被世界挡住，只用来放手。",
+      "imgs": [
+        {
+          "src": "img/bsl/10-main-seeded.png",
+          "caption": "主通道"
+        },
+        {
+          "src": "img/bsl/09-debug_xray-seeded.png",
+          "caption": "透视通道"
+        }
+      ]
+    },
+    {
+      "id": "draw",
+      "lane": 3,
+      "row": 8,
+      "kind": "channel",
+      "when": "原版着色器",
+      "title": "画进通道",
+      "text": "绿色写颜色和深度。红色是半透明的，被石头挡住右下角，而且不写深度。",
+      "imgs": [
+        {
+          "src": "img/bsl/11-main-color.png",
+          "caption": "主通道颜色",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/bsl/12-main-depth.png",
+          "caption": "主通道深度"
+        }
+      ]
+    },
+    {
+      "id": "fold",
+      "lane": 3,
+      "row": 9,
+      "kind": "channel",
+      "when": "合并前",
+      "title": "补上半透明的深度",
+      "text": "把半透明的东西再画一遍，只把深度写进单独的缓冲，再取较近的值折进通道的深度。这样多个通道就能按前后顺序排序。",
+      "imgs": [
+        {
+          "src": "img/bsl/13-main-translucent-depth.png",
+          "caption": "半透明的深度"
+        },
+        {
+          "src": "img/bsl/14-main-depth-folded.png",
+          "caption": "折叠后"
+        }
+      ]
+    },
+    {
+      "id": "others",
+      "lane": 3,
+      "row": 10,
+      "kind": "channel",
+      "when": "每个通道",
+      "title": "其他通道同样处理",
+      "text": "黄色方块在 mix 通道里；蓝色方块和青色线框在透视通道里。",
+      "imgs": [
+        {
+          "src": "img/bsl/15-debug_mix-color.png",
+          "caption": "mix 通道",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/bsl/19-debug_xray-color.png",
+          "caption": "透视通道",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "handMask",
+      "lane": 2,
+      "row": 9,
+      "kind": "depth",
+      "when": "合并时",
+      "title": "找手",
+      "text": "“有手”和“没手”两份深度中不同的像素就是手（橙色）。",
+      "imgs": [
+        {
+          "src": "img/bsl/23-hand-mask.png",
+          "caption": "手的位置"
+        }
+      ]
+    },
+    {
+      "id": "transMask",
+      "lane": 2,
+      "row": 10,
+      "kind": "depth",
+      "when": "合并时",
+      "title": "找半透明",
+      "text": "最终深度比“没有半透明的深度”更近的地方就是玻璃（橙色）。如果通道在玻璃后面，就压暗到 50%伪造混合。",
+      "imgs": [
+        {
+          "src": "img/bsl/24-translucent-in-front.png",
+          "caption": "玻璃的位置"
+        }
+      ]
+    },
+    {
+      "id": "layer1",
+      "lane": 4,
+      "row": 11,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "叠第一个通道",
+      "text": "主通道去掉手的像素，玻璃后面的绿色下半部分被压暗。",
+      "imgs": [
+        {
+          "src": "img/bsl/25-layer-after-main.png",
+          "caption": "混合层",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/bsl/26-layer-depth-after-main.png",
+          "caption": "混合层深度",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer2",
+      "lane": 4,
+      "row": 12,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "按深度叠 mix 通道",
+      "text": "逐像素比较深度，近的在前：绿色挡住与黄色重叠的部分。",
+      "imgs": [
+        {
+          "src": "img/bsl/27-layer-after-debug_mix.png",
+          "caption": "混合层",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/bsl/28-layer-depth-after-debug_mix.png",
+          "caption": "混合层深度",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer3",
+      "lane": 4,
+      "row": 13,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "叠透视通道",
+      "text": "蓝色方块和线框加入混合层。",
+      "imgs": [
+        {
+          "src": "img/bsl/29-layer-after-debug_xray.png",
+          "caption": "混合层",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/bsl/30-layer-depth-after-debug_xray.png",
+          "caption": "混合层深度",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "final",
+      "lane": 4,
+      "row": 14,
+      "kind": "merge",
+      "when": "Composite",
+      "title": "叠回光影画面",
+      "text": "混合层按透明度盖到光影的成品画面上，得到最终的画面。",
+      "imgs": [
+        {
+          "src": "img/bsl/31-final.png",
+          "caption": "最终画面"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "shadow",
+      "to": "gbuf",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "gbuf",
+      "to": "noHand",
+      "label": "直接复制",
+      "style": "depth"
+    },
+    {
+      "from": "gbuf",
+      "to": "hand",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "noHand",
+      "to": "probe",
+      "label": "第一次：量缩放",
+      "style": "probe"
+    },
+    {
+      "from": "hand",
+      "to": "transl",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "hand",
+      "to": "opaque",
+      "label": "直接复制",
+      "style": "depth"
+    },
+    {
+      "from": "transl",
+      "to": "packframe",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "transl",
+      "to": "mainEnd",
+      "label": "帧末直接读",
+      "style": "depth"
+    },
+    {
+      "from": "collect",
+      "to": "seed",
+      "label": "等光影画完",
+      "style": "depth"
+    },
+    {
+      "from": "opaque",
+      "to": "seed",
+      "label": "世界挡通道",
+      "style": "depth"
+    },
+    {
+      "from": "noHand",
+      "to": "handMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "opaque",
+      "to": "handMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "mainEnd",
+      "to": "transMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "seed",
+      "to": "draw",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "draw",
+      "to": "fold",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "fold",
+      "to": "others",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "fold",
+      "to": "layer1",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "handMask",
+      "to": "layer1",
+      "label": "手的像素不画",
+      "style": "merge"
+    },
+    {
+      "from": "transMask",
+      "to": "layer1",
+      "label": "玻璃后变暗",
+      "style": "merge"
+    },
+    {
+      "from": "others",
+      "to": "layer2",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer1",
+      "to": "layer2",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer2",
+      "to": "layer3",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer3",
+      "to": "final",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "packframe",
+      "to": "final",
+      "label": "叠在光影成品上",
+      "style": "merge"
+    }
+  ]
+}
+</script>
+<script type="application/json" id="flow-kappa-en">
+{
+  "lanes": [
+    {
+      "name": "Shader pack (Iris)",
+      "sub": "the pack draws the world with its own shaders"
+    },
+    {
+      "name": "Scene depth",
+      "sub": "depth EXIT copies while the pack is halfway through the frame"
+    },
+    {
+      "name": "EXIT channels",
+      "sub": "the mod's own objects, drawn with vanilla shaders"
+    },
+    {
+      "name": "Merge",
+      "sub": "at the end of the frame, blended back over the pack's image by depth"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "shadow",
+      "lane": 1,
+      "row": 2,
+      "kind": "pack",
+      "when": "frame start",
+      "title": "Shadow pass",
+      "text": "The pack draws its shadow map. EXIT draws nothing here.",
+      "imgs": []
+    },
+    {
+      "id": "collect",
+      "lane": 3,
+      "row": 2,
+      "kind": "channel",
+      "when": "throughout level rendering",
+      "title": "Mod submits draws",
+      "text": "<code>Exit.batch</code>, <code>draw</code> and <code>portal</code> collect what they need to draw first. Once the pack finishes, the mod draws it into EXIT's channels.",
+      "imgs": []
+    },
+    {
+      "id": "gbuf",
+      "lane": 1,
+      "row": 3,
+      "kind": "pack",
+      "when": "gbuffers",
+      "title": "Pack draws opaque world",
+      "text": "Sky, terrain, stone and the other opaque things. The vertex shader multiplies xy by 0.75, so only the lower-left corner (dashed box) of the depth buffer holds content.",
+      "imgs": [
+        {
+          "src": "img/frame/01-pack-depth-before-hand.png",
+          "caption": "pack depth (scaled space)",
+          "box": [
+            0,
+            120,
+            640.5,
+            360
+          ]
+        }
+      ]
+    },
+    {
+      "id": "noHand",
+      "lane": 2,
+      "row": 3,
+      "kind": "depth",
+      "when": "Iris beginHand",
+      "title": "Copy: depth without hand",
+      "text": "The hand isn't drawn yet. The copy resamples with a and b, which puts the stone back where it belongs in the image.",
+      "imgs": [
+        {
+          "src": "img/frame/02-no-hand-aligned.png",
+          "caption": "aligned"
+        }
+      ]
+    },
+    {
+      "id": "hand",
+      "lane": 1,
+      "row": 4,
+      "kind": "pack",
+      "when": "gbuffers_hand",
+      "title": "Pack draws the hand",
+      "text": "The hand is scaled too. It ends up in the lower-right part of the buffer, a little left of the corner.",
+      "imgs": [
+        {
+          "src": "img/frame/03-pack-depth-before-translucents.png",
+          "caption": "depth with hand (scaled space)",
+          "box": [
+            0,
+            120,
+            640.5,
+            360
+          ]
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "lane": 2,
+      "row": 4,
+      "kind": "probe",
+      "when": "first beginHand",
+      "title": "Measure the scale: probe",
+      "text": "A quad covering the middle 90% is drawn with the pack's program. It writes no color and restores the depth afterward, then the depth change shows where it landed. The measurement is x 0.75, y 0.75, with an offset of about 0.",
+      "imgs": [
+        {
+          "src": "img/frame/05-probe-mask.png",
+          "caption": "probe landing (red); the dashed line is where it would be without scaling",
+          "box": [
+            42.7,
+            24,
+            768.6,
+            432
+          ]
+        }
+      ]
+    },
+    {
+      "id": "transl",
+      "lane": 1,
+      "row": 5,
+      "kind": "pack",
+      "when": "gbuffers_water etc.",
+      "title": "Pack draws translucents",
+      "text": "The pale blue glass is written to depth, but it isn't in the two copies above.",
+      "imgs": [
+        {
+          "src": "img/frame/07-main-depth-end.png",
+          "caption": "depth with glass (scaled space)",
+          "box": [
+            0,
+            120,
+            640.5,
+            360
+          ]
+        }
+      ]
+    },
+    {
+      "id": "opaque",
+      "lane": 2,
+      "row": 5,
+      "kind": "depth",
+      "when": "Iris beginTranslucents",
+      "title": "Copy: depth without translucents",
+      "text": "It includes the hand but not the glass. It's resampled and aligned the same way.",
+      "imgs": [
+        {
+          "src": "img/frame/04-opaque-aligned.png",
+          "caption": "aligned"
+        }
+      ]
+    },
+    {
+      "id": "packframe",
+      "lane": 1,
+      "row": 6,
+      "kind": "pack",
+      "when": "deferred → composite → final",
+      "title": "Pack's finished frame",
+      "text": "Lighting, fog and the TAAU upscale are finished. The mod's draw calls aren't in the image yet.",
+      "imgs": [
+        {
+          "src": "img/frame/06-pack-frame.png",
+          "caption": "pack's finished image"
+        }
+      ]
+    },
+    {
+      "id": "mainAligned",
+      "lane": 2,
+      "row": 6,
+      "kind": "depth",
+      "when": "end of frame",
+      "title": "Final depth, also aligned",
+      "text": "The merge finds the glass using the final depth, so this copy is resampled first.",
+      "imgs": [
+        {
+          "src": "img/frame/08-main-depth-end-aligned.png",
+          "caption": "aligned (with glass)"
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "lane": 3,
+      "row": 7,
+      "kind": "channel",
+      "when": "end of frame, first use of the channel",
+      "title": "Seed the channel",
+      "text": "Clear the channel and seed it with \"depth without translucents\". The world in front then blocks the channel. The hand's position is set to nearest. The see-through channel (blue) isn't blocked by the world, and it only holds the hand.",
+      "imgs": [
+        {
+          "src": "img/frame/11-main-seeded.png",
+          "caption": "main channel"
+        },
+        {
+          "src": "img/frame/10-debug_xray-seeded.png",
+          "caption": "see-through channel"
+        }
+      ]
+    },
+    {
+      "id": "draw",
+      "lane": 3,
+      "row": 8,
+      "kind": "channel",
+      "when": "vanilla shaders",
+      "title": "Draw into the channel",
+      "text": "Green writes color and depth. Red is translucent: the stone cuts off its lower-right corner, and red doesn't write depth.",
+      "imgs": [
+        {
+          "src": "img/frame/12-main-color.png",
+          "caption": "main channel color",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/frame/13-main-depth.png",
+          "caption": "main channel depth"
+        }
+      ]
+    },
+    {
+      "id": "fold",
+      "lane": 3,
+      "row": 9,
+      "kind": "channel",
+      "when": "before merging",
+      "title": "Add the translucent depth",
+      "text": "The translucent objects are drawn again, this time writing only depth into a separate buffer. The nearer value is folded into the channel's depth, so several channels can be sorted front to back.",
+      "imgs": [
+        {
+          "src": "img/frame/14-main-translucent-depth.png",
+          "caption": "translucent depth"
+        },
+        {
+          "src": "img/frame/15-main-depth-folded.png",
+          "caption": "folded"
+        }
+      ]
+    },
+    {
+      "id": "others",
+      "lane": 3,
+      "row": 10,
+      "kind": "channel",
+      "when": "each channel",
+      "title": "Other channels, same treatment",
+      "text": "The yellow block is in the mix channel. The blue block and the cyan wireframe are in the see-through channel.",
+      "imgs": [
+        {
+          "src": "img/frame/16-debug_mix-color.png",
+          "caption": "mix channel",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/frame/20-debug_xray-color.png",
+          "caption": "see-through channel",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "handMask",
+      "lane": 2,
+      "row": 9,
+      "kind": "depth",
+      "when": "at merge",
+      "title": "Find the hand",
+      "text": "Pixels where the \"with hand\" and \"without hand\" depths differ belong to the hand (orange).",
+      "imgs": [
+        {
+          "src": "img/frame/24-hand-mask.png",
+          "caption": "hand position"
+        }
+      ]
+    },
+    {
+      "id": "transMask",
+      "lane": 2,
+      "row": 10,
+      "kind": "depth",
+      "when": "at merge",
+      "title": "Find the translucents",
+      "text": "Where the final depth is nearer than \"depth without translucents\", that's the glass (orange). If a channel is behind the glass, it is darkened to 50%, which fakes the translucent blend.",
+      "imgs": [
+        {
+          "src": "img/frame/25-translucent-in-front.png",
+          "caption": "glass position"
+        }
+      ]
+    },
+    {
+      "id": "layer1",
+      "lane": 4,
+      "row": 11,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "Blend the first channel",
+      "text": "The main channel drops the hand's pixels, and the lower half of the green behind the glass is darkened.",
+      "imgs": [
+        {
+          "src": "img/frame/26-layer-after-main.png",
+          "caption": "blend layer",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/frame/27-layer-depth-after-main.png",
+          "caption": "blend layer depth",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer2",
+      "lane": 4,
+      "row": 12,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "Blend the mix channel by depth",
+      "text": "Each pixel compares depths, and the closer one wins. The green covers the part of the yellow it overlaps.",
+      "imgs": [
+        {
+          "src": "img/frame/28-layer-after-debug_mix.png",
+          "caption": "blend layer",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/frame/29-layer-depth-after-debug_mix.png",
+          "caption": "blend layer depth",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer3",
+      "lane": 4,
+      "row": 13,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "Blend the see-through channel",
+      "text": "The blue block and the wireframe are added to the blend layer.",
+      "imgs": [
+        {
+          "src": "img/frame/30-layer-after-debug_xray.png",
+          "caption": "blend layer",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/frame/31-layer-depth-after-debug_xray.png",
+          "caption": "blend layer depth",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "final",
+      "lane": 4,
+      "row": 14,
+      "kind": "merge",
+      "when": "Composite",
+      "title": "Composite onto the pack's image",
+      "text": "The blend layer goes over the pack's finished image, using its transparency, to produce the final frame.",
+      "imgs": [
+        {
+          "src": "img/frame/32-final.png",
+          "caption": "final frame"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "shadow",
+      "to": "gbuf",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "gbuf",
+      "to": "noHand",
+      "label": "copy + resample",
+      "style": "depth"
+    },
+    {
+      "from": "gbuf",
+      "to": "hand",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "noHand",
+      "to": "probe",
+      "label": "first time: measure scale",
+      "style": "probe"
+    },
+    {
+      "from": "hand",
+      "to": "transl",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "hand",
+      "to": "opaque",
+      "label": "copy + resample",
+      "style": "depth"
+    },
+    {
+      "from": "transl",
+      "to": "packframe",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "transl",
+      "to": "mainAligned",
+      "label": "end-of-frame copy + resample",
+      "style": "depth"
+    },
+    {
+      "from": "collect",
+      "to": "seed",
+      "label": "after the pack finishes",
+      "style": "depth"
+    },
+    {
+      "from": "opaque",
+      "to": "seed",
+      "label": "world blocks the channel",
+      "style": "depth"
+    },
+    {
+      "from": "noHand",
+      "to": "handMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "opaque",
+      "to": "handMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "mainAligned",
+      "to": "transMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "seed",
+      "to": "draw",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "draw",
+      "to": "fold",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "fold",
+      "to": "others",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "fold",
+      "to": "layer1",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "handMask",
+      "to": "layer1",
+      "label": "hand pixels not drawn",
+      "style": "merge"
+    },
+    {
+      "from": "transMask",
+      "to": "layer1",
+      "label": "darkened behind glass",
+      "style": "merge"
+    },
+    {
+      "from": "others",
+      "to": "layer2",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer1",
+      "to": "layer2",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer2",
+      "to": "layer3",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer3",
+      "to": "final",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "packframe",
+      "to": "final",
+      "label": "laid over the pack's finished image",
+      "style": "merge"
+    }
+  ]
+}
+</script>
+<script type="application/json" id="flow-kappa">
+{
+  "lanes": [
+    {
+      "name": "光影（Iris）",
+      "sub": "光影用自己的着色器画世界"
+    },
+    {
+      "name": "场景深度",
+      "sub": "EXIT 在光影画到一半时复制的深度"
+    },
+    {
+      "name": "EXIT 通道",
+      "sub": "模组的东西，用原版着色器画"
+    },
+    {
+      "name": "合并",
+      "sub": "帧末按深度叠回光影画面"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "shadow",
+      "lane": 1,
+      "row": 2,
+      "kind": "pack",
+      "when": "帧开始",
+      "title": "阴影 pass",
+      "text": "光影画阴影贴图。EXIT 在这里不画任何东西。",
+      "imgs": []
+    },
+    {
+      "id": "collect",
+      "lane": 3,
+      "row": 2,
+      "kind": "channel",
+      "when": "整个关卡渲染期间",
+      "title": "模组提交绘制",
+      "text": "<code>Exit.batch</code>、<code>draw</code>、<code>portal</code> 先收集要画的东西，等光影画完，再画进 EXIT 的通道。",
+      "imgs": []
+    },
+    {
+      "id": "gbuf",
+      "lane": 1,
+      "row": 3,
+      "kind": "pack",
+      "when": "gbuffers",
+      "title": "光影画不透明世界",
+      "text": "天空、地形、石头这些不透明的东西。顶点着色器把 xy 乘以 0.75，所以深度缓冲只有左下角（虚线框）里有内容。",
+      "imgs": [
+        {
+          "src": "img/frame/01-pack-depth-before-hand.png",
+          "caption": "光影的深度（缩放空间）",
+          "box": [
+            0,
+            120,
+            640.5,
+            360
+          ]
+        }
+      ]
+    },
+    {
+      "id": "noHand",
+      "lane": 2,
+      "row": 3,
+      "kind": "depth",
+      "when": "Iris beginHand",
+      "title": "复制：没有手的深度",
+      "text": "手还没画出来。复制时按 a、b 重采样，石头就回到它在画面里的位置。",
+      "imgs": [
+        {
+          "src": "img/frame/02-no-hand-aligned.png",
+          "caption": "对齐后"
+        }
+      ]
+    },
+    {
+      "id": "hand",
+      "lane": 1,
+      "row": 4,
+      "kind": "pack",
+      "when": "gbuffers_hand",
+      "title": "光影画手",
+      "text": "手也被缩放了，出现在缓冲右下角偏左一点的位置。",
+      "imgs": [
+        {
+          "src": "img/frame/03-pack-depth-before-translucents.png",
+          "caption": "加上手的深度（缩放空间）",
+          "box": [
+            0,
+            120,
+            640.5,
+            360
+          ]
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "lane": 2,
+      "row": 4,
+      "kind": "probe",
+      "when": "第一次 beginHand",
+      "title": "量缩放：探针",
+      "text": "用光影的程序画一个覆盖中间 90% 的四边形（不写颜色，画完恢复深度），然后看哪里的深度变了。测得 x 0.75、y 0.75，偏移约为 0。",
+      "imgs": [
+        {
+          "src": "img/frame/05-probe-mask.png",
+          "caption": "探针落点（红），虚线是不缩放时应在的位置",
+          "box": [
+            42.7,
+            24,
+            768.6,
+            432
+          ]
+        }
+      ]
+    },
+    {
+      "id": "transl",
+      "lane": 1,
+      "row": 5,
+      "kind": "pack",
+      "when": "gbuffers_water 等",
+      "title": "光影画半透明",
+      "text": "浅蓝色玻璃写进了深度，但不在上面两份复制里。",
+      "imgs": [
+        {
+          "src": "img/frame/07-main-depth-end.png",
+          "caption": "带玻璃的深度（缩放空间）",
+          "box": [
+            0,
+            120,
+            640.5,
+            360
+          ]
+        }
+      ]
+    },
+    {
+      "id": "opaque",
+      "lane": 2,
+      "row": 5,
+      "kind": "depth",
+      "when": "Iris beginTranslucents",
+      "title": "复制：没有半透明的深度",
+      "text": "有手，没有玻璃，同样做重采样对齐。",
+      "imgs": [
+        {
+          "src": "img/frame/04-opaque-aligned.png",
+          "caption": "对齐后"
+        }
+      ]
+    },
+    {
+      "id": "packframe",
+      "lane": 1,
+      "row": 6,
+      "kind": "pack",
+      "when": "deferred → composite → final",
+      "title": "光影的成品画面",
+      "text": "光照、雾和 TAAU 放大都已经做完。画面里还没有模组的绘制。",
+      "imgs": [
+        {
+          "src": "img/frame/06-pack-frame.png",
+          "caption": "光影成品"
+        }
+      ]
+    },
+    {
+      "id": "mainAligned",
+      "lane": 2,
+      "row": 6,
+      "kind": "depth",
+      "when": "帧末",
+      "title": "最终深度也对齐",
+      "text": "合并时用最终深度找玻璃，所以这一份要先重采样。",
+      "imgs": [
+        {
+          "src": "img/frame/08-main-depth-end-aligned.png",
+          "caption": "对齐后（有玻璃）"
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "lane": 3,
+      "row": 7,
+      "kind": "channel",
+      "when": "帧末， 通道第一次使用",
+      "title": "通道打底",
+      "text": "清空通道，用“没有半透明的深度”打底，前面的世界就会挡住通道。手的位置设为最近。透视通道（蓝）不会被世界挡住，只用来放手。",
+      "imgs": [
+        {
+          "src": "img/frame/11-main-seeded.png",
+          "caption": "主通道"
+        },
+        {
+          "src": "img/frame/10-debug_xray-seeded.png",
+          "caption": "透视通道"
+        }
+      ]
+    },
+    {
+      "id": "draw",
+      "lane": 3,
+      "row": 8,
+      "kind": "channel",
+      "when": "原版着色器",
+      "title": "画进通道",
+      "text": "绿色写颜色和深度。红色是半透明的，被石头挡住右下角，而且不写深度。",
+      "imgs": [
+        {
+          "src": "img/frame/12-main-color.png",
+          "caption": "主通道颜色",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/frame/13-main-depth.png",
+          "caption": "主通道深度"
+        }
+      ]
+    },
+    {
+      "id": "fold",
+      "lane": 3,
+      "row": 9,
+      "kind": "channel",
+      "when": "合并前",
+      "title": "补上半透明的深度",
+      "text": "把半透明的东西再画一遍，只把深度写进单独的缓冲，再取较近的值折进通道的深度。这样多个通道就能按前后顺序排序。",
+      "imgs": [
+        {
+          "src": "img/frame/14-main-translucent-depth.png",
+          "caption": "半透明的深度"
+        },
+        {
+          "src": "img/frame/15-main-depth-folded.png",
+          "caption": "折叠后"
+        }
+      ]
+    },
+    {
+      "id": "others",
+      "lane": 3,
+      "row": 10,
+      "kind": "channel",
+      "when": "每个通道",
+      "title": "其他通道同样处理",
+      "text": "黄色方块在 mix 通道里；蓝色方块和青色线框在透视通道里。",
+      "imgs": [
+        {
+          "src": "img/frame/16-debug_mix-color.png",
+          "caption": "mix 通道",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/frame/20-debug_xray-color.png",
+          "caption": "透视通道",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "handMask",
+      "lane": 2,
+      "row": 9,
+      "kind": "depth",
+      "when": "合并时",
+      "title": "找手",
+      "text": "“有手”和“没手”两份深度中不同的像素就是手（橙色）。",
+      "imgs": [
+        {
+          "src": "img/frame/24-hand-mask.png",
+          "caption": "手的位置"
+        }
+      ]
+    },
+    {
+      "id": "transMask",
+      "lane": 2,
+      "row": 10,
+      "kind": "depth",
+      "when": "合并时",
+      "title": "找半透明",
+      "text": "最终深度比“没有半透明的深度”更近的地方就是玻璃（橙色）。如果通道在玻璃后面，就压暗到 50%伪造混合。",
+      "imgs": [
+        {
+          "src": "img/frame/25-translucent-in-front.png",
+          "caption": "玻璃的位置"
+        }
+      ]
+    },
+    {
+      "id": "layer1",
+      "lane": 4,
+      "row": 11,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "叠第一个通道",
+      "text": "主通道去掉手的像素，玻璃后面的绿色下半部分被压暗。",
+      "imgs": [
+        {
+          "src": "img/frame/26-layer-after-main.png",
+          "caption": "混合层",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/frame/27-layer-depth-after-main.png",
+          "caption": "混合层深度",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer2",
+      "lane": 4,
+      "row": 12,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "按深度叠 mix 通道",
+      "text": "逐像素比较深度，近的在前：绿色挡住与黄色重叠的部分。",
+      "imgs": [
+        {
+          "src": "img/frame/28-layer-after-debug_mix.png",
+          "caption": "混合层",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/frame/29-layer-depth-after-debug_mix.png",
+          "caption": "混合层深度",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer3",
+      "lane": 4,
+      "row": 13,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "叠透视通道",
+      "text": "蓝色方块和线框加入混合层。",
+      "imgs": [
+        {
+          "src": "img/frame/30-layer-after-debug_xray.png",
+          "caption": "混合层",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        },
+        {
+          "src": "img/frame/31-layer-depth-after-debug_xray.png",
+          "caption": "混合层深度",
+          "crop": [
+            210,
+            140,
+            420,
+            140
+          ]
+        }
+      ]
+    },
+    {
+      "id": "final",
+      "lane": 4,
+      "row": 14,
+      "kind": "merge",
+      "when": "Composite",
+      "title": "叠回光影画面",
+      "text": "混合层按透明度盖到光影的成品画面上，得到最终的画面。",
+      "imgs": [
+        {
+          "src": "img/frame/32-final.png",
+          "caption": "最终画面"
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "shadow",
+      "to": "gbuf",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "gbuf",
+      "to": "noHand",
+      "label": "复制 + 重采样",
+      "style": "depth"
+    },
+    {
+      "from": "gbuf",
+      "to": "hand",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "noHand",
+      "to": "probe",
+      "label": "第一次：量缩放",
+      "style": "probe"
+    },
+    {
+      "from": "hand",
+      "to": "transl",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "hand",
+      "to": "opaque",
+      "label": "复制 + 重采样",
+      "style": "depth"
+    },
+    {
+      "from": "transl",
+      "to": "packframe",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "transl",
+      "to": "mainAligned",
+      "label": "帧末复制 + 重采样",
+      "style": "depth"
+    },
+    {
+      "from": "collect",
+      "to": "seed",
+      "label": "等光影画完",
+      "style": "depth"
+    },
+    {
+      "from": "opaque",
+      "to": "seed",
+      "label": "世界挡通道",
+      "style": "depth"
+    },
+    {
+      "from": "noHand",
+      "to": "handMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "opaque",
+      "to": "handMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "mainAligned",
+      "to": "transMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "seed",
+      "to": "draw",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "draw",
+      "to": "fold",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "fold",
+      "to": "others",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "fold",
+      "to": "layer1",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "handMask",
+      "to": "layer1",
+      "label": "手的像素不画",
+      "style": "merge"
+    },
+    {
+      "from": "transMask",
+      "to": "layer1",
+      "label": "玻璃后变暗",
+      "style": "merge"
+    },
+    {
+      "from": "others",
+      "to": "layer2",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer1",
+      "to": "layer2",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer2",
+      "to": "layer3",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer3",
+      "to": "final",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "packframe",
+      "to": "final",
+      "label": "叠在光影成品上",
+      "style": "merge"
+    }
+  ]
+}
+</script>
+<script type="application/json" id="flow-sr-en">
+{
+  "lanes": [
+    {
+      "name": "Shader pack (Iris)",
+      "sub": "the pack draws the world with its own shaders"
+    },
+    {
+      "name": "Scene depth",
+      "sub": "depth EXIT copies while the pack is halfway through the frame"
+    },
+    {
+      "name": "EXIT channels",
+      "sub": "the mod's own objects, drawn with vanilla shaders"
+    },
+    {
+      "name": "Merge",
+      "sub": "at the end of the frame, blended back over the pack's image by depth"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "shadow",
+      "lane": 1,
+      "row": 2,
+      "kind": "pack",
+      "when": "frame start",
+      "title": "Shadow pass",
+      "text": "The pack draws its shadow map. EXIT draws nothing here.",
+      "imgs": []
+    },
+    {
+      "id": "collect",
+      "lane": 3,
+      "row": 2,
+      "kind": "channel",
+      "when": "throughout level rendering",
+      "title": "Mod submits draws",
+      "text": "<code>Exit.batch</code>, <code>draw</code> and <code>portal</code> collect what they need to draw first. Once the pack finishes, the mod draws it into EXIT's channels.",
+      "imgs": []
+    },
+    {
+      "id": "gbuf",
+      "lane": 1,
+      "row": 3,
+      "kind": "pack",
+      "when": "gbuffers",
+      "title": "Pack draws opaque world",
+      "text": "Super Resolution has the pack draw into only 1/1.21 of the window. The window is 854×480 and the scene is 705×396. The depth buffer is still 854×480, but only the lower-left corner (dashed box) is used.",
+      "imgs": [
+        {
+          "src": "img/sr/01-pack-depth-before-hand.png",
+          "caption": "pack depth (854×480)",
+          "size": [
+            854,
+            480
+          ],
+          "box": [
+            0,
+            84,
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "noHand",
+      "lane": 2,
+      "row": 3,
+      "kind": "depth",
+      "when": "Iris beginHand",
+      "title": "Copy: depth without hand",
+      "text": "EXIT reads the scene size, 705×396, from SR and copies from the lower-left corner at that size. The result is the whole scene, so no resampling is needed.",
+      "imgs": [
+        {
+          "src": "img/sr/02-no-hand-copy.png",
+          "caption": "copy (705×396)",
+          "size": [
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hand",
+      "lane": 1,
+      "row": 4,
+      "kind": "pack",
+      "when": "gbuffers_hand",
+      "title": "Pack draws the hand",
+      "text": "The hand is drawn in this lower-left block too.",
+      "imgs": [
+        {
+          "src": "img/sr/03-pack-depth-before-translucents.png",
+          "caption": "depth with hand (854×480)",
+          "size": [
+            854,
+            480
+          ],
+          "box": [
+            0,
+            84,
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "lane": 2,
+      "row": 4,
+      "kind": "probe",
+      "when": "first beginHand",
+      "title": "No scale measurement",
+      "text": "EXIT skips the probe while SR is in use. SR's downscale is already covered by the scene size, and measuring again would shrink the scene twice.",
+      "imgs": []
+    },
+    {
+      "id": "transl",
+      "lane": 1,
+      "row": 5,
+      "kind": "pack",
+      "when": "gbuffers_water etc.",
+      "title": "Pack draws translucents",
+      "text": "The pale blue glass is written to depth.",
+      "imgs": [
+        {
+          "src": "img/sr/06-main-depth-end.png",
+          "caption": "depth with glass (854×480)",
+          "size": [
+            854,
+            480
+          ],
+          "box": [
+            0,
+            84,
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "opaque",
+      "lane": 2,
+      "row": 5,
+      "kind": "depth",
+      "when": "Iris beginTranslucents",
+      "title": "Copy: depth without translucents",
+      "text": "It includes the hand but not the glass. It's copied at the scene size as well.",
+      "imgs": [
+        {
+          "src": "img/sr/04-opaque-copy.png",
+          "caption": "copy (705×396)",
+          "size": [
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "packframe",
+      "lane": 1,
+      "row": 6,
+      "kind": "pack",
+      "when": "deferred → composite → final → SR",
+      "title": "Pack's finished frame",
+      "text": "After the pack finishes, SR (FSR2 here) upscales 705×396 to the full window. The mod's draw calls aren't in the image yet.",
+      "imgs": [
+        {
+          "src": "img/sr/05-pack-frame.png",
+          "caption": "upscaled finished image (854×480)",
+          "size": [
+            854,
+            480
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mainEnd",
+      "lane": 2,
+      "row": 6,
+      "kind": "depth",
+      "when": "end of frame",
+      "title": "Final depth, no alignment",
+      "text": "The final depth used to find the glass at merge time also reads only the lower-left 705×396 block. Its pixels line up one-to-one with the channels.",
+      "imgs": [
+        {
+          "src": "img/sr/06-main-depth-end.png",
+          "caption": "read from inside the dashed box",
+          "size": [
+            854,
+            480
+          ],
+          "box": [
+            0,
+            84,
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "lane": 3,
+      "row": 7,
+      "kind": "channel",
+      "when": "end of frame, first use of the channel",
+      "title": "Seed the channel",
+      "text": "The channel is the same size as the scene, 705×396. Seed it with \"depth without translucents\" and set the hand's position to nearest. The see-through channel only holds the hand.",
+      "imgs": [
+        {
+          "src": "img/sr/09-main-seeded.png",
+          "caption": "main channel",
+          "size": [
+            705,
+            396
+          ]
+        },
+        {
+          "src": "img/sr/08-debug_xray-seeded.png",
+          "caption": "see-through channel",
+          "size": [
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "draw",
+      "lane": 3,
+      "row": 8,
+      "kind": "channel",
+      "when": "vanilla shaders",
+      "title": "Draw into the channel",
+      "text": "Green writes color and depth. Red is translucent: the stone cuts off its lower-right corner, and red doesn't write depth.",
+      "imgs": [
+        {
+          "src": "img/sr/10-main-color.png",
+          "caption": "main channel color",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        },
+        {
+          "src": "img/sr/11-main-depth.png",
+          "caption": "main channel depth",
+          "size": [
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fold",
+      "lane": 3,
+      "row": 9,
+      "kind": "channel",
+      "when": "before merging",
+      "title": "Add the translucent depth",
+      "text": "The translucent objects are drawn again, writing only depth, and then folded into the channel's depth.",
+      "imgs": [
+        {
+          "src": "img/sr/12-main-translucent-depth.png",
+          "caption": "translucent depth",
+          "size": [
+            705,
+            396
+          ]
+        },
+        {
+          "src": "img/sr/13-main-depth-folded.png",
+          "caption": "folded",
+          "size": [
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "others",
+      "lane": 3,
+      "row": 10,
+      "kind": "channel",
+      "when": "each channel",
+      "title": "Other channels, same treatment",
+      "text": "The yellow block is in the mix channel. The blue block and the cyan wireframe are in the see-through channel.",
+      "imgs": [
+        {
+          "src": "img/sr/14-debug_mix-color.png",
+          "caption": "mix channel",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        },
+        {
+          "src": "img/sr/18-debug_xray-color.png",
+          "caption": "see-through channel",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        }
+      ]
+    },
+    {
+      "id": "handMask",
+      "lane": 2,
+      "row": 9,
+      "kind": "depth",
+      "when": "at merge",
+      "title": "Find the hand",
+      "text": "Pixels where the \"with hand\" and \"without hand\" depths differ belong to the hand (orange).",
+      "imgs": [
+        {
+          "src": "img/sr/22-hand-mask.png",
+          "caption": "hand position",
+          "size": [
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "transMask",
+      "lane": 2,
+      "row": 10,
+      "kind": "depth",
+      "when": "at merge",
+      "title": "Find the translucents",
+      "text": "Where the final depth is nearer than \"depth without translucents\", that's the glass (orange). Only the dashed box is checked.",
+      "imgs": [
+        {
+          "src": "img/sr/23-translucent-in-front.png",
+          "caption": "glass position (854×480)",
+          "size": [
+            854,
+            480
+          ],
+          "box": [
+            0,
+            84,
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer1",
+      "lane": 4,
+      "row": 11,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "Blend the first channel",
+      "text": "The main channel drops the hand's pixels, and the lower half of the green behind the glass is darkened.",
+      "imgs": [
+        {
+          "src": "img/sr/24-layer-after-main.png",
+          "caption": "blend layer",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        },
+        {
+          "src": "img/sr/25-layer-depth-after-main.png",
+          "caption": "blend layer depth",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer2",
+      "lane": 4,
+      "row": 12,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "Blend the mix channel by depth",
+      "text": "The nearer one is in front. The green covers the part of the yellow it overlaps.",
+      "imgs": [
+        {
+          "src": "img/sr/26-layer-after-debug_mix.png",
+          "caption": "blend layer",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        },
+        {
+          "src": "img/sr/27-layer-depth-after-debug_mix.png",
+          "caption": "blend layer depth",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer3",
+      "lane": 4,
+      "row": 13,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "Blend the see-through channel",
+      "text": "The blue block and the wireframe are added to the blend layer.",
+      "imgs": [
+        {
+          "src": "img/sr/28-layer-after-debug_xray.png",
+          "caption": "blend layer",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        },
+        {
+          "src": "img/sr/29-layer-depth-after-debug_xray.png",
+          "caption": "blend layer depth",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        }
+      ]
+    },
+    {
+      "id": "final",
+      "lane": 4,
+      "row": 14,
+      "kind": "merge",
+      "when": "Composite (STRETCHED)",
+      "title": "Stretch and composite onto the finished image",
+      "text": "The finished image has been upscaled by SR to 854×480, but the blend layer is still 705×396. At merge time, each window pixel p reads the blend layer at p × 705/854 and stretches it over the image.",
+      "imgs": [
+        {
+          "src": "img/sr/30-final.png",
+          "caption": "final frame (854×480)",
+          "size": [
+            854,
+            480
+          ]
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "shadow",
+      "to": "gbuf",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "gbuf",
+      "to": "noHand",
+      "label": "copy at scene size",
+      "style": "depth"
+    },
+    {
+      "from": "gbuf",
+      "to": "hand",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "noHand",
+      "to": "probe",
+      "label": "skipped while SR is in use",
+      "style": "probe"
+    },
+    {
+      "from": "hand",
+      "to": "transl",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "hand",
+      "to": "opaque",
+      "label": "copy at scene size",
+      "style": "depth"
+    },
+    {
+      "from": "transl",
+      "to": "packframe",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "transl",
+      "to": "mainEnd",
+      "label": "read directly at end of frame",
+      "style": "depth"
+    },
+    {
+      "from": "collect",
+      "to": "seed",
+      "label": "after the pack finishes",
+      "style": "depth"
+    },
+    {
+      "from": "opaque",
+      "to": "seed",
+      "label": "world blocks the channel",
+      "style": "depth"
+    },
+    {
+      "from": "noHand",
+      "to": "handMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "opaque",
+      "to": "handMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "mainEnd",
+      "to": "transMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "seed",
+      "to": "draw",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "draw",
+      "to": "fold",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "fold",
+      "to": "others",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "fold",
+      "to": "layer1",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "handMask",
+      "to": "layer1",
+      "label": "hand pixels not drawn",
+      "style": "merge"
+    },
+    {
+      "from": "transMask",
+      "to": "layer1",
+      "label": "darkened behind glass",
+      "style": "merge"
+    },
+    {
+      "from": "others",
+      "to": "layer2",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer1",
+      "to": "layer2",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer2",
+      "to": "layer3",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer3",
+      "to": "final",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "packframe",
+      "to": "final",
+      "label": "stretched over the finished image",
+      "style": "merge"
+    }
+  ]
+}
+</script>
+<script type="application/json" id="flow-sr">
+{
+  "lanes": [
+    {
+      "name": "光影（Iris）",
+      "sub": "光影用自己的着色器画世界"
+    },
+    {
+      "name": "场景深度",
+      "sub": "EXIT 在光影画到一半时复制的深度"
+    },
+    {
+      "name": "EXIT 通道",
+      "sub": "模组的东西，用原版着色器画"
+    },
+    {
+      "name": "合并",
+      "sub": "帧末按深度叠回光影画面"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "shadow",
+      "lane": 1,
+      "row": 2,
+      "kind": "pack",
+      "when": "帧开始",
+      "title": "阴影 pass",
+      "text": "光影画阴影贴图。EXIT 在这里不画任何东西。",
+      "imgs": []
+    },
+    {
+      "id": "collect",
+      "lane": 3,
+      "row": 2,
+      "kind": "channel",
+      "when": "整个关卡渲染期间",
+      "title": "模组提交绘制",
+      "text": "<code>Exit.batch</code>、<code>draw</code>、<code>portal</code> 先收集要画的东西，等光影画完，再画进 EXIT 的通道。",
+      "imgs": []
+    },
+    {
+      "id": "gbuf",
+      "lane": 1,
+      "row": 3,
+      "kind": "pack",
+      "when": "gbuffers",
+      "title": "光影画不透明世界",
+      "text": "Super Resolution 让光影只在窗口的 1/1.21 里画：窗口 854×480，场景 705×396。深度缓冲仍是 854×480，只用到左下角（虚线框）。",
+      "imgs": [
+        {
+          "src": "img/sr/01-pack-depth-before-hand.png",
+          "caption": "光影的深度（854×480）",
+          "size": [
+            854,
+            480
+          ],
+          "box": [
+            0,
+            84,
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "noHand",
+      "lane": 2,
+      "row": 3,
+      "kind": "depth",
+      "when": "Iris beginHand",
+      "title": "复制：没有手的深度",
+      "text": "EXIT 从 SR 那里读到场景尺寸 705×396，就按这个尺寸从左下角复制。拿到的正好是整幅场景，不需要重采样。",
+      "imgs": [
+        {
+          "src": "img/sr/02-no-hand-copy.png",
+          "caption": "复制（705×396）",
+          "size": [
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "hand",
+      "lane": 1,
+      "row": 4,
+      "kind": "pack",
+      "when": "gbuffers_hand",
+      "title": "光影画手",
+      "text": "手也画在左下角这一块里。",
+      "imgs": [
+        {
+          "src": "img/sr/03-pack-depth-before-translucents.png",
+          "caption": "加上手的深度（854×480）",
+          "size": [
+            854,
+            480
+          ],
+          "box": [
+            0,
+            84,
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "lane": 2,
+      "row": 4,
+      "kind": "probe",
+      "when": "第一次 beginHand",
+      "title": "不测缩放",
+      "text": "SR 在用的时候，EXIT 不画探针。SR 的缩小已经由场景尺寸处理了，再测一次就会把场景缩小两次。",
+      "imgs": []
+    },
+    {
+      "id": "transl",
+      "lane": 1,
+      "row": 5,
+      "kind": "pack",
+      "when": "gbuffers_water 等",
+      "title": "光影画半透明",
+      "text": "浅蓝色玻璃写进深度。",
+      "imgs": [
+        {
+          "src": "img/sr/06-main-depth-end.png",
+          "caption": "带玻璃的深度（854×480）",
+          "size": [
+            854,
+            480
+          ],
+          "box": [
+            0,
+            84,
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "opaque",
+      "lane": 2,
+      "row": 5,
+      "kind": "depth",
+      "when": "Iris beginTranslucents",
+      "title": "复制：没有半透明的深度",
+      "text": "有手，没有玻璃，同样按场景尺寸复制。",
+      "imgs": [
+        {
+          "src": "img/sr/04-opaque-copy.png",
+          "caption": "复制（705×396）",
+          "size": [
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "packframe",
+      "lane": 1,
+      "row": 6,
+      "kind": "pack",
+      "when": "deferred → composite → final → SR",
+      "title": "光影的成品画面",
+      "text": "光影画完后，SR（这里用 FSR2）把 705×396 放大到整个窗口。画面里还没有模组的绘制。",
+      "imgs": [
+        {
+          "src": "img/sr/05-pack-frame.png",
+          "caption": "放大后的成品（854×480）",
+          "size": [
+            854,
+            480
+          ]
+        }
+      ]
+    },
+    {
+      "id": "mainEnd",
+      "lane": 2,
+      "row": 6,
+      "kind": "depth",
+      "when": "帧末",
+      "title": "最终深度不用对齐",
+      "text": "合并时找玻璃用的最终深度也只读左下角 705×396 这一块，像素和通道一一对应。",
+      "imgs": [
+        {
+          "src": "img/sr/06-main-depth-end.png",
+          "caption": "读的是虚线框里",
+          "size": [
+            854,
+            480
+          ],
+          "box": [
+            0,
+            84,
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "seed",
+      "lane": 3,
+      "row": 7,
+      "kind": "channel",
+      "when": "帧末， 通道第一次使用",
+      "title": "通道打底",
+      "text": "通道和场景一样大，都是 705×396。用“没有半透明的深度”打底，手的位置设为最近；透视通道只放手。",
+      "imgs": [
+        {
+          "src": "img/sr/09-main-seeded.png",
+          "caption": "主通道",
+          "size": [
+            705,
+            396
+          ]
+        },
+        {
+          "src": "img/sr/08-debug_xray-seeded.png",
+          "caption": "透视通道",
+          "size": [
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "draw",
+      "lane": 3,
+      "row": 8,
+      "kind": "channel",
+      "when": "原版着色器",
+      "title": "画进通道",
+      "text": "绿色写颜色和深度。红色是半透明的，被石头挡住右下角，而且不写深度。",
+      "imgs": [
+        {
+          "src": "img/sr/10-main-color.png",
+          "caption": "主通道颜色",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        },
+        {
+          "src": "img/sr/11-main-depth.png",
+          "caption": "主通道深度",
+          "size": [
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "fold",
+      "lane": 3,
+      "row": 9,
+      "kind": "channel",
+      "when": "合并前",
+      "title": "补上半透明的深度",
+      "text": "半透明的东西再画一遍，只写深度，再折进通道的深度。",
+      "imgs": [
+        {
+          "src": "img/sr/12-main-translucent-depth.png",
+          "caption": "半透明的深度",
+          "size": [
+            705,
+            396
+          ]
+        },
+        {
+          "src": "img/sr/13-main-depth-folded.png",
+          "caption": "折叠后",
+          "size": [
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "others",
+      "lane": 3,
+      "row": 10,
+      "kind": "channel",
+      "when": "每个通道",
+      "title": "其他通道同样处理",
+      "text": "黄色方块在 mix 通道里；蓝色方块和青色线框在透视通道里。",
+      "imgs": [
+        {
+          "src": "img/sr/14-debug_mix-color.png",
+          "caption": "mix 通道",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        },
+        {
+          "src": "img/sr/18-debug_xray-color.png",
+          "caption": "透视通道",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        }
+      ]
+    },
+    {
+      "id": "handMask",
+      "lane": 2,
+      "row": 9,
+      "kind": "depth",
+      "when": "合并时",
+      "title": "找手",
+      "text": "“有手”和“没手”两份深度中不同的像素就是手（橙色）。",
+      "imgs": [
+        {
+          "src": "img/sr/22-hand-mask.png",
+          "caption": "手的位置",
+          "size": [
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "transMask",
+      "lane": 2,
+      "row": 10,
+      "kind": "depth",
+      "when": "合并时",
+      "title": "找半透明",
+      "text": "最终深度比“没有半透明的深度”更近的地方就是玻璃（橙色），只检查虚线框里的部分。",
+      "imgs": [
+        {
+          "src": "img/sr/23-translucent-in-front.png",
+          "caption": "玻璃的位置（854×480）",
+          "size": [
+            854,
+            480
+          ],
+          "box": [
+            0,
+            84,
+            705,
+            396
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer1",
+      "lane": 4,
+      "row": 11,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "叠第一个通道",
+      "text": "主通道去掉手的像素，玻璃后面的绿色下半部分被压暗。",
+      "imgs": [
+        {
+          "src": "img/sr/24-layer-after-main.png",
+          "caption": "混合层",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        },
+        {
+          "src": "img/sr/25-layer-depth-after-main.png",
+          "caption": "混合层深度",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer2",
+      "lane": 4,
+      "row": 12,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "按深度叠 mix 通道",
+      "text": "近的在前：绿色挡住与黄色重叠的部分。",
+      "imgs": [
+        {
+          "src": "img/sr/26-layer-after-debug_mix.png",
+          "caption": "混合层",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        },
+        {
+          "src": "img/sr/27-layer-depth-after-debug_mix.png",
+          "caption": "混合层深度",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        }
+      ]
+    },
+    {
+      "id": "layer3",
+      "lane": 4,
+      "row": 13,
+      "kind": "merge",
+      "when": "ChannelBlend",
+      "title": "叠透视通道",
+      "text": "蓝色方块和线框加入混合层。",
+      "imgs": [
+        {
+          "src": "img/sr/28-layer-after-debug_xray.png",
+          "caption": "混合层",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        },
+        {
+          "src": "img/sr/29-layer-depth-after-debug_xray.png",
+          "caption": "混合层深度",
+          "size": [
+            705,
+            396
+          ],
+          "crop": [
+            173,
+            116,
+            347,
+            116
+          ]
+        }
+      ]
+    },
+    {
+      "id": "final",
+      "lane": 4,
+      "row": 14,
+      "kind": "merge",
+      "when": "Composite（STRETCHED）",
+      "title": "拉伸叠回成品",
+      "text": "SR 已把成品放大到 854×480，但混合层仍是 705×396。合并时，窗口里的每个像素 p 读取混合层的 p × 705/854 处，拉伸后盖上去。",
+      "imgs": [
+        {
+          "src": "img/sr/30-final.png",
+          "caption": "最终画面（854×480）",
+          "size": [
+            854,
+            480
+          ]
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "shadow",
+      "to": "gbuf",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "gbuf",
+      "to": "noHand",
+      "label": "按场景尺寸复制",
+      "style": "depth"
+    },
+    {
+      "from": "gbuf",
+      "to": "hand",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "noHand",
+      "to": "probe",
+      "label": "SR 在用：跳过",
+      "style": "probe"
+    },
+    {
+      "from": "hand",
+      "to": "transl",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "hand",
+      "to": "opaque",
+      "label": "按场景尺寸复制",
+      "style": "depth"
+    },
+    {
+      "from": "transl",
+      "to": "packframe",
+      "label": "",
+      "style": "pack"
+    },
+    {
+      "from": "transl",
+      "to": "mainEnd",
+      "label": "帧末直接读",
+      "style": "depth"
+    },
+    {
+      "from": "collect",
+      "to": "seed",
+      "label": "等光影画完",
+      "style": "depth"
+    },
+    {
+      "from": "opaque",
+      "to": "seed",
+      "label": "世界挡通道",
+      "style": "depth"
+    },
+    {
+      "from": "noHand",
+      "to": "handMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "opaque",
+      "to": "handMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "mainEnd",
+      "to": "transMask",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "seed",
+      "to": "draw",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "draw",
+      "to": "fold",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "fold",
+      "to": "others",
+      "label": "",
+      "style": "depth"
+    },
+    {
+      "from": "fold",
+      "to": "layer1",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "handMask",
+      "to": "layer1",
+      "label": "手的像素不画",
+      "style": "merge"
+    },
+    {
+      "from": "transMask",
+      "to": "layer1",
+      "label": "玻璃后变暗",
+      "style": "merge"
+    },
+    {
+      "from": "others",
+      "to": "layer2",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer1",
+      "to": "layer2",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer2",
+      "to": "layer3",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "layer3",
+      "to": "final",
+      "label": "",
+      "style": "merge"
+    },
+    {
+      "from": "packframe",
+      "to": "final",
+      "label": "拉伸叠到成品上",
+      "style": "merge"
+    }
+  ]
+}
+</script>
+
+<script>
+(function () {
+  const flow = document.getElementById("flow");
+  const svg = document.getElementById("edges");
+  const labelSvg = document.getElementById("edge-labels");
+  const LANE_BG = ["--lane-a", "--lane-b", "--lane-c", "--lane-d"];
+  const COLOR = { pack: "var(--pack)", depth: "var(--depth)", probe: "var(--probe)", merge: "var(--merge)" };
+  const NS = "http://www.w3.org/2000/svg";
+
+  const VARIANTS = [
+    { id: "bsl", label: { en: "Normal shader pack (BSL)", zh: "普通光影（BSL）" } },
+    { id: "kappa", label: { en: "Render-scaled pack (Kappa)", zh: "降分辨率光影（Kappa）" } },
+    { id: "sr", label: { en: "Super Resolution", zh: "Super Resolution" } },
+  ];
+  const DEFAULT = "kappa";
+  const TEXT = {
+    en: { title: "One frame of EXIT around a shader pack", zoomClose: "Close", invalid: " data is not valid JSON: ", detail: " (detail)", flowAria: "Flowchart controls", sceneAria: "Scene", langAria: "Language" },
+    zh: { title: "EXIT 绕过光影的一帧", zoomClose: "关闭", invalid: " 的数据不是合法的 JSON：", detail: "（局部）", flowAria: "流程图操作", sceneAria: "场景", langAria: "语言" },
+  };
+  const loaded = {}; 
+  let current = null;
+  let data = null;
+  let lang = "zh";
+  const byId = {};
+
+  function escapeHtml(s) {
+    return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  function cleanRich(source) {
+    let out = "";
+    source.childNodes.forEach((n) => {
+      if (n.nodeType === Node.TEXT_NODE) out += escapeHtml(n.textContent);
+      else if (n.nodeName === "CODE") out += "<code>" + escapeHtml(n.textContent) + "</code>";
+      else if (n.nodeName === "BR") out += " ";
+      else if (n.nodeType === Node.ELEMENT_NODE) out += cleanRich(n);
+    });
+    return out;
+  }
+  function richFromString(s) {
+    const t = document.createElement("template");
+    t.innerHTML = s;
+    return cleanRich(t.content);
+  }
+
+  function el(tag, cls, text, rich) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (rich) e.innerHTML = richFromString(text);
+    else e.textContent = text;
+    return e;
+  }
+
+  function render() {
+    flow.querySelectorAll(".lane-bg, .lane-head, .node, .flow-empty").forEach((e) => e.remove());
+    Object.keys(byId).forEach((k) => delete byId[k]);
+    const lastRow = Math.max(2, ...data.nodes.map((n) => n.row));
+    data.lanes.forEach((lane, i) => {
+      const bg = document.createElement("div");
+      bg.className = "lane-bg";
+      bg.style.gridColumn = String(i + 1);
+      bg.style.gridRow = "1 / " + (lastRow + 1);
+      bg.style.background = "var(" + LANE_BG[i % LANE_BG.length] + ")";
+      flow.appendChild(bg);
+      const head = document.createElement("div");
+      head.className = "lane-head";
+      head.style.gridColumn = String(i + 1);
+      head.append(el("span", "", lane.name), el("small", "", lane.sub));
+      flow.appendChild(head);
+    });
+    data.nodes.forEach((n) => {
+      const node = document.createElement("article");
+      node.className = "node";
+      node.dataset.kind = n.kind;
+      node.style.gridColumn = String(n.lane);
+      node.style.gridRow = String(n.row);
+      node.append(el("div", "when", n.when), el("h3", "", n.title), el("p", "", n.text, true));
+      if (n.imgs && n.imgs.length) {
+        const imgs = document.createElement("div");
+        imgs.className = "imgs";
+        imgs.style.setProperty("--n", n.imgs.length);
+        n.imgs.forEach((im) => {
+          const fig = document.createElement("figure");
+          const img = document.createElement("img");
+          img.src = im.src;
+          img.alt = n.title + (lang === "zh" ? "：" : ": ") + im.caption;
+          img.tabIndex = 0;
+          img.dataset.cap = n.title + " · " + im.caption;
+          let holder = img;
+          const [iw, ih] = im.size || [854, 480];
+          if (im.crop) {
+            const [x, y, w, h] = im.crop;
+            holder = document.createElement("div");
+            holder.className = "crop";
+            holder.style.aspectRatio = w + " / " + h;
+            img.style.width = (iw / w * 100) + "%";
+            img.style.left = (-x / w * 100) + "%";
+            img.style.top = (-y / h * 100) + "%";
+            holder.appendChild(img);
+          } else if (im.box) {
+            const [x, y, w, h] = im.box;
+            holder = document.createElement("div");
+            holder.className = "boxed";
+            const region = document.createElement("div");
+            region.className = "region";
+            region.style.left = (x / iw * 100) + "%";
+            region.style.top = (y / ih * 100) + "%";
+            region.style.width = (w / iw * 100) + "%";
+            region.style.height = (h / ih * 100) + "%";
+            holder.append(img, region);
+          }
+          const cap = document.createElement("figcaption");
+          cap.appendChild(el("span", "", im.caption));
+          if (im.crop) cap.append(TEXT[lang].detail);
+          img.addEventListener("load", schedule);
+          fig.append(holder, cap);
+          imgs.appendChild(fig);
+        });
+        node.appendChild(imgs);
+      }
+      flow.appendChild(node);
+      byId[n.id] = node;
+    });
+    schedule();
+  }
+
+  function drawEdges() {
+    if (!data) return;
+    const box = flow.getBoundingClientRect();
+    svg.setAttribute("viewBox", "0 0 " + box.width + " " + box.height);
+    svg.innerHTML = "";
+    labelSvg.setAttribute("viewBox", "0 0 " + box.width + " " + box.height);
+    labelSvg.innerHTML = "";
+    const defs = document.createElementNS(NS, "defs");
+    Object.keys(COLOR).forEach((k) => {
+      const m = document.createElementNS(NS, "marker");
+      m.setAttribute("id", "arrow-" + k);
+      m.setAttribute("viewBox", "0 0 10 10");
+      m.setAttribute("refX", "9"); m.setAttribute("refY", "5");
+      m.setAttribute("markerWidth", "7"); m.setAttribute("markerHeight", "7");
+      m.setAttribute("orient", "auto-start-reverse");
+      const p = document.createElementNS(NS, "path");
+      p.setAttribute("d", "M0,0 L10,5 L0,10 z");
+      p.setAttribute("fill", COLOR[k]);
+      m.appendChild(p);
+      defs.appendChild(m);
+    });
+    svg.appendChild(defs);
+    data.edges.forEach(({ from, to, label, style }) => {
+      const a = byId[from], b = byId[to];
+      if (!a || !b) return;
+      const kind = COLOR[style] ? style : "depth";
+      const ra = a.getBoundingClientRect(), rb = b.getBoundingClientRect();
+      const A = { l: ra.left - box.left, r: ra.right - box.left, t: ra.top - box.top, b: ra.bottom - box.top };
+      const B = { l: rb.left - box.left, r: rb.right - box.left, t: rb.top - box.top, b: rb.bottom - box.top };
+      let x1, y1, x2, y2, d;
+      if (A.b > B.t && B.b > A.t) {
+
+        const right = B.l >= A.r;
+        x1 = right ? A.r : A.l; y1 = Math.min(A.t + 40, A.b - 10);
+        x2 = right ? B.l : B.r; y2 = Math.min(B.t + 40, B.b - 10);
+        const k = (x2 - x1) / 2;
+        d = "M" + x1 + "," + y1 + " C" + (x1 + k) + "," + y1 + " " + (x2 - k) + "," + y2 + " " + x2 + "," + y2;
+      } else if (B.t >= A.b) {
+
+        x2 = (B.l + B.r) / 2; y2 = B.t; y1 = A.b;
+        x1 = (A.l + A.r) / 2;
+        if (Math.abs(x1 - x2) > 20) x1 = x2 > x1 ? A.r - 24 : A.l + 24;
+        const k = Math.max(30, (y2 - y1) / 2);
+        d = "M" + x1 + "," + y1 + " C" + x1 + "," + (y1 + k) + " " + x2 + "," + (y2 - k) + " " + x2 + "," + y2;
+      } else {
+        x1 = (A.l + A.r) / 2; y1 = A.t; x2 = (B.l + B.r) / 2; y2 = B.b;
+        d = "M" + x1 + "," + y1 + " C" + x1 + "," + (y1 - 40) + " " + x2 + "," + (y2 + 40) + " " + x2 + "," + y2;
+      }
+      const path = document.createElementNS(NS, "path");
+      path.setAttribute("d", d);
+      path.setAttribute("fill", "none");
+      path.setAttribute("stroke", COLOR[kind]);
+      path.setAttribute("stroke-width", "2");
+      if (kind === "probe") path.setAttribute("stroke-dasharray", "6 4");
+      path.setAttribute("marker-end", "url(#arrow-" + kind + ")");
+      svg.appendChild(path);
+      if (label) {
+        const mid = path.getPointAtLength(path.getTotalLength() / 2);
+        const t = document.createElementNS(NS, "text");
+        t.setAttribute("x", mid.x); t.setAttribute("y", mid.y + 4);
+        t.setAttribute("text-anchor", "middle");
+        t.setAttribute("fill", COLOR[kind]);
+        t.setAttribute("paint-order", "stroke");
+        t.setAttribute("stroke", "var(--surface)");
+        t.setAttribute("stroke-width", "5");
+        t.setAttribute("font-weight", "500");
+        t.textContent = label;
+        labelSvg.appendChild(t);
+      }
+    });
+  }
+  let pending = 0;
+  function schedule() { cancelAnimationFrame(pending); pending = requestAnimationFrame(drawEdges); }
+  window.addEventListener("resize", schedule);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(schedule);
+
+
+  const dialog = document.getElementById("zoom");
+  const zImg = document.getElementById("zoom-img");
+  const zCap = document.getElementById("zoom-cap");
+  function open(img) {
+    zImg.src = img.src; zImg.alt = img.alt; zCap.textContent = img.dataset.cap || img.alt;
+    if (dialog.showModal) dialog.showModal();
+  }
+  flow.addEventListener("click", (e) => { if (e.target.matches(".imgs img")) open(e.target); });
+  flow.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target.matches(".imgs img")) open(e.target); });
+  document.getElementById("zoom-close").addEventListener("click", () => dialog.close());
+  dialog.addEventListener("click", (e) => { if (e.target === dialog) dialog.close(); });
+
+  // ---------- 读数据、切换场景 ----------
+  const variantBox = document.getElementById("variants");
+  const langBox = document.getElementById("langs");
+  VARIANTS.forEach((v) => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.dataset.variant = v.id;
+    b.addEventListener("click", () => show(v));
+    variantBox.appendChild(b);
+  });
+
+  function show(v) {
+    current = v;
+    variantBox.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.variant === v.id)));
+    try { history.replaceState(null, "", "#" + v.id); } catch (e) { /* 有的查看器不让改地址 */ }
+    const blockId = "flow-" + v.id + (lang === "en" ? "-en" : "");
+    if (!loaded[blockId]) {
+      try {
+        loaded[blockId] = JSON.parse(document.getElementById(blockId).textContent);
+      } catch (e) {
+        flow.querySelectorAll(".lane-bg, .lane-head, .node, .flow-empty").forEach((x) => x.remove());
+        svg.innerHTML = "";
+        data = null;
+        const msg = document.createElement("p");
+        msg.className = "flow-empty";
+        msg.textContent = blockId + TEXT[lang].invalid + e.message;
+        flow.appendChild(msg);
+        return;
+      }
+    }
+    data = loaded[blockId];
+    render();
+  }
+
+  function applyLang() {
+    document.documentElement.dataset.lang = lang;
+    document.documentElement.lang = lang === "zh" ? "zh-CN" : "en";
+    document.title = TEXT[lang].title;
+    variantBox.querySelectorAll("button").forEach((b) => { b.textContent = VARIANTS.find((v) => v.id === b.dataset.variant).label[lang]; });
+    langBox.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", String(b.dataset.lang === lang)));
+    langBox.setAttribute("aria-label", TEXT[lang].langAria);
+    variantBox.setAttribute("aria-label", TEXT[lang].sceneAria);
+    document.querySelector(".toolbar[role='toolbar']").setAttribute("aria-label", TEXT[lang].flowAria);
+    document.getElementById("zoom-close").textContent = TEXT[lang].zoomClose;
+    document.querySelectorAll("img[data-alt-en]").forEach((img) => { img.alt = lang === "zh" ? img.dataset.altZh : img.dataset.altEn; });
+  }
+
+  langBox.querySelectorAll("button").forEach((b) => b.addEventListener("click", () => {
+    lang = b.dataset.lang;
+    try { localStorage.setItem("exit-docs-lang", lang); } catch (e) {  }
+    Object.keys(loaded).forEach((k) => delete loaded[k]);
+    applyLang();
+    if (current) show(current);
+  }));
+
+  try { lang = localStorage.getItem("exit-docs-lang") || ""; } catch (e) { lang = ""; }
+  if (lang !== "en" && lang !== "zh") lang = (navigator.language || "").toLowerCase().startsWith("zh") ? "zh" : "en";
+  applyLang();
+
+  show(VARIANTS.find((v) => "#" + v.id === location.hash) || VARIANTS.find((v) => v.id === DEFAULT));
+  window.addEventListener("hashchange", () => {
+    const v = VARIANTS.find((x) => "#" + x.id === location.hash);
+    if (v && v !== current) show(v);
+  });
+})();
+</script>
+<link rel="stylesheet" href="./__blog-theme.css" data-blog-mirror><script src="./__blog-bridge.js" data-blog-mirror></script>
+</body>
+</html>

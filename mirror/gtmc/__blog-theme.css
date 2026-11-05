@@ -1,0 +1,103 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@0,900;1,900&display=swap');
+/*
+ * GTMC（https://www.techmc.wiki/）静态快照的博客风格覆盖。
+ * 由 scripts/mirror.mjs 复制为镜像里的 __blog-theme.css，在原样式之后加载。
+ * 原站是 Next.js 应用，快照里没有脚本，所以这里还负责：
+ *   - 让图片显示出来（原本由脚本在加载完成后去掉占位块）
+ *   - 展开目录里的所有折叠分组（原本由脚本展开）
+ *   - 隐藏没有脚本就不能用的按钮（搜索、切换语言、主题、编辑等）
+ * --color-tech-advanced（进阶内容标记）表示含义，保持原样。
+ */
+:root {
+  --color-tech-bg: #efe9fb;
+  --color-tech-line: #d6cbee;
+  --color-tech-main: #5b5078;
+  --color-tech-main-dark: #1d1534;
+  --color-tech-accent: #e4dbf6;
+  --color-tech-signal: #5d3b99;
+  --color-tech-signal-ink: #ffffff;
+  --color-surface: #f8f5fe;
+  --color-surface-overlay: #f8f5fe;
+  --color-surface-modal: #f8f5fe;
+  --color-surface-input: #ffffff;
+  --blog-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  --blog-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  --blog-cut: 5px;
+}
+:root[data-theme="dark"] {
+  --color-tech-bg: #0b0910;
+  --color-tech-line: #2a2340;
+  --color-tech-main: #a197bd;
+  --color-tech-main-dark: #efe9fd;
+  --color-tech-accent: #1d1828;
+  --color-tech-signal: #b59cf2;
+  --color-tech-signal-ink: #0b0910;
+  --color-surface: #100d18;
+  --color-surface-overlay: #16121f;
+  --color-surface-modal: #16121f;
+  --color-surface-input: #0b0910;
+}
+
+* { border-radius: 0 !important; }
+body { background: var(--color-tech-bg) !important; }
+
+/* 标题用衬线 */
+h1, h2, h3, .display-title { font-family: var(--blog-serif) !important; letter-spacing: 0 !important; }
+
+/* 图片：直接显示，去掉加载占位 */
+.t-skel .t-skel-skeleton { opacity: 0 !important; }
+.t-skel .t-skel-content { opacity: 1 !important; filter: none !important; }
+
+/* 目录：展开所有折叠分组 */
+.grid-rows-\[0fr\] { grid-template-rows: 1fr !important; opacity: 1 !important; }
+[aria-expanded="false"] svg { transform: rotate(90deg); }
+
+/* 没有脚本就不能用的按钮 */
+[aria-label="Search articles"], [aria-label="搜索文章"],
+[aria-label="Switch language"], [aria-label="切换语言"],
+[aria-label^="Switch to"], [aria-label^="切换到"],
+[aria-label="Collapse all"], [aria-label="折叠全部"],
+[aria-label="Locate current"], [aria-label="定位当前"],
+[aria-label="Hide chapter navigation"], [aria-label="隐藏章节导航"],
+[aria-label="Toggle article tree"], [aria-label="切换文章树"],
+[aria-label="Copy as Markdown"], [aria-label="复制为 Markdown"],
+[aria-label="编辑文章"], [aria-label="Edit article"],
+[aria-label="Expand metadata"], [aria-label="展开元数据"],
+[aria-label="Copy link to heading"], [aria-label="复制标题链接"],
+[aria-label="Copy suggested attribution"], [aria-label="复制建议署名"],
+[aria-label="Copy"], [aria-label="复制"] { display: none !important; }
+
+/* 标签、章节编号为平行四边形 */
+.bg-tech-signal, .bg-tech-main-dark {
+  clip-path: polygon(var(--blog-cut) 0, 100% 0, calc(100% - var(--blog-cut)) 100%, 0 100%);
+  padding-inline: 0.7em !important;
+}
+
+/* 镜像署名（每页底部） */
+.blog-mirror-credit {
+  max-width: 64rem;
+  margin: 3rem auto 2rem;
+  padding: 1rem 1.25rem;
+  border-top: 1px solid var(--color-tech-line);
+  font-family: var(--blog-mono);
+  font-size: 12px;
+  line-height: 1.8;
+  color: var(--color-tech-main);
+}
+.blog-mirror-credit p { margin: 0.2rem 0; }
+.blog-mirror-credit a { color: var(--color-tech-signal); text-decoration: underline; text-underline-offset: 2px; overflow-wrap: anywhere; }
+.blog-mirror-langs a { font-weight: 700; }
+
+/* 在 iframe 里高度由内容决定：原站的根容器是一屏高、内部滚动，还有多处高度跟视口挂钩
+   （min-h-screen、h-dvh、100dvh）。iframe 的视口就是它自己的高度，不改的话会和自适应高度互相推高。 */
+.blog-mirror-framed body, .blog-mirror-framed #site-scroll-root { min-height: 0 !important; height: auto !important; overflow: visible !important; }
+.blog-mirror-framed .min-h-screen { min-height: 0 !important; }
+.blog-mirror-framed .h-dvh, .blog-mirror-framed .h-screen { height: auto !important; }
+/* 类名里带 vh / dvh 的高度（例如侧栏的 h-[calc(100dvh-144px)]）一律改为按内容，
+   sticky 在不滚动的 iframe 里本来也不起作用 */
+.blog-mirror-framed [class*="dvh"], .blog-mirror-framed [class*="vh)"], .blog-mirror-framed [class*="vh]"] {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+}
+.blog-mirror-framed .top-\[50vh\] { top: 320px !important; }
