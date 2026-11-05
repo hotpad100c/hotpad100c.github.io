@@ -1,100 +1,117 @@
-# 你好
+---
+title: 关于
+pageLayout: page
+---
 
-我是 **Ryan100c**，也叫 **Ryan**。
+<!--
+  「关于」页使用斜切页面组件排版，用法见仓库根目录 CUSTOMIZING.md 的「斜切页面组件」。
+  组件之间、组件和 Markdown 之间都要空一行。
+  方向规则：方正行（square）上下两侧的斜切行方向相反。
+  本页：首屏窗口（/） → square → rev（\） → square → slant（/） → square
+-->
 
-![Ryan100c](https://github-readme-stats.vercel.app/api?username=hotpad100c&show_icons=true)
+<SlantPage>
 
-[![Top Langs](https://github-readme-stats.vercel.app/api/top-langs/?username=hotpad100c)](https://github.com/anuraghazra/github-readme-stats)
-<img src="https://i.imgur.com/FaWB3Tf.png" width="250px" height="250px" align="right" />
+<SlantHero label="关于" image="/about/pfp.png">
 
-[![skilled-lang](https://skillicons.dev/icons?i=cs,java,py,js,blender,idea,unity)](https://skillicons.dev)
+# 你好，我是 *Ryan100c*
+
+也叫 **Ryan**。
+
+这个名字的由来其实很简单：它是由我的英文名 **Ryan** 和邮箱 **hotpad100c@gmail.com** 组合而成的。
+
+如果你跟我比较熟悉，有时我被群友叫做「人言一百草」「ryan将军」。至于将军的称号是怎么来的，我也不知道，你应该询问 *寒鱼*。
 
 [![Minecraft](https://img.shields.io/badge/Minecraft-Ryan100c-lightpurple.svg?labelColor=purple&color=magenta)](https://namemc.com/profile/Ryan100c)
 
-这个名字的由来其实很简单：  
-它是由我的英文名 **Ryan** 和邮箱 **hotpad100c@gmail.com** 组合而成的。  
-如果你更我比较熟悉，有时我被群友叫做「人言一百草」「ryan将军」，至于将军的称号是怎么来的，我也不知道，你应该询问*寒鱼*。
+</SlantHero>
 
----
+<SlantRow kind="square">
 
-# 爱好
+<SlantCell span="7" label="01" title="爱好">
 
-我是一名热爱 **红石**， **编程**， **Minecraft 模组开发** 与 **视频创作** 的创作者。也是一名学生。
-我从小学开始接触编程，而目前的我对Minecraft的游戏底层极其感兴趣，同样，我也希望能让他人**看见那些平时看不见的游戏逻辑**。
+我是一名热爱 **红石**、**编程**、**Minecraft 模组开发** 与 **视频创作** 的创作者，也是一名学生。
 
----
+我从小学开始接触编程，而目前的我对 Minecraft 的游戏底层极其感兴趣。同样，我也希望能让他人 **看见那些平时看不见的游戏逻辑**。
 
-#  社交
+</SlantCell>
 
-也许..你会希望关注我的[Youtube](https://youtube.com/@ryan100c?si=pXAZx1J267bsRHhK)，[Bilibili](https://b23.tv/JrRwBBm)，或者加入我的[Discord服务器](https://discord.gg/r25t6cQpDP)！
-<CardGrid>
-<ImageCard
-  image="https://i.imgur.com/A61RLP0.png"
-  title="Youtube"
-  description="我的youtube帐号"
-  href="https://youtube.com/@ryan100c?si=pXAZx1J267bsRHhK"
-/>
-<ImageCard
-  image="https://i.imgur.com/1eb3X2E.png"
-  title="Bilibili"
-  description="这是我的Bilibili帐号"
-  href="https://b23.tv/JrRwBBm"
-/>
-<ImageCard
-  image="https://i.imgur.com/pODrbtB.png"
-  title="我的Discord服务器"
-  description="这是discord服务器，我在上面发布模组更新等"
-  href="https://discord.gg/r25t6cQpDP"
-/>
-</CardGrid>
+<SlantCell span="5" label="02" title="技能">
 
-另外，如果你想联系我，你可以通过
+<SkillIcons list="csharp,java,python,javascript,blender,idea,unity" />
 
-- 我的邮箱 : hotpad100c@gmail.com
-  
-- 我的qq : 3854665503
-  
-- 我的dc : https://discord.gg/323QBKeW
+</SlantCell>
 
-与我取得联系。
+</SlantRow>
 
----
+<SlantRow kind="rev">
 
-# 活动
+<SlantCell span="4" label="Modrinth" title="13 个模组" image="/about/modrinth.png" fit="contain" href="https://modrinth.com/user/ryan100c">
 
-到目前为止，我在[Modrinth](https://modrinth.com/user/ryan100c)拥有13个实际项目。你可以在我的“项目”页面浏览它们。
-![modrinth主页-2025-11-5](media/MyModrinth.png)
+到目前为止，我在 Modrinth 拥有 13 个实际项目，也可以在「项目」页面浏览它们。
 
-在接触Minecraft前，我热衷于Unity游戏开发，我发布过数个小游戏(和一些当年爆火Unity游戏的破解版)。
-如果你感兴趣，你可以在我的[itch.io主页](https://ryan100c.itch.io)找到并下载它们。
+</SlantCell>
 
-<ImageCard
-  image="https://i.imgur.com/e3xOlwM.jpeg"
-  title="我的itch.io主页"
-  description="这是我的itch.io主页，我已经很久很久没有碰Unity了，真是怀念啊..."
-  href="https://ryan100c.itch.io"
-  author="Ryan100c"
-  date="2025/11/5"
-/>
+<SlantCell span="4" label="itch.io" title="Unity 小游戏" image="/about/itchio.jpeg" href="https://ryan100c.itch.io">
 
-同时，我正在参与撰写一个叫做[GTMC](https://techmc.wiki/#/)的Minecraft技术文档。它是一个好东西，如果你对Minecraft红石与TMC感兴趣，它将是很好的参考子资料。
+在接触 Minecraft 前，我热衷于 Unity 游戏开发，发布过数个小游戏（和一些当年爆火 Unity 游戏的破解版）。我已经很久很久没有碰 Unity 了，真是怀念啊……
 
-<ImageCard
-  image="https://socialify.git.ci/tanhHeng/GraduateTextsInTechnicalMC/image?description=1&forks=1&issues=1&pulls=1&stargazers=1&theme=Auto"
-  title="GTMC"
-  description="GraduateTextsInTechnicalMC：这是一本面向萌新的技术红石入门教材，也是一本面向熟练者的文档。这里有通俗易懂的解释和实例，也有更为复杂的代码解读。
-  基于CC BY-NC-SA 4.0协议开源。Copyright © 2024 ABxl_lly, BFladderbean, Molforte, Ryan100c, tanh_Heng, Twisuki, xhbsh, yuhan2680. All Rights Reserved."
-  href="https://techmc.wiki/#/"
-  author="CC BY-NC-SA 4.0"
-/>
+</SlantCell>
 
-我还有一些其它有趣的项目，你可以在这里
+<SlantCell span="4" label="GTMC" title="技术 MC 文档" image="https://socialify.git.ci/tanhHeng/GraduateTextsInTechnicalMC/image?description=1&forks=1&issues=1&pulls=1&stargazers=1&theme=Dark" href="https://techmc.wiki/#/">
 
-<LinkCard title="我的项目" href="https://hotpad100c.github.io/projects/" description="详细了解我的项目" />
+我正在参与撰写 GTMC（GraduateTextsInTechnicalMC）：一本面向萌新的技术红石入门教材，也是一本面向熟练者的文档。基于 CC BY-NC-SA 4.0 协议开源。
 
-浏览它们。
+</SlantCell>
 
-喔，最后，这里有一些表单表，它将展示我贡献与负责的公开项目。
+</SlantRow>
+
+<SlantRow kind="square">
+
+<SlantCell span="5" label="03" title="关注我">
+
+也许你会希望关注我的 YouTube、Bilibili，或者加入我的 Discord 服务器，我在上面发布模组更新等。
+
+<SocialButtons />
+
+</SlantCell>
+
+<SlantCell span="7" label="04" title="联系方式">
+
+<ContactList :items="[
+  { label: '邮箱', value: 'hotpad100c@gmail.com', href: 'mailto:hotpad100c@gmail.com' },
+  { label: 'QQ', value: '3854665503' },
+  { label: 'Discord', value: 'discord.gg/323QBKeW', href: 'https://discord.gg/323QBKeW' },
+]" />
+
+</SlantCell>
+
+</SlantRow>
+
+<SlantRow kind="slant">
+
+<SlantCell span="12" label="05" title="我的项目" href="/projects/">
+
+我还有一些其它有趣的项目：模组、网页工具、渲染库……都在「项目」页面。
+
+</SlantCell>
+
+</SlantRow>
+
+<SlantRow kind="square">
+
+<SlantCell span="6" label="06" title="我贡献过的公开项目" max-height="380">
 
 ![Repos I contributed to](https://github-contrib-stats.vercel.app/Hotpad100c/contributed.svg)
+
+</SlantCell>
+
+<SlantCell span="6" label="07" title="我创建的公开项目" max-height="380">
+
 ![Repos I created](https://github-contrib-stats.vercel.app/Hotpad100c/created.svg)
+
+</SlantCell>
+
+</SlantRow>
+
+</SlantPage>
