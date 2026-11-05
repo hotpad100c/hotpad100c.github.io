@@ -1,0 +1,84 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@0,900;1,900&display=swap');
+/*
+ * Redstone Modeler（https://hotpad100c.github.io/Redstone-Modeler/）的博客风格覆盖。
+ * 由 scripts/mirror.mjs 复制为镜像里的 __blog-theme.css，在原样式之后加载。
+ * 这是一个只有深色界面的 3D 编辑器，所以始终使用博客的深色配色。
+ * 3D 场景本身的背景色由程序设置（可在 Settings 里改），这里不改。
+ */
+:root {
+  --b-bg: #0b0910;
+  --b-bar: #100d18;
+  --b-panel: #16121f;
+  --b-raised: #1d1828;
+  --b-line: rgba(181, 156, 242, 0.22);
+  --b-line-strong: rgba(181, 156, 242, 0.45);
+  --b-fg: #efe9fd;
+  --b-fg-2: #a197bd;
+  --b-accent: #b59cf2;
+  --b-on-accent: #0b0910;
+  --b-cut: 5px;
+  --b-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  --b-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  color-scheme: dark;
+}
+
+* { border-radius: 0 !important; }
+body { background: var(--b-bg) !important; color: var(--b-fg) !important; }
+
+/* 顶栏、底栏、侧栏 */
+#top_bar, #hotbar_row { background: var(--b-bar) !important; border-bottom: 1px solid var(--b-line); }
+#hotbar_row { border-bottom: none; border-top: 1px solid var(--b-line); }
+#sidebar, #state_bar { background: var(--b-panel) !important; border-color: var(--b-line) !important; }
+#sidebar { border-left-width: 1px !important; }
+#block_states, #state_bar { border-top: 1px solid var(--b-line) !important; }
+
+/* 按钮：平行四边形，用内描边代替边框（clip-path 会裁掉斜边上的边框） */
+button {
+  border: none !important;
+  background: var(--b-raised) !important;
+  color: var(--b-fg) !important;
+  box-shadow: inset 0 0 0 1px var(--b-line-strong);
+  padding: 3px 12px !important;
+  clip-path: polygon(var(--b-cut) 0, 100% 0, calc(100% - var(--b-cut)) 100%, 0 100%);
+}
+button:hover { background: #2a2140 !important; }
+button:active, button.selected, .selected { background: var(--b-accent) !important; color: var(--b-on-accent) !important; box-shadow: none; }
+button.error { color: #ff8a8a !important; }
+/* 方块列表、方块状态、快捷栏格子保持方正（它们是格子，不是按钮） */
+.block_item, .state_tile, .slot {
+  clip-path: none !important;
+  padding: 0 !important;
+  background: transparent !important;
+  box-shadow: none;
+}
+.block_item { padding: 2px 8px !important; }
+.block_item:hover { background: var(--b-raised) !important; }
+.state_tile, .slot { box-shadow: inset 0 0 0 1px var(--b-line-strong); background: var(--b-bar) !important; }
+.state_tile.selected, .slot.selected { box-shadow: inset 0 0 0 2px var(--b-accent); background: var(--b-raised) !important; }
+
+/* 输入框、下拉框 */
+input[type="text"], input[type="search"], input[type="number"], select, textarea {
+  background: var(--b-bar) !important;
+  color: var(--b-fg) !important;
+  border: 1px solid var(--b-line-strong) !important;
+}
+input:focus, select:focus, textarea:focus { outline: none; border-color: var(--b-accent) !important; }
+
+/* 对话框 */
+dialog {
+  background: var(--b-panel) !important;
+  color: var(--b-fg) !important;
+  border: 1px solid var(--b-line-strong) !important;
+  box-shadow: 16px 16px 0 rgba(181, 156, 242, 0.08);
+}
+dialog::backdrop { background: rgba(11, 9, 16, 0.7); }
+dialog h2, dialog h3 { font-family: var(--b-serif); }
+#source_list li, #library_list li { border-color: var(--b-line) !important; }
+#library_list li.active { background: var(--b-raised) !important; box-shadow: inset 3px 0 0 var(--b-accent); }
+
+/* 首次打开的提示层 */
+#onboarding { background: rgba(11, 9, 16, 0.86) !important; }
+#onboarding h2, #onboarding p:first-child { font-family: var(--b-serif); }
+
+/* 小字说明、编号用等宽 */
+#help, #build_id, .note, .block_id, .held_id { font-family: var(--b-mono); color: var(--b-fg-2) !important; }

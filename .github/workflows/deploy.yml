@@ -3,6 +3,9 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  # 每天重新构建一次，让镜像站点（docs/.vuepress/mirrors.json）跟上原站的更新
+  schedule:
+    - cron: '41 19 * * *'
 
 jobs:
   docs:
@@ -25,6 +28,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
           
+      - name: Mirror external sites
+        run: node scripts/mirror.mjs
+
       - name: Build VuePress site
         run: NODE_OPTIONS="--max-old-space-size=4096" pnpm run docs:build
         

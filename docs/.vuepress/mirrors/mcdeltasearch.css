@@ -1,0 +1,75 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@0,900;1,900&display=swap');
+/*
+ * mcdeltasearch（https://mcdeltasearch.hotpad100c.workers.dev/）的博客风格覆盖。
+ * 由 scripts/mirror.mjs 复制为镜像里的 __blog-theme.css，在原样式之后加载。
+ * 原站的绿色配色换成博客的紫色，圆角改为方角，按钮 / 分段切换为平行四边形。
+ * 检索结果里的高亮色（--mark）表示命中的关键词，只调整到与紫色协调。
+ */
+:root, :root[data-theme="light"] {
+  --bg: #efe9fb;
+  --surface: #f8f5fe;
+  --ink: #1d1534;
+  --muted: #5b5078;
+  --line: #d6cbee;
+  --accent: #5d3b99;
+  --accent-ink: #ffffff;
+  --mark: #f1dd8a;
+  --mark-ink: #2a2410;
+  --chip-snap: #e4dbf6;
+  --chip-pre: #f3e3d0;
+  --chip-pre-ink: #6a4214;
+  --warn: #9a4a1a;
+  --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+  --font-mark: 'Playfair Display', 'Noto Serif SC', serif;
+  --blog-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  --blog-cut: 5px;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --bg: #0b0910;
+  --surface: #100d18;
+  --ink: #efe9fd;
+  --muted: #a197bd;
+  --line: #2a2340;
+  --accent: #b59cf2;
+  --accent-ink: #0b0910;
+  --mark: #5c4c12;
+  --mark-ink: #fbefc4;
+  --chip-snap: #1d1828;
+  --chip-pre: #3a2c1b;
+  --chip-pre-ink: #f0c995;
+  --warn: #e3a074;
+  color-scheme: dark;
+}
+
+* { border-radius: 0 !important; }
+body { background: var(--bg) !important; }
+
+/* 标题：站名用斜体展示字体，条目标题用衬线 */
+.brand h1 { font-weight: 900 !important; letter-spacing: 0 !important; color: var(--ink); }
+.brand h1 span { font-style: italic; color: var(--accent); }
+
+/* 输入框与按钮：1px 发丝线，按钮为平行四边形 */
+#q {
+  border-width: 1px !important;
+  border-color: var(--line) !important;
+}
+#q:focus { border-color: var(--accent) !important; outline: none; }
+.go, .more, .seg, .tier, .form, .cat {
+  clip-path: polygon(var(--blog-cut) 0, 100% 0, calc(100% - var(--blog-cut)) 100%, 0 100%);
+}
+.go, .more {
+  border: none !important;
+  background: var(--accent) !important;
+  color: var(--accent-ink) !important;
+  padding-inline: 24px !important;
+}
+.go:hover, .more:hover { filter: brightness(1.1); }
+.seg { border: none !important; background: var(--chip-snap); }
+.seg button { padding-inline: 14px !important; }
+.seg button[aria-pressed="true"] { background: var(--accent) !important; color: var(--accent-ink) !important; }
+.tier, .form, .cat { padding-inline: 9px !important; }
+select { border-color: var(--line) !important; }
+
+/* 在 iframe 里高度由内容决定 */
+.blog-mirror-framed body { min-height: 0 !important; }

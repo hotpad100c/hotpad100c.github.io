@@ -174,7 +174,23 @@ export const navData = [
         detail: '是的。', 
         url: 'https://hotpad100c.github.io/RyansRenderingKit/Overview',
         cover: 'https://i.imgur.com/OV8wj8t.png'
-      }   
+      },
+      {
+        id: 'McDeltaSearch',
+        title: 'mcdelta 检索',
+        description: '检索 Minecraft 各版本的行为变化',
+        detail: '基于 Fallen-Breath/mcdelta 的报告，支持关键词与语义检索（语义模型在浏览器本地运行，首次打开需要下载约 40MB 数据）。',
+        url: '/tools/mcdeltasearch/',
+        cover: '/projects/mcdeltasearch.webp'
+      },
+      {
+        id: 'RedstoneModeler',
+        title: 'Redstone Modeler',
+        description: '在浏览器里搭建与分享方块模型',
+        detail: '导入资源包后放置方块、调整方块状态，可以导入原理图、截图和生成分享链接。资源包只在本地处理，不会上传。',
+        url: '/tools/redstone-modeler/',
+        cover: '/projects/redstone-modeler.webp'
+      }
     ]
   }
 ]

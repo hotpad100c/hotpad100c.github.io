@@ -14,6 +14,10 @@
 | `docs/.vuepress/components/home/useHomeData.ts` | 读取文章、标签、项目数据（一般不用改） |
 | `docs/.vuepress/components/slant/` | 斜切页面组件（`SlantPage`、`SlantRow`、`SlantCell` 等），「关于」页用的就是它们 |
 | `docs/about/README.md` | 「关于」页，用斜切页面组件排版 |
+| `docs/.vuepress/mirrors.json` | 镜像站点列表（见「镜像站点」） |
+| `docs/.vuepress/mirrors/` | 镜像站点的风格覆盖 CSS 和桥接脚本 |
+| `scripts/mirror.mjs` | 抓取镜像站点的脚本，部署时自动运行 |
+| `docs/tools/` | 镜像工具的页面（mcdelta 检索、Redstone Modeler） |
 | `docs/.vuepress/public/about/` | 「关于」页用到的图片 |
 | `docs/.vuepress/styles/index.css` | 全站配色（浅色 / 深色两套） |
 | `docs/.vuepress/styles/slant.css` | 全站形状规则：无圆角、发丝线、平行四边形、标题字体 |
@@ -31,6 +35,12 @@ pnpm docs:dev
 ```
 
 浏览器打开终端里显示的地址（通常是 `http://localhost:8080/`）。改动保存后页面会自动刷新。
+
+镜像站点的文件不在仓库里，本地第一次预览前（或想拿到原站的最新版本时）先抓取一次：
+
+```bash
+pnpm mirror
+```
 
 要检查正式构建是否正常：
 
@@ -280,6 +290,83 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 - **图片**：站内图片放在 `docs/.vuepress/public/` 下，用 `/` 开头引用（例如 `image="/about/pfp.png"`）；也可以填 `https://` 地址。正文里的 Markdown 图片（`![](...)`）照常可用。
 - **链接不能嵌套**：给 `SlantCell` 写了 `href` 后，它的正文里就不要再放链接。
 - **方向规则**：与首页相同，方正行上下两侧的斜切行方向相反。`SlantHero` 的窗口算作 `/`，所以它下面如果是 `square`，再下面的斜切行要用 `rev`。「关于」页的顺序是：首屏窗口（/）→ square → rev → square → slant → square。
+
+## 镜像站点
+
+可以把自己的其它静态网站「镜像」到博客里：在博客的页面里直接使用，风格也改成和博客一致，而原站的代码不进入本仓库。目前有三个：
+
+| 原站 | 博客里的页面 |
+|---|---|
+| `https://modsite-4x9.pages.dev/` | 文章「逃离光影地狱」（`/posts/EscapingFromShaderHell/`） |
+| `https://mcdeltasearch.hotpad100c.workers.dev/` | `/tools/mcdeltasearch/`，「项目」页「网页」分类里可以找到 |
+| `https://hotpad100c.github.io/Redstone-Modeler/` | `/tools/redstone-modeler/`，同上 |
+
+### 工作方式
+
+1. **抓取**：部署时 `scripts/mirror.mjs` 读取 `docs/.vuepress/mirrors.json`，从每个入口页面开始，递归抓取它引用的同站文件（`src`、`href`、`import`、`fetch("./…")`、CSS 里的 `url()` 等），存进 `docs/.vuepress/mirror-dist/<name>/`（不提交，已在 `.gitignore` 中）。构建完成后复制到网站的 `/mirror/<name>/`。
+2. **改风格**：抓取时在每个 HTML 的末尾插入 `docs/.vuepress/mirrors/<name>.css`（风格覆盖）和 `_bridge.js`（桥接脚本）。覆盖 CSS 排在原站样式之后，所以写同样的选择器就能覆盖。
+3. **显示**：博客页面用 `MirrorFrame` 组件把 `/mirror/<name>/` 放进 iframe。因为和博客同域，iframe 的高度可以跟随内容，深浅色也能同步。
+
+桥接脚本做的事：
+
+- 在博客里时，深浅色跟随博客导航栏的开关实时切换；单独打开 `/mirror/<name>/` 时读取博客保存的深浅色设置。
+- 在博客里时，指向其它网站的链接在新标签页打开（GitHub 等网站不允许被嵌在 iframe 里）。
+- 给 `<html>` 加上 `blog-mirror`（在博客里时再加 `blog-mirror-framed`），覆盖 CSS 可以用它只在博客里隐藏原站的主题按钮等。
+
+**原站更新后**：部署工作流每天自动重新构建一次（北京时间 03:41），镜像会在一天内跟上。想立刻更新，在 GitHub 仓库的 Actions → deploy → Run workflow 手动运行一次即可。如果某个文件抓取失败，部署会中止并保留线上的旧版本，不会发布残缺的镜像。
+
+### 添加一个镜像
+
+**1. 在 `docs/.vuepress/mirrors.json` 里加一项**：
+
+```json
+{
+  "name": "mytool",
+  "url": "https://mytool.example.dev/",
+  "entries": ["index.html"]
+}
+```
+
+| 字段 | 说明 |
+|---|---|
+| `name` | 镜像名，决定地址 `/mirror/<name>/` 和覆盖 CSS 的文件名 |
+| `url` | 原站地址 |
+| `entries` | 入口页面，有多个页面时都列出来（例如 modsite 的 `index.html` 和 `mod.html`） |
+| `extra` | 可选。脚本里用变量拼出来、自动发现不了的文件，例如 mcdelta 的 `model.json` |
+| `follow` | 可选。这些 JSON 文件里出现的文件名也一并抓取，例如 mcdelta 的 `blobs.json` 里列着模型分片 |
+
+运行 `pnpm mirror`，终端会列出抓到的文件和找不到的文件。然后 `pnpm docs:dev`，打开 `http://localhost:8080/mirror/<name>/` 确认原站能正常运行；打开浏览器开发者工具的「网络」面板，如果有 404，就把缺的文件加进 `extra` 或 `follow`。
+
+**2. 写风格覆盖** `docs/.vuepress/mirrors/<name>.css`（可选，没有就保持原样）。建议的顺序：
+
+- 先找原站的颜色变量（`:root { --bg: …; }` 之类），换成博客的颜色（见「配色」）。三个现有的覆盖文件都是这样开头的，可以照抄。
+- `* { border-radius: 0 !important; }` 去掉圆角。
+- 按钮、标签等加 `clip-path: polygon(5px 0, 100% 0, calc(100% - 5px) 100%, 0 100%)` 变成平行四边形。
+- 文件开头 `@import` 博客用的字体（iframe 里不会继承博客的字体）。
+- `.blog-mirror-framed body { min-height: 0 !important; }`：原站如果用了 `min-height: 100vh`，在 iframe 里会和自适应高度互相影响。
+
+**3. 新建一个页面**，例如 `docs/tools/mytool.md`：
+
+```md
+---
+title: My Tool
+permalink: /tools/mytool/
+pageLayout: page
+description: 一句话介绍。
+---
+
+<MirrorFrame src="/mirror/mytool/" title="My Tool" source="https://mytool.example.dev/" />
+```
+
+`MirrorFrame` 的参数：`src` 镜像地址；`title` 标题栏里的名称；`source` 原站地址（可选，有的话标题栏里有「原站」按钮）；`fit` 为 `content`（默认，高度跟随内容，整页一起滚动）或 `screen`（占满一屏，适合编辑器这类应用）。
+
+想放进「项目」页，在 `docs/projects/data.js` 里加一项，`url` 写站内地址（`/tools/mytool/`），点击后会在当前标签页打开。封面图可以放在 `docs/.vuepress/public/projects/` 下。
+
+### 限制
+
+- 只适合**纯前端**的静态网站。原站如果调用自己的后端接口，换了域名之后可能被跨域限制拦下。
+- 原站里写死的外部地址（下载链接、图片 CDN、第三方接口，例如 modsite 的机器翻译）保持原样，会直接访问原来的地址。
+- 风格覆盖依赖原站的类名和变量名。原站改版后，覆盖可能需要跟着调整。
 
 ## 配色
 

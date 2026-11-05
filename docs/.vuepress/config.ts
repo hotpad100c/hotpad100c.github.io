@@ -2,6 +2,41 @@ import { defineUserConfig } from "vuepress";
 import theme from "vuepress-theme-plume";
 import { webpackBundler } from '@vuepress/bundler-webpack'
 import type { Plugin } from 'vuepress/core'
+import { cp, readFile, stat } from 'node:fs/promises'
+import path from 'node:path'
+
+/**
+ * 镜像站点（scripts/mirror.mjs 抓取到 docs/.vuepress/mirror-dist/）在网站上的地址是 /mirror/<name>/。
+ * 构建：生成完成后复制到 dist/mirror/。开发：由下面的 serveMirror 中间件直接提供。
+ */
+const MIRROR_DIR = path.resolve(process.cwd(), 'docs/.vuepress/mirror-dist')
+const mirrorPlugin = (): Plugin => ({
+  name: 'mirror-sites',
+  onGenerated: async (app) => {
+    try { await stat(MIRROR_DIR) } catch {
+      console.warn('[mirror] 没有找到 docs/.vuepress/mirror-dist，镜像页面将无法显示。先运行 pnpm mirror')
+      return
+    }
+    await cp(MIRROR_DIR, app.dir.dest('mirror'), { recursive: true })
+  },
+})
+const MIME: Record<string, string> = {
+  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript', '.mjs': 'text/javascript',
+  '.css': 'text/css', '.json': 'application/json', '.txt': 'text/plain; charset=utf-8',
+  '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.webp': 'image/webp', '.wasm': 'application/wasm',
+}
+const serveMirror = async (req: any, res: any, next: () => void) => {
+  const url = decodeURIComponent((req.url || '').split('?')[0])
+  if (!url.startsWith('/mirror/')) return next()
+  let file = path.join(MIRROR_DIR, url.slice('/mirror/'.length))
+  if (!file.startsWith(MIRROR_DIR)) return next()
+  try {
+    if ((await stat(file)).isDirectory()) file = path.join(file, 'index.html')
+    const body = await readFile(file)
+    res.setHeader('Content-Type', MIME[path.extname(file)] || 'application/octet-stream')
+    res.end(body)
+  } catch { next() }
+}
 
 /** 把 frontmatter 的 date（Date 或 "2026–7-4" 之类的字符串）转成 Plume 的 createTime 格式 */
 function dateToCreateTime(d: unknown): string | undefined {
@@ -35,7 +70,7 @@ const homePostsPlugin = (): Plugin => ({
         path: p.path,
         date: toDateString(p.frontmatter.date ?? p.frontmatter.createTime),
         tags: (p.frontmatter.tags as string[]) || [],
-        excerpt: plain(p.content.replace(/^---[\s\S]*?---/, ''))
+        excerpt: (p.frontmatter.description as string) || plain(p.content.replace(/^---[\s\S]*?---/, ''))
           .replace(new RegExp(`^${p.title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*`), '')
           .slice(0, 160),
       }))
@@ -136,7 +171,9 @@ export default defineUserConfig({
     },
     
   }),
-  plugins: [homePostsPlugin()],
+  plugins: [homePostsPlugin(), mirrorPlugin()],
   cache: 'filesystem',
-  bundler: webpackBundler(),
+  bundler: webpackBundler({
+    devServerSetupMiddlewares: (middlewares) => [{ name: 'mirror-sites', middleware: serveMirror }, ...middlewares],
+  }),
 });

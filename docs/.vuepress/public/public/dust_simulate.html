@@ -4,271 +4,404 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>红石粉更新顺序 · 颜色映射</title>
+<script>
+  // 与博客共用深浅色设置（Plume 存在 localStorage 的 vuepress-theme-appearance 里）
+  (function () {
+    var KEY = 'vuepress-theme-appearance', v = 'auto';
+    try { v = localStorage.getItem(KEY) || 'auto'; } catch (e) {}
+    var dark = v === 'dark' || (v !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+  })();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@1,900&display=swap">
 <style>
+  /*
+   * 斜切风格（与博客一致）：方正面板 + 1px 发丝线，按钮 / 标签为平行四边形，无圆角。
+   * 画布里的颜色（更新顺序映射、6 种分组色）表示数据，保持不变。
+   */
   :root{
-    --bg:#1a1a2e;
-    --panel:#16213e;
-    --info:#0f3460;
-    --field:#1a1a3e;
-    --accent:#f0a500;
-    --text:#eeeeee;
-    --dim:#aaaaaa;
-    --dim2:#888888;
+    --bg:#efe9fb;
+    --panel:rgba(248,245,254,.96);
+    --tile:rgba(250,247,255,.9);
+    --hover:#ffffff;
+    --line:rgba(93,59,153,.28);
+    --text:#1d1534;
+    --dim:#5b5078;
+    --dim2:#8a80a6;
+    --accent:#5d3b99;
+    --on-accent:#ffffff;
+    --field:#ffffff;
+    --canvas-bg:#111111;
+    --cut:5px;
+    --serif:'Noto Serif SC','Source Han Serif SC','Songti SC',serif;
+    --display:'Playfair Display','Noto Serif SC',serif;
+    --mono:'JetBrains Mono',ui-monospace,Menlo,Consolas,monospace;
+    --sans:"PingFang SC","Microsoft YaHei","Noto Sans SC",-apple-system,BlinkMacSystemFont,sans-serif;
+    color-scheme:light;
   }
-  *{ box-sizing:border-box; }
+  [data-theme="dark"]{
+    --bg:#0b0910;
+    --panel:rgba(16,13,24,.94);
+    --tile:rgba(19,15,28,.86);
+    --hover:rgba(34,26,52,.92);
+    --line:rgba(181,156,242,.22);
+    --text:#efe9fd;
+    --dim:#a197bd;
+    --dim2:#6f6690;
+    --accent:#b59cf2;
+    --on-accent:#0b0910;
+    --field:#120f1b;
+    color-scheme:dark;
+  }
+  *{ box-sizing:border-box; border-radius:0 !important; }
   html,body{
     margin:0; padding:0;
     background:var(--bg);
     color:var(--text);
-    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",-apple-system,BlinkMacSystemFont,sans-serif;
+    font-family:var(--sans);
     -webkit-tap-highlight-color: transparent;
   }
+  a{ color:inherit; }
+  button:focus-visible, input:focus-visible, a:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+
+  /* 平行四边形 */
+  .cut{ clip-path:polygon(var(--cut) 0,100% 0,calc(100% - var(--cut)) 100%,0 100%); }
+
+  /* ---------- 顶栏 ---------- */
+  .topbar{
+    max-width:1280px; margin:0 auto;
+    padding:0 max(16px,3vw);
+    height:56px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px;
+    border-bottom:1px solid var(--line);
+    font-family:var(--mono); font-size:12px;
+  }
+  .topbar a{ text-decoration:none; color:var(--dim); }
+  .topbar a:hover{ color:var(--accent); }
+  .topbar .crumb b{ color:var(--text); font-weight:700; letter-spacing:.08em; }
+  .theme-btn{
+    font-family:var(--mono); font-size:12px;
+    padding:6px 16px;
+    background:var(--tile); color:var(--dim);
+    border:none; cursor:pointer;
+  }
+  .theme-btn:hover{ color:var(--text); background:var(--hover); }
+
   #app{
-    max-width:1000px;
+    max-width:1280px;
     margin:0 auto;
-    padding:16px 14px 24px;
-    display:flex;
-    flex-direction:column;
-    align-items:center;
+    padding:22px max(16px,3vw) 32px;
+  }
+
+  /* ---------- 标题 ---------- */
+  .page-head{ display:flex; flex-wrap:wrap; align-items:baseline; gap:6px 18px; margin-bottom:18px; }
+  .label{
+    font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase;
+    color:var(--accent); margin:0;
   }
   h1{
-    font-size:20px;
-    font-weight:400;
-    color:var(--accent);
-    margin:4px 0 14px;
-    text-align:center;
+    font-family:var(--serif);
+    font-size:clamp(24px,3.2vw,36px);
+    font-weight:900;
+    color:var(--text);
+    margin:4px 0 0;
+    line-height:1.2;
   }
-  .round{
-    background:var(--panel);
-    border-radius:22px;
-    padding:10px 16px;
-    display:flex;
-    flex-wrap:wrap;
-    gap:10px 18px;
-    align-items:center;
-    justify-content:center;
-    width:100%;
+  h1 em{ font-family:var(--display); font-style:italic; color:var(--accent); font-weight:900; }
+  .page-head .desc{ flex-basis:100%; margin:0; color:var(--dim); font-size:14px; line-height:1.7; }
+
+  /* ---------- 两列：图 + 控制 ---------- */
+  .layout{ display:grid; grid-template-columns:minmax(0,1fr); gap:16px; }
+  @media (min-width:960px){
+    .layout{ grid-template-columns:minmax(0,1fr) 360px; align-items:start; }
+    .side{ position:sticky; top:16px; }
   }
-  .round.info{ background:var(--info); border-radius:16px; padding:8px 16px; }
+  .figure, .side{ display:flex; flex-direction:column; gap:12px; min-width:0; }
+
+  /* 方正面板：1px 发丝线 */
+  .panel{
+    display:grid; gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+  }
+  .cell{ background:var(--panel); padding:10px 14px; min-width:0; }
+  .cell .label{ margin-bottom:8px; }
+
+  /* 坐标输入 */
   .field-group{ display:flex; align-items:center; gap:6px; position:relative; }
-  .field-group label{ font-size:14px; color:var(--text); }
+  .field-group label{ font-family:var(--mono); font-size:13px; font-weight:700; color:var(--text); width:1.4em; }
   .layertag{
+    font-family:var(--mono);
     font-size:10px;
-    color:#1a1a2e;
+    color:var(--on-accent);
     background:var(--accent);
-    border-radius:6px;
-    padding:1px 5px;
-    margin-left:-2px;
+    padding:1px 8px;
     visibility:hidden;
     font-weight:700;
-    line-height:1.4;
+    line-height:1.5;
+    clip-path:polygon(4px 0,100% 0,calc(100% - 4px) 100%,0 100%);
+    order:9;
   }
-  .stepper{
-    display:flex; align-items:center; gap:3px;
-  }
+  .stepper{ display:flex; align-items:center; gap:1px; background:var(--line); border:1px solid var(--line); }
   .stepper button{
-    width:22px; height:22px;
-    border:1px solid var(--info);
+    width:30px; height:26px;
+    border:none;
     background:var(--field);
     color:var(--dim);
-    border-radius:5px;
+    font-family:var(--mono);
     font-size:11px;
     line-height:1;
     cursor:pointer;
     padding:0;
     touch-action:manipulation;
   }
-  .stepper button:active{ background:var(--info); color:var(--text); }
+  .stepper button:hover{ color:var(--text); background:var(--hover); }
+  .stepper button:active{ background:var(--accent); color:var(--on-accent); }
   .coord-input{
-    width:64px;
+    width:68px;
+    height:28px;
     text-align:center;
+    font-family:var(--mono);
     font-size:14px;
     background:var(--field);
-    color:#fff;
-    border:1px solid var(--info);
-    border-radius:6px;
-    padding:4px 4px;
-    font-family:inherit;
-  }
-  .coord-input:focus{ outline:1px solid var(--accent); }
-  .pair{ display:flex; align-items:center; gap:6px; font-size:14px; white-space:nowrap; }
-  .pair .k{ color:#cccccc; }
-  .pair .v{ color:#fff; min-width:1ch; font-variant-numeric: tabular-nums; }
-  .switchgroup{ display:flex; align-items:center; gap:6px; }
-  .switchgroup .lbl{ font-size:14px; color:#cccccc; }
-  .switchgroup button{
-    font-size:13px;
-    background:var(--field);
     color:var(--text);
-    border:1px solid var(--info);
-    border-radius:7px;
-    padding:5px 12px;
+    border:1px solid var(--line);
+    padding:2px 4px;
+  }
+  .coord-input:focus{ outline:none; border-color:var(--accent); }
+
+  /* 键值 */
+  .pair{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; font-size:13px; white-space:nowrap; }
+  .pair .k{ font-family:var(--mono); font-size:11px; letter-spacing:.06em; color:var(--dim); }
+  .pair .v{ font-family:var(--mono); color:var(--text); min-width:1ch; font-variant-numeric:tabular-nums; }
+  .info{ display:flex; flex-wrap:wrap; }
+  .info .cell{ display:flex; align-items:center; flex:1 1 200px; }
+  .info .pair{ width:100%; }
+
+  /* 切换按钮：平行四边形 */
+  .switchgroup{ display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+  .switchgroup .lbl{ display:none; }
+  .switchgroup button{
+    font-family:var(--sans);
+    font-size:13px;
+    background:var(--tile);
+    color:var(--dim);
+    border:none;
+    padding:6px 16px;
     cursor:pointer;
     touch-action:manipulation;
     white-space:nowrap;
+    clip-path:polygon(var(--cut) 0,100% 0,calc(100% - var(--cut)) 100%,0 100%);
+    box-shadow:inset 0 0 0 1px var(--line);
   }
+  .switchgroup button:hover{ color:var(--text); background:var(--hover); }
   .switchgroup button.active{
     background:var(--accent);
-    color:#1a1a2e;
-    border-color:var(--accent);
-    font-weight:600;
+    color:var(--on-accent);
+    font-weight:700;
+    box-shadow:none;
   }
+
+  /* 画布 */
   .canvas-wrap{
     width:100%;
-    margin-top:10px;
-    border:2px solid var(--info);
-    background:#111;
+    border:1px solid var(--line);
+    outline:1px solid var(--line);
+    outline-offset:4px;
+    background:var(--canvas-bg);
     line-height:0;
     touch-action:none;
     overflow:hidden;
-    border-radius:2px;
   }
   #canvas{
     width:100%;
-    height:clamp(300px, 56vh, 560px);
+    height:clamp(300px, 62vh, 640px);
     display:block;
     cursor:grab;
   }
   #canvas.dragging{ cursor:grabbing; }
+
+  /* 图例 */
   .legend{
-    margin-top:10px;
-    width:100%;
-    background:var(--panel);
-    border-radius:18px;
-    padding:10px 16px;
     display:none;
-    flex-wrap:wrap;
-    gap:8px 20px;
-    align-items:center;
-    justify-content:center;
+    background:var(--line);
+    border:1px solid var(--line);
+    gap:1px;
+    grid-template-columns:minmax(0,1fr);
     font-size:12px;
   }
-  .legend.show{ display:flex; }
-  .legend .item{ display:flex; align-items:center; gap:7px; white-space:nowrap; }
-  .legend .sw{ width:13px; height:13px; border-radius:4px; flex:none; }
+  .legend.show{ display:grid; }
+  .legend .item{ display:flex; align-items:center; gap:10px; padding:7px 14px; background:var(--panel); }
+  .legend .sw{ width:12px; height:12px; flex:none; }
+
+  /* 更新顺序 */
   .orderPanel{
-    margin-top:10px;
-    width:100%;
     min-height:46px;
-    background:var(--info);
-    border-radius:20px;
-    padding:10px 16px;
+    background:var(--panel);
+    border:1px solid var(--line);
+    padding:12px 14px;
     display:flex;
     flex-wrap:wrap;
-    gap:8px 8px;
+    gap:6px;
     align-items:center;
-    justify-content:center;
   }
-  .orderPanel .placeholder{ color:var(--dim); font-size:14px; }
-  .orderPanel .head{ color:var(--accent); font-weight:700; font-size:14px; margin-right:4px; }
-  .orderPanel .sub, .orderPanel .arrow{ color:var(--dim2); font-size:14px; margin:0 2px; }
+  .orderPanel .placeholder{ color:var(--dim); font-size:13px; }
+  .orderPanel .head{ font-family:var(--mono); color:var(--accent); font-weight:700; font-size:13px; margin:0 4px 0 0; flex-basis:100%; }
+  .orderPanel .sub, .orderPanel .arrow{ color:var(--dim2); font-size:13px; margin:0 1px; }
   .orderPanel .chip{
-    background:var(--field);
-    border-radius:14px;
-    padding:5px 12px;
-    font-size:14px;
+    background:var(--tile);
+    box-shadow:inset 0 0 0 1px var(--line);
+    padding:4px 14px;
+    font-size:13px;
     display:flex; align-items:baseline; gap:5px;
     white-space:nowrap;
+    clip-path:polygon(var(--cut) 0,100% 0,calc(100% - var(--cut)) 100%,0 100%);
   }
-  .orderPanel .chip .a{ color:var(--accent); font-weight:700; }
+  .orderPanel .chip .a{ font-family:var(--mono); color:var(--accent); font-weight:700; }
   .orderPanel .chip .b{ color:var(--dim); font-size:12px; }
   .orderPanel .flag{
-    background:var(--field);
-    border-radius:14px;
-    padding:5px 14px 5px 10px;
-    font-size:14px;
+    flex-basis:100%;
+    background:var(--tile);
+    box-shadow:inset 0 0 0 1px var(--line);
+    padding:6px 12px;
+    font-size:13px;
     display:flex; align-items:center; gap:8px;
-    white-space:nowrap;
+    white-space:normal;
+    margin-top:4px;
   }
-  .orderPanel .flag .dot{ width:10px; height:10px; border-radius:3px; flex:none; }
-  .hint,.status{
-    text-align:center;
-    font-size:12.5px;
-    margin-top:8px;
-    line-height:1.6;
-  }
+  .orderPanel .flag .dot{ width:10px; height:10px; flex:none; }
+
+  .hint,.status{ font-size:12px; line-height:1.7; margin:0; }
   .hint{ color:var(--dim); }
-  .status{ color:var(--dim2); }
+  .status{ font-family:var(--mono); font-size:11px; color:var(--dim2); }
+
+  @media (max-width:560px){
+    .stepper button{ width:28px; }
+    .coord-input{ width:58px; }
+    .topbar .crumb span{ display:none; }
+  }
 </style>
 </head>
 <body>
+<header class="topbar">
+  <a class="crumb" href="/posts/RedstoneDustMath/">← <b>RYAN100C</b><span> · 红石粉更新的数学规律</span></a>
+  <button type="button" class="theme-btn cut" id="themeBtn">深色 / 浅色</button>
+</header>
+
 <div id="app">
-  <h1>红石粉更新顺序 · 颜色映射</h1>
-
-  <div class="round" id="controls">
-    <div class="field-group">
-      <label>X:</label>
-      <span class="layertag" id="tagX">层</span>
-      <div class="stepper">
-        <button data-axis="x" data-step="-16">−16</button>
-        <button data-axis="x" data-step="-1">−1</button>
-      </div>
-      <input class="coord-input" id="tfX" inputmode="decimal" value="0">
-      <div class="stepper">
-        <button data-axis="x" data-step="1">+1</button>
-        <button data-axis="x" data-step="16">+16</button>
-      </div>
-    </div>
-    <div class="field-group">
-      <label>Y:</label>
-      <span class="layertag" id="tagY">层</span>
-      <div class="stepper">
-        <button data-axis="y" data-step="-16">−16</button>
-        <button data-axis="y" data-step="-1">−1</button>
-      </div>
-      <input class="coord-input" id="tfY" inputmode="decimal" value="0">
-      <div class="stepper">
-        <button data-axis="y" data-step="1">+1</button>
-        <button data-axis="y" data-step="16">+16</button>
-      </div>
-    </div>
-    <div class="field-group">
-      <label>Z:</label>
-      <span class="layertag" id="tagZ">层</span>
-      <div class="stepper">
-        <button data-axis="z" data-step="-16">−16</button>
-        <button data-axis="z" data-step="-1">−1</button>
-      </div>
-      <input class="coord-input" id="tfZ" inputmode="decimal" value="0">
-      <div class="stepper">
-        <button data-axis="z" data-step="1">+1</button>
-        <button data-axis="z" data-step="16">+16</button>
-      </div>
-    </div>
-    <div class="pair"><span class="k">缩放</span><span class="v" id="lbScale">1.00</span></div>
-    <div class="switchgroup">
-      <span class="lbl">视角</span>
-      <button id="btnPlaneXZ" class="active" title="俯视：X 为横轴，Z 为纵轴，Y 为层">俯视 X-Z</button>
-      <button id="btnPlaneXY" title="正视：X 为横轴，Y 为纵轴，Z 为层">正视 X-Y</button>
-      <button id="btnPlaneZY" title="侧视：Z 为横轴，Y 为纵轴，X 为层">侧视 Z-Y</button>
-    </div>
-    <div class="switchgroup">
-      <span class="lbl">模式</span>
-      <button id="btnModeOrder" class="active">更新顺序</button>
-      <button id="btnModeGroup">3 组分组</button>
-    </div>
+  <div class="page-head">
+    <p class="label">工具 · TMC</p>
+    <h1>红石粉更新顺序 <em>·</em> 颜色映射</h1>
+    <p class="desc">点击或点触任意方块，显示其周围 7 个方向的 bucketIndex 排序（与视角无关，永远是真实的 6 邻 + 自身）。</p>
   </div>
 
-  <div class="round info" id="infoBar">
-    <div class="pair"><span class="k">中心:</span><span class="v" id="lbCenter">(X 0.00, Z 0.00)</span></div>
-    <div class="pair"><span class="k">坐标:</span><span class="v" id="lbCoord">(0, 0, 0)</span></div>
-    <div class="pair"><span class="k">范围:</span><span class="v" id="lbRange">±32</span></div>
-    <div class="pair"><span class="k">渲染:</span><span class="v" id="lbTime">0.0 ms</span></div>
-    <div class="pair" id="hitBox" style="display:none;"><span class="k">视野内符合:</span><span class="v" id="lbHit">—</span></div>
+  <div class="layout">
+    <section class="figure">
+      <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
+
+      <div class="panel info" id="infoBar">
+        <div class="cell"><div class="pair"><span class="k">中心</span><span class="v" id="lbCenter">(X 0.00, Z 0.00)</span></div></div>
+        <div class="cell"><div class="pair"><span class="k">坐标</span><span class="v" id="lbCoord">(0, 0, 0)</span></div></div>
+        <div class="cell"><div class="pair"><span class="k">范围</span><span class="v" id="lbRange">±32</span></div></div>
+        <div class="cell"><div class="pair"><span class="k">渲染</span><span class="v" id="lbTime">0.0 ms</span></div></div>
+        <div class="cell" id="hitBox" style="display:none;"><div class="pair"><span class="k">视野内符合</span><span class="v" id="lbHit">—</span></div></div>
+      </div>
+
+      <p class="status">拖动平移 · 滚轮 / 双指缩放 · 输入框内滚轮 ±1（Shift ±16）· 两侧按钮 ±1 / ±16 · “层”标记的输入框是当前视角下被固定的那根轴</p>
+    </section>
+
+    <aside class="side">
+      <div class="panel" id="controls">
+        <div class="cell">
+          <p class="label">坐标</p>
+          <div style="display:grid; gap:8px;">
+            <div class="field-group">
+              <label>X</label>
+              <div class="stepper">
+                <button data-axis="x" data-step="-16">−16</button>
+                <button data-axis="x" data-step="-1">−1</button>
+              </div>
+              <input class="coord-input" id="tfX" inputmode="decimal" value="0" aria-label="X">
+              <div class="stepper">
+                <button data-axis="x" data-step="1">+1</button>
+                <button data-axis="x" data-step="16">+16</button>
+              </div>
+              <span class="layertag" id="tagX">层</span>
+            </div>
+            <div class="field-group">
+              <label>Y</label>
+              <div class="stepper">
+                <button data-axis="y" data-step="-16">−16</button>
+                <button data-axis="y" data-step="-1">−1</button>
+              </div>
+              <input class="coord-input" id="tfY" inputmode="decimal" value="0" aria-label="Y">
+              <div class="stepper">
+                <button data-axis="y" data-step="1">+1</button>
+                <button data-axis="y" data-step="16">+16</button>
+              </div>
+              <span class="layertag" id="tagY">层</span>
+            </div>
+            <div class="field-group">
+              <label>Z</label>
+              <div class="stepper">
+                <button data-axis="z" data-step="-16">−16</button>
+                <button data-axis="z" data-step="-1">−1</button>
+              </div>
+              <input class="coord-input" id="tfZ" inputmode="decimal" value="0" aria-label="Z">
+              <div class="stepper">
+                <button data-axis="z" data-step="1">+1</button>
+                <button data-axis="z" data-step="16">+16</button>
+              </div>
+              <span class="layertag" id="tagZ">层</span>
+            </div>
+          </div>
+        </div>
+        <div class="cell">
+          <p class="label">视角</p>
+          <div class="switchgroup">
+            <span class="lbl">视角</span>
+            <button id="btnPlaneXZ" class="active" title="俯视：X 为横轴，Z 为纵轴，Y 为层">俯视 X-Z</button>
+            <button id="btnPlaneXY" title="正视：X 为横轴，Y 为纵轴，Z 为层">正视 X-Y</button>
+            <button id="btnPlaneZY" title="侧视：Z 为横轴，Y 为纵轴，X 为层">侧视 Z-Y</button>
+          </div>
+        </div>
+        <div class="cell">
+          <p class="label">模式</p>
+          <div class="switchgroup">
+            <span class="lbl">模式</span>
+            <button id="btnModeOrder" class="active">更新顺序</button>
+            <button id="btnModeGroup">3 组分组</button>
+          </div>
+        </div>
+        <div class="cell"><div class="pair"><span class="k">缩放</span><span class="v" id="lbScale">1.00</span></div></div>
+      </div>
+
+      <div class="orderPanel" id="orderPanel">
+        <span class="placeholder">点击 / 点触方块查看更新顺序</span>
+      </div>
+
+      <div class="legend" id="legend"></div>
+    </aside>
   </div>
-
-  <div class="canvas-wrap"><canvas id="canvas"></canvas></div>
-
-  <div class="legend" id="legend"></div>
-
-  <div class="orderPanel" id="orderPanel">
-    <span class="placeholder">点击 / 点触方块查看更新顺序</span>
-  </div>
-
-  <div class="hint">点击或点触任意方块，显示其周围 7 个方向的 bucketIndex 排序（与视角无关，永远是真实的 6 邻 + 自身）</div>
-  <div class="status">拖动平移 · 滚轮 / 双指缩放 · 输入框内滚轮 ±1（Shift ±16）· 两侧按钮 ±1 / ±16 · “层”标记的输入框是当前视角下被固定的那根轴</div>
 </div>
 
+<script>
+  // 深浅色切换按钮：写回博客的设置，博客里也会跟着变
+  (function () {
+    var KEY = 'vuepress-theme-appearance';
+    var btn = document.getElementById('themeBtn');
+    function label() { btn.textContent = document.documentElement.dataset.theme === 'dark' ? '切换为浅色' : '切换为深色'; }
+    label();
+    btn.addEventListener('click', function () {
+      var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem(KEY, next); } catch (e) {}
+      label();
+    });
+  })();
+</script>
 <script>
 (function(){
   "use strict";
