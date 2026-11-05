@@ -131,3 +131,52 @@
 
 /* 页脚 */
 .theme-plume .vp-footer { border-top: 1px solid var(--vp-c-divider); }
+
+/* ==========================================================================
+ * 斜切页面组件（components/slant/*）共用的配色与字体，与首页 HomeSlant 一致。
+ * 用法见 CUSTOMIZING.md「斜切页面组件」。
+ * ========================================================================== */
+.sl-scope {
+  --sl-bg: #0b0910;
+  --sl-tile: rgba(19, 15, 28, 0.86);
+  --sl-tile-hover: rgba(34, 26, 52, 0.92);
+  --sl-panel: rgba(16, 13, 24, 0.94);
+  --sl-line: rgba(181, 156, 242, 0.22);
+  --sl-fg: #efe9fd;
+  --sl-fg-2: #a197bd;
+  --sl-accent: #b59cf2;
+  --sl-veil-1: rgba(11, 9, 16, 0.55);
+  --sl-veil-2: rgba(11, 9, 16, 0.92);
+  --sl-skew: -10deg;
+  --sl-unskew: 10deg;
+  --sl-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  --sl-display: 'Playfair Display', 'Noto Serif SC', serif;
+  --sl-mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
+  font-family: var(--sl-serif);
+}
+[data-theme='light'] .sl-scope {
+  --sl-bg: #efe9fb;
+  --sl-tile: rgba(250, 247, 255, 0.9);
+  --sl-tile-hover: #ffffff;
+  --sl-panel: rgba(248, 245, 254, 0.96);
+  --sl-line: rgba(93, 59, 153, 0.28);
+  --sl-fg: #1d1534;
+  --sl-fg-2: #5b5078;
+  --sl-accent: #5d3b99;
+  --sl-veil-1: rgba(239, 233, 251, 0.82);
+  --sl-veil-2: rgba(239, 233, 251, 0.95);
+}
+@media (max-width: 560px) {
+  .sl-scope { --sl-skew: -6deg; --sl-unskew: 6deg; }
+}
+.sl-scope .sl-label {
+  font-family: var(--sl-mono);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--sl-accent);
+  margin: 0;
+}
+/* pageLayout: page 的页面去掉 vp-doc 的默认内边距，让斜切页面铺满 */
+.theme-plume .vp-page:has(> .vp-doc > .sl-scope) { padding: 0 !important; }
+.theme-plume .vp-page > .vp-doc:has(> .sl-scope) { padding: 0 !important; max-width: none !important; }

@@ -12,6 +12,9 @@
 | `docs/.vuepress/components/home/homeConfig.ts` | **首页内容配置**：文字、按钮、社交链接、显示数量、展示哪些项目 |
 | `docs/.vuepress/components/home/HomeSlant.vue` | 首页的布局和样式 |
 | `docs/.vuepress/components/home/useHomeData.ts` | 读取文章、标签、项目数据（一般不用改） |
+| `docs/.vuepress/components/slant/` | 斜切页面组件（`SlantPage`、`SlantRow`、`SlantCell` 等），「关于」页用的就是它们 |
+| `docs/about/README.md` | 「关于」页，用斜切页面组件排版 |
+| `docs/.vuepress/public/about/` | 「关于」页用到的图片 |
 | `docs/.vuepress/styles/index.css` | 全站配色（浅色 / 深色两套） |
 | `docs/.vuepress/styles/slant.css` | 全站形状规则：无圆角、发丝线、平行四边形、标题字体 |
 | `docs/.vuepress/config.ts` | 字体链接、文章数据插件、`date` → `createTime` 的日期修正 |
@@ -213,6 +216,70 @@ config:
 3. 在 `docs/README.md` 的 `config` 里加 `- type: HomeTimeline`。写在这一项下面的其它字段会作为 props 传给组件（`HomeSlant` 的 `background`、`cover` 就是这样传进去的）。
 
 新组件想沿用首页的样子，可以照抄 `HomeSlant.vue` 里 `.sl-page` 的颜色变量和 `.tile` / `.panel` / `.sq` 的写法。
+
+## 斜切页面组件
+
+首页以外的页面也可以用斜切风格排版。「关于」页（`docs/about/README.md`）就是这样做的，可以直接照着改。
+
+内容仍然写 Markdown，只是用几个组件把它包起来。**组件标签和 Markdown 之间、组件和组件之间都要空一行**，否则里面的 Markdown 不会被解析。
+
+### 页面骨架
+
+```md
+---
+title: 关于
+pageLayout: page
+---
+
+<SlantPage>
+
+<SlantHero label="关于" image="/about/pfp.png">
+
+# 你好，我是 *Ryan100c*
+
+正文……
+
+</SlantHero>
+
+<SlantRow kind="square">
+
+<SlantCell span="7" label="01" title="爱好">
+
+Markdown 正文……
+
+</SlantCell>
+
+<SlantCell span="5" label="02" title="技能">
+
+<SkillIcons list="csharp,java,python" />
+
+</SlantCell>
+
+</SlantRow>
+
+</SlantPage>
+```
+
+frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有右侧目录栏）。
+
+### 组件
+
+| 组件 | 作用 | 参数 |
+|---|---|---|
+| `SlantPage` | 整页容器：配色、模糊背景图、最大宽度 | `background`：背景图，可选，默认 bg-cube |
+| `SlantHero` | 首屏：左边是插槽里的 Markdown，右边是斜切窗口 | `label`：小标签；`image`：窗口里的前景图（透明 PNG 最好）；`cover`：窗口背景图，默认 bg-cube |
+| `SlantRow` | 一行格子，横屏下是 12 列网格 | `kind`：`slant`（斜切 /）、`rev`（反向斜切 \）、`square`（方正面板） |
+| `SlantCell` | 一个格子，形状跟随所在的行 | `span`：占 12 列中的几列（默认 12）；`label`、`title`；`image`：顶部配图；`fit="contain"`：配图完整显示在深色底上；`max-height`：正文超出这个高度（像素）时在格子里滚动；`href`：整格变成链接 |
+| `SkillIcons` | 一排技能图标 | `list`：逗号分隔，可用 `csharp`、`java`、`python`、`javascript`、`blender`、`idea`、`unity`；其它写成 `图标集:图标名:显示名`，例如 `devicon-plain:rust:Rust` |
+| `SocialButtons` | 社交链接小按钮 | 无。内容与首页相同，在 `homeConfig.ts` 的 `socials` 里改 |
+| `ContactList` | 联系方式列表，每行带「复制」按钮 | `:items="[{ label: '邮箱', value: 'a@b.com', href: 'mailto:a@b.com' }]"`，`href` 可选 |
+
+补充说明：
+
+- **`span`**：同一行的 `span` 加起来最好等于 12。平板上 `span` ≤ 6 的格子占半行，其它占整行；手机上所有格子都占整行。
+- **图片**：站内图片放在 `docs/.vuepress/public/` 下，用 `/` 开头引用（例如 `image="/about/pfp.png"`）；也可以填 `https://` 地址。正文里的 Markdown 图片（`![](...)`）照常可用。
+- **链接不能嵌套**：给 `SlantCell` 写了 `href` 后，它的正文里就不要再放链接。
+- **方向规则**：与首页相同，方正行上下两侧的斜切行方向相反。`SlantHero` 的窗口算作 `/`，所以它下面如果是 `square`，再下面的斜切行要用 `rev`。「关于」页的顺序是：首屏窗口（/）→ square → rev → square → slant → square。
 
 ## 配色
 

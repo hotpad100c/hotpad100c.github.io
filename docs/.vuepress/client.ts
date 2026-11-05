@@ -4,6 +4,13 @@ import './styles/index.css'
 import './styles/slant.css'
 import NavPage from './components/NavPage.vue'
 import HomeSlant from './components/home/HomeSlant.vue'
+import SlantPage from './components/slant/SlantPage.vue'
+import SlantHero from './components/slant/SlantHero.vue'
+import SlantRow from './components/slant/SlantRow.vue'
+import SlantCell from './components/slant/SlantCell.vue'
+import SkillIcons from './components/slant/SkillIcons.vue'
+import SocialButtons from './components/slant/SocialButtons.vue'
+import ContactList from './components/slant/ContactList.vue'
 
 /**
  * 每次部署后，页面脚本的文件名（带哈希）都会变，旧文件会被删除。
@@ -29,6 +36,14 @@ export default defineClientConfig({
     app.component('NavPage', NavPage) // 添加这一行来注册 NavPage 组件
     // 首页区块（在 docs/README.md 的 config 里以 type: HomeSlant 使用）
     app.component('HomeSlant', HomeSlant)
+    // 斜切页面组件（用法见 CUSTOMIZING.md「斜切页面组件」，「关于」页是例子）
+    app.component('SlantPage', SlantPage)
+    app.component('SlantHero', SlantHero)
+    app.component('SlantRow', SlantRow)
+    app.component('SlantCell', SlantCell)
+    app.component('SkillIcons', SkillIcons)
+    app.component('SocialButtons', SocialButtons)
+    app.component('ContactList', ContactList)
 
     if (!__VUEPRESS_SSR__) {
       router.onError((err, to) => {
