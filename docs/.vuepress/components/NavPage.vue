@@ -2,7 +2,7 @@
   <div class="masonry-page">
     <!-- 按分类显示 -->
     <div 
-      v-for="group in navData" 
+      v-for="group in groups" 
       :key="group.category"
       class="masonry-group"
     >
@@ -59,9 +59,13 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
-import { useRouter } from 'vuepress/client'
+import { computed, ref } from 'vue'
+import { resolveRoute, useRouter, withBase } from 'vuepress/client'
 import { navData } from '../../projects/data.js'
+
+// exclude：不显示的分类名，例如 <NavPage :exclude="['模组']" />
+const props = defineProps({ exclude: { type: Array, default: () => [] } })
+const groups = computed(() => navData.filter(g => !props.exclude.includes(g.category)))
 
 const router = useRouter()
 
@@ -72,9 +76,10 @@ function toggleItem(item) {
 }
 
 function openLink(url) {
-  // 站内页面（/ 开头，例如镜像的工具页）在当前标签页打开
-  if (url.startsWith('/')) router.push(url)
-  else window.open(url, '_blank', 'noopener noreferrer')
+  if (!url.startsWith('/')) return window.open(url, '_blank', 'noopener noreferrer')
+  // 站内地址在当前标签页打开：博客页面走路由；public/ 里的独立 HTML（不是博客页面）整页跳转
+  if (resolveRoute(url).notFound) window.location.assign(withBase(url))
+  else router.push(url)
 }
 </script>
 

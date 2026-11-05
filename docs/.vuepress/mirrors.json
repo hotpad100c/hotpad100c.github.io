@@ -8,6 +8,14 @@
     ]
   },
   {
+    "name": "shader-escape",
+    "url": "https://shader-escape.github.io/emergency-exit/render-scale/",
+    "entries": [
+      "index.html"
+    ],
+    "scanStrings": true
+  },
+  {
     "name": "mcdeltasearch",
     "url": "https://mcdeltasearch.hotpad100c.workers.dev/",
     "entries": [

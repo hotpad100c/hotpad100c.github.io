@@ -294,11 +294,12 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 
 ## 镜像站点
 
-可以把自己的其它静态网站「镜像」到博客里：在博客的页面里直接使用，风格也改成和博客一致，而原站的代码不进入本仓库。目前有三个：
+可以把自己的其它静态网站「镜像」到博客里：在博客的页面里直接使用，风格也改成和博客一致，而原站的代码不进入本仓库。目前有四个：
 
-| 原站 | 博客里的页面 |
+| 原站 | 博客里的位置 |
 |---|---|
-| `https://modsite-4x9.pages.dev/` | 文章「逃离光影地狱」（`/posts/EscapingFromShaderHell/`） |
+| `https://shader-escape.github.io/emergency-exit/render-scale/` | 文章「逃离光影地狱」（`/posts/EscapingFromShaderHell/`），地址里的 `#bsl` / `#kappa` / `#sr` 与镜像同步 |
+| `https://modsite-4x9.pages.dev/` | 「项目」页上半部分（代替原来的「模组」卡片） |
 | `https://mcdeltasearch.hotpad100c.workers.dev/` | `/tools/mcdeltasearch/`，「项目」页「网页」分类里可以找到 |
 | `https://hotpad100c.github.io/Redstone-Modeler/` | `/tools/redstone-modeler/`，同上 |
 
@@ -342,6 +343,7 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 | `entries` | 入口页面，有多个页面时都列出来（例如 modsite 的 `index.html` 和 `mod.html`） |
 | `extra` | 可选。脚本里用变量拼出来、自动发现不了的文件，例如 mcdelta 的 `model.json` |
 | `follow` | 可选。这些 JSON 文件里出现的文件名也一并抓取，例如 mcdelta 的 `blobs.json` 里列着模型分片 |
+| `scanStrings` | 可选，`true` 时把页面和脚本里所有「像相对路径文件」的字符串也抓取（例如脚本数据里的 `src: "img/a.png"`），找不到的只警告。shader-escape 的流程图图片就是这样找到的 |
 
 运行 `pnpm mirror`，终端会列出抓到的文件和找不到的文件。然后 `pnpm docs:dev`，打开 `http://localhost:8080/mirror/<name>/` 确认原站能正常运行；打开浏览器开发者工具的「网络」面板，如果有 404，就把缺的文件加进 `extra` 或 `follow`。
 
@@ -366,9 +368,13 @@ description: 一句话介绍。
 <MirrorFrame src="/mirror/mytool/" title="My Tool" source="https://mytool.example.dev/" />
 ```
 
-`MirrorFrame` 的参数：`src` 镜像地址；`title` 标题栏里的名称；`source` 原站地址（可选，有的话标题栏里有「原站」按钮）；`fit` 为 `content`（默认，高度跟随内容，整页一起滚动）或 `screen`（占满一屏，适合编辑器这类应用）。
+`MirrorFrame` 的参数：`src` 镜像地址；`title` 标题栏里的名称；`source` 原站地址（可选，有的话标题栏里有「原站」按钮）；`fit` 为 `content`（默认，高度跟随内容，整页一起滚动）或 `screen`（占满一屏，适合编辑器这类应用）；`sync-hash`：博客地址的 `#…` 与镜像页面的 `#…` 双向同步，适合用 `#…` 切换内容的页面（例如「逃离光影地狱」的 `#bsl`）。`MirrorFrame` 也可以放在 `SlantPage` 里和其它内容一起排版，「项目」页就是这样。
 
-想放进「项目」页，在 `docs/projects/data.js` 里加一项，`url` 写站内地址（`/tools/mytool/`），点击后会在当前标签页打开。封面图可以放在 `docs/.vuepress/public/projects/` 下。
+想放进「项目」页，在 `docs/projects/data.js` 里加一项，`url` 写站内地址（`/tools/mytool/`），点击后会在当前标签页打开（博客页面走路由，`public/` 里的独立 HTML 整页打开）。封面图可以放在 `docs/.vuepress/public/projects/` 下。
+
+「项目」页（`docs/projects/README.md`）的卡片由 `<NavPage />` 显示；`<NavPage :exclude="['模组']" />` 可以不显示某些分类。现在「模组」分类由上方的 modsite 镜像代替，但 `data.js` 里的模组条目仍然保留：首页的「展示项目」（`homeConfig.ts` 的 `featuredProjects`）和项目数用的是它们。
+
+**站内链接请写成 `/` 开头的路径**（例如 `/RyansRenderingKit/Overview`），不要写 `https://hotpad100c.github.io/...`：博客现在由 Cloudflare Pages 提供，`hotpad100c.github.io` 这个地址下已经没有博客了（`hotpad100c.github.io/Redstone-Modeler/` 等其它仓库的项目站点不受影响）。
 
 ### 限制
 

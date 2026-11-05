@@ -19,7 +19,7 @@ permalink: /app/blog-in-blog/
   z-index: 0;
 ">
   <iframe
-    src="https://hotpad100c.github.io"
+    src="/"
     style="width: 100%; height: 100%; border: none;"
   ></iframe>
 </div>
