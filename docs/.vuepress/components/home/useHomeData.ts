@@ -1,4 +1,5 @@
 import { computed } from 'vue'
+import { withBase } from 'vuepress/client'
 // @ts-ignore 由 config.ts 中的 homePostsPlugin 生成
 import { homePosts } from '@temp/home-posts.js'
 import { navData } from '../../../projects/data.js'
@@ -65,7 +66,26 @@ export function pickFeaturedProjects(ids: string[]): HomeProject[] {
   return ids.map(id => projects.find(p => p.id === id)).filter((p): p is HomeProject => !!p)
 }
 
-// bg-cube 背景图（docs/images/Bg.png 的压缩版）
+// 默认背景图（docs/images/Bg.png 的压缩版）：首页整页背景、SlantPage 的背景
+// @ts-ignore 图片由打包器处理
+import bgMainUrl from '../../../images/bg-main.jpg'
+export const bgMain: string = bgMainUrl
+
+// 默认封面图 bg-cube（方块）：首页与 SlantHero 的斜切窗口
 // @ts-ignore 图片由打包器处理
 import bgCubeUrl from '../../../images/bg-cube.jpg'
 export const bgCube: string = bgCubeUrl
+
+/**
+ * 解析组件参数里的图片地址：
+ *   bg-main / bg-cube —— 上面两张内置图片
+ *   / 开头            —— docs/.vuepress/public/ 下的站内图片
+ *   其它              —— 原样使用（https:// 地址）
+ * 没有填写时返回 fallback。
+ */
+export function resolveImage(src: string | undefined, fallback: string): string {
+  if (!src) return fallback
+  if (src === 'bg-main') return bgMain
+  if (src === 'bg-cube') return bgCube
+  return src.startsWith('/') ? withBase(src) : src
+}

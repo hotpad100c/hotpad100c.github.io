@@ -3,19 +3,15 @@
  * 斜切风格的整页容器：提供与首页一致的配色、模糊背景图和最大宽度。
  * 用在 pageLayout: page 的 Markdown 页面里，里面放 SlantHero / SlantRow / SlantCell。
  *
- *   <SlantPage background="/images/xxx.jpg">   （background 可选，默认 bg-cube）
+ *   <SlantPage background="/images/xxx.jpg">   （background 可选，默认 bg-main；也可以写 bg-cube）
  *   ...
  *   </SlantPage>
  */
 import { computed } from 'vue'
-import { withBase } from 'vuepress/client'
-import { bgCube } from '../home/useHomeData'
+import { bgMain, resolveImage } from '../home/useHomeData'
 
 const props = defineProps<{ background?: string }>()
-const bg = computed(() => {
-  const src = props.background
-  return `url(${!src ? bgCube : src.startsWith('/') ? withBase(src) : src})`
-})
+const bg = computed(() => `url(${resolveImage(props.background, bgMain)})`)
 </script>
 
 <template>

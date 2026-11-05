@@ -23,7 +23,9 @@
 | `docs/.vuepress/styles/index.css` | 全站配色（浅色 / 深色两套） |
 | `docs/.vuepress/styles/slant.css` | 全站形状规则：无圆角、发丝线、平行四边形、标题字体 |
 | `docs/.vuepress/config.ts` | 字体链接、文章数据插件、`date` → `createTime` 的日期修正 |
-| `docs/images/bg-cube.jpg` | 默认背景图（`Bg.png` 的压缩版，约 100KB） |
+| `docs/images/Bg.png` | 背景图原图 |
+| `docs/images/bg-main.jpg` | 默认背景图（`Bg.png` 的压缩版，约 80KB）：首页整页背景、`SlantPage` 的背景 |
+| `docs/images/bg-cube.jpg` | 默认封面图（方块，约 100KB）：首页和 `SlantHero` 的斜切窗口 |
 
 ## 本地预览
 
@@ -90,15 +92,15 @@ config:
 
 1. 把图片放进 `docs/.vuepress/public/` 下（例如 `docs/.vuepress/public/images/home-bg.jpg`）。
 2. 用 `/` 开头的路径引用，路径从 `public/` 之后开始写，如上例。也可以直接填 `https://` 开头的完整地址。
-3. 只写 `background` 时，封面也用这张图；两个都不写时使用 `bg-cube`。
+3. 只写 `background` 时，封面也用这张图。都不写时，背景用 `bg-main.jpg`，封面用 `bg-cube.jpg`。
 
 建议：
 
 - 背景图用 16:9 左右的横图，1920 宽足够。背景会被模糊，细节不重要。
 - 封面图会被斜切窗口裁掉左右两角，主体放在画面中间。窗口在横屏下约为 16:7 到 16:9。
-- 用 JPG 或 WebP，控制在 300KB 以内，首页加载会快很多。原图 `Bg.png` 有 1.7MB，所以默认用的是压缩后的 `bg-cube.jpg`。
+- 用 JPG 或 WebP，控制在 300KB 以内，首页加载会快很多。所以默认背景用的是 `Bg.png` 压缩后的 `bg-main.jpg`。
 
-想换掉默认图（不写配置时用的那张），替换 `docs/images/bg-cube.jpg` 即可，文件名保持不变。
+想换掉默认图（不写配置时用的那张）：背景替换 `docs/images/bg-main.jpg`（原图可以放在 `Bg.png`），封面替换 `docs/images/bg-cube.jpg`，文件名保持不变。
 
 ## 首页布局
 
@@ -277,8 +279,8 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 
 | 组件 | 作用 | 参数 |
 |---|---|---|
-| `SlantPage` | 整页容器：配色、模糊背景图、最大宽度 | `background`：背景图，可选，默认 bg-cube |
-| `SlantHero` | 首屏：左边是插槽里的 Markdown，右边是斜切窗口 | `label`：小标签；`image`：窗口里的前景图（透明 PNG 最好）；`cover`：窗口背景图，默认 bg-cube |
+| `SlantPage` | 整页容器：配色、模糊背景图、最大宽度 | `background`：背景图，可选，默认 `bg-main.jpg` |
+| `SlantHero` | 首屏：左边是插槽里的 Markdown，右边是斜切窗口 | `label`：小标签；`image`：窗口里的前景图（透明 PNG 最好）；`cover`：窗口背景图，默认 `bg-cube.jpg`；`image-x`、`image-y`、`image-size`：把前景图钉在背景图上的某个位置（见下） |
 | `SlantRow` | 一行格子，横屏下是 12 列网格 | `kind`：`slant`（斜切 /）、`rev`（反向斜切 \）、`square`（方正面板） |
 | `SlantCell` | 一个格子，形状跟随所在的行 | `span`：占 12 列中的几列（默认 12）；`label`、`title`；`image`：顶部配图；`fit="contain"`：配图完整显示在深色底上；`max-height`：正文超出这个高度（像素）时在格子里滚动；`href`：整格变成链接 |
 | `SkillIcons` | 一排技能图标 | `list`：逗号分隔，可用 `csharp`、`java`、`python`、`javascript`、`blender`、`idea`、`unity`；其它写成 `图标集:图标名:显示名`，例如 `devicon-plain:rust:Rust` |
@@ -288,7 +290,14 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 补充说明：
 
 - **`span`**：同一行的 `span` 加起来最好等于 12。平板上 `span` ≤ 6 的格子占半行，其它占整行；手机上所有格子都占整行。
-- **图片**：站内图片放在 `docs/.vuepress/public/` 下，用 `/` 开头引用（例如 `image="/about/pfp.png"`）；也可以填 `https://` 地址。正文里的 Markdown 图片（`![](...)`）照常可用。
+- **图片**：站内图片放在 `docs/.vuepress/public/` 下，用 `/` 开头引用（例如 `image="/about/pfp.png"`）；也可以填 `https://` 地址。`background`、`cover` 还可以直接写 `bg-main`（`docs/images/bg-main.jpg`，分形图）或 `bg-cube`（`docs/images/bg-cube.jpg`，方块）。正文里的 Markdown 图片（`![](...)`）照常可用。
+- **把头像钉在背景图里**：`SlantHero` 写了 `image-size` 时，前景图的位置按**背景图**计算，而不是按窗口：`image-x` / `image-y` 是前景图中心在背景图上的位置（百分比），`image-size` 是前景图宽度占背景图宽度的百分比。窗口在不同屏幕上裁切的范围不同，但前景图始终停在背景图的同一位置。「关于」页的头像就是这样放进分形中央的暗框里的：
+
+  ```md
+  <SlantHero label="关于" image="/about/pfp.png" cover="bg-main" image-x="49.95" image-y="47.6" image-size="15.8">
+  ```
+
+  这三个数是按图量出来的（中央暗区的内切圆圆心约在 49.8% / 49.2%，直径约为图宽的 19.4%）。换了背景图或头像，需要重新调整。不写 `image-size` 时，前景图贴着窗口底部居中，高度为窗口的 92%。
 - **链接不能嵌套**：给 `SlantCell` 写了 `href` 后，它的正文里就不要再放链接。
 - **方向规则**：与首页相同，方正行上下两侧的斜切行方向相反。`SlantHero` 的窗口算作 `/`，所以它下面如果是 `square`，再下面的斜切行要用 `rev`。「关于」页的顺序是：首屏窗口（/）→ square → rev → square → slant → square。
 

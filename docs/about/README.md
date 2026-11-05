@@ -10,9 +10,15 @@ pageLayout: page
   本页：首屏窗口（/） → square → rev（\） → square → slant（/） → square
 -->
 
-<SlantPage>
+<!--
+  背景：整页用 bg-cube；首屏窗口用 bg-main（分形图），头像钉在分形中央的暗框里。
+  image-x / image-y / image-size 是按 docs/images/Bg.png 量出来的：中央暗区的内切圆圆心约在 (49.8%, 49.2%)，
+  直径约为图宽的 19.4%；头像宽 15.8% 时整个头像都在圆内。换背景图后需要重新调整这三个值。
+-->
 
-<SlantHero label="关于" image="/about/pfp.png">
+<SlantPage background="bg-cube">
+
+<SlantHero label="关于" image="/about/pfp.png" cover="bg-main" image-x="49.95" image-y="47.6" image-size="15.8">
 
 # 你好，我是 *Ryan100c*
 
