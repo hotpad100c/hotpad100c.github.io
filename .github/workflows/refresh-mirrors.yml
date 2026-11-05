@@ -1,0 +1,30 @@
+name: refresh-mirrors
+
+# 网站由 Cloudflare Pages 从 main 分支构建（构建时 pnpm docs:build 会抓取镜像站点）。
+# 原站更新后，博客需要重新构建才能拿到新版本。这个工作流每天调用一次 Cloudflare 的
+# Deploy Hook，让 Cloudflare 重新构建。
+#
+# 需要先设置一次：
+#   1. Cloudflare 控制台 → Workers & Pages → 这个 Pages 项目 → Settings → Builds
+#      → Deploy hooks → 添加一个（分支选 main），复制生成的地址
+#   2. GitHub 仓库 → Settings → Secrets and variables → Actions → New repository secret，
+#      名字填 CF_DEPLOY_HOOK，值填上一步复制的地址
+# 没有设置时这个工作流什么也不做。也可以在 Actions 页面手动运行它。
+on:
+  schedule:
+    - cron: '41 19 * * *'   # 每天北京时间 03:41
+  workflow_dispatch:
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Cloudflare Pages rebuild
+        env:
+          HOOK: ${{ secrets.CF_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "没有设置 CF_DEPLOY_HOOK，跳过。设置方法见本文件开头的说明。"
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK"

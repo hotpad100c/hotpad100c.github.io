@@ -3,6 +3,7 @@ import theme from "vuepress-theme-plume";
 import { webpackBundler } from '@vuepress/bundler-webpack'
 import type { Plugin } from 'vuepress/core'
 import { cp, readFile, stat } from 'node:fs/promises'
+import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 
 /**
@@ -13,9 +14,12 @@ const MIRROR_DIR = path.resolve(process.cwd(), 'docs/.vuepress/mirror-dist')
 const mirrorPlugin = (): Plugin => ({
   name: 'mirror-sites',
   onGenerated: async (app) => {
-    try { await stat(MIRROR_DIR) } catch {
-      console.warn('[mirror] 没有找到 docs/.vuepress/mirror-dist，镜像页面将无法显示。先运行 pnpm mirror')
-      return
+    // 正常情况下 pnpm docs:build 已经先抓取过了。如果构建命令不是它（例如 Cloudflare Pages 里填的是
+    // npx vuepress build docs），这里补抓一次；抓取失败则让构建失败，线上保持旧版本。
+    const missing = await stat(MIRROR_DIR).then(() => false, () => true)
+    if (missing) {
+      console.log('[mirror] 没有找到 docs/.vuepress/mirror-dist，现在抓取镜像站点…')
+      execFileSync(process.execPath, [path.resolve(process.cwd(), 'scripts/mirror.mjs')], { stdio: 'inherit' })
     }
     await cp(MIRROR_DIR, app.dir.dest('mirror'), { recursive: true })
   },
