@@ -22,8 +22,9 @@
  *        - mirrors/_bridge.js（与博客同步深浅色、在 iframe 中隐藏重复的页头等）
  *   3. 外部绝对地址（下载链接、图片 CDN、翻译接口等）保持原样。
  *
- * 用法：node scripts/mirror.mjs            抓取全部
- *       node scripts/mirror.mjs modsite    只抓取一个
+ * 用法：node scripts/mirror.mjs                抓取全部（pnpm docs:build 会先运行它）
+ *       node scripts/mirror.mjs modsite        只抓取一个
+ *       node scripts/mirror.mjs --if-missing   只抓取还没有抓过的（pnpm docs:dev 会先运行它）
  * 任何必需文件抓取失败都会以非零退出码结束，避免部署出残缺的镜像。
  */
 import { mkdir, readFile, rm, writeFile, copyFile, access } from 'node:fs/promises'
@@ -161,11 +162,19 @@ function injectTags(html, rel) {
   return i >= 0 ? html.slice(0, i) + tags + '\n' + html.slice(i) : html + tags
 }
 
-const only = process.argv[2]
+const args = process.argv.slice(2)
+const ifMissing = args.includes('--if-missing')
+const only = args.find(a => !a.startsWith('--'))
 const sites = JSON.parse(await readFile(path.join(VP, 'mirrors.json'), 'utf8')).filter(s => !only || s.name === only)
 if (!sites.length) { console.error(`[mirror] 没有找到镜像配置${only ? `：${only}` : ''}`); process.exit(1) }
 try {
-  for (const s of sites) await mirrorOne(s)
+  for (const s of sites) {
+    if (ifMissing && await exists(path.join(OUT, s.name, 'index.html'))) {
+      console.log(`[mirror] ${s.name}: 已存在，跳过（要更新请运行 pnpm mirror）`)
+      continue
+    }
+    await mirrorOne(s)
+  }
 } catch (e) {
   console.error(`[mirror] 失败：${e.message}`)
   process.exit(1)

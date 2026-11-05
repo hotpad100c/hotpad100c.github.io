@@ -8,9 +8,9 @@
   "license": "MIT",
   "scripts": {
     "mirror": "node scripts/mirror.mjs",
-    "docs:build": "vuepress build docs --clean-cache --clean-temp",
-    "docs:dev": "vuepress dev docs",
-    "docs:dev-clean": "vuepress dev docs --clean-cache --clean-temp",
+    "docs:build": "node scripts/mirror.mjs && vuepress build docs --clean-cache --clean-temp",
+    "docs:dev": "node scripts/mirror.mjs --if-missing && vuepress dev docs",
+    "docs:dev-clean": "node scripts/mirror.mjs --if-missing && vuepress dev docs --clean-cache --clean-temp",
     "docs:preview": "http-server docs/.vuepress/dist"
   },
   "devDependencies": {

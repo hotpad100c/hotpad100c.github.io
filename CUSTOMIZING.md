@@ -16,7 +16,8 @@
 | `docs/about/README.md` | 「关于」页，用斜切页面组件排版 |
 | `docs/.vuepress/mirrors.json` | 镜像站点列表（见「镜像站点」） |
 | `docs/.vuepress/mirrors/` | 镜像站点的风格覆盖 CSS 和桥接脚本 |
-| `scripts/mirror.mjs` | 抓取镜像站点的脚本，部署时自动运行 |
+| `scripts/mirror.mjs` | 抓取镜像站点的脚本，`pnpm docs:build` 会先运行它 |
+| `.github/workflows/refresh-mirrors.yml` | 每天让 Cloudflare 重新构建一次，跟上镜像原站的更新（需要设置，见「镜像站点」） |
 | `docs/tools/` | 镜像工具的页面（mcdelta 检索、Redstone Modeler） |
 | `docs/.vuepress/public/about/` | 「关于」页用到的图片 |
 | `docs/.vuepress/styles/index.css` | 全站配色（浅色 / 深色两套） |
@@ -36,7 +37,7 @@ pnpm docs:dev
 
 浏览器打开终端里显示的地址（通常是 `http://localhost:8080/`）。改动保存后页面会自动刷新。
 
-镜像站点的文件不在仓库里，本地第一次预览前（或想拿到原站的最新版本时）先抓取一次：
+镜像站点的文件不在仓库里。`pnpm docs:dev` 第一次运行时会自动抓取；之后想拿到原站的最新版本时运行：
 
 ```bash
 pnpm mirror
@@ -303,7 +304,7 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 
 ### 工作方式
 
-1. **抓取**：部署时 `scripts/mirror.mjs` 读取 `docs/.vuepress/mirrors.json`，从每个入口页面开始，递归抓取它引用的同站文件（`src`、`href`、`import`、`fetch("./…")`、CSS 里的 `url()` 等），存进 `docs/.vuepress/mirror-dist/<name>/`（不提交，已在 `.gitignore` 中）。构建完成后复制到网站的 `/mirror/<name>/`。
+1. **抓取**：构建前 `scripts/mirror.mjs` 读取 `docs/.vuepress/mirrors.json`，从每个入口页面开始，递归抓取它引用的同站文件（`src`、`href`、`import`、`fetch("./…")`、CSS 里的 `url()` 等），存进 `docs/.vuepress/mirror-dist/<name>/`（不提交，已在 `.gitignore` 中）。构建完成后复制到网站的 `/mirror/<name>/`。
 2. **改风格**：抓取时在每个 HTML 的末尾插入 `docs/.vuepress/mirrors/<name>.css`（风格覆盖）和 `_bridge.js`（桥接脚本）。覆盖 CSS 排在原站样式之后，所以写同样的选择器就能覆盖。
 3. **显示**：博客页面用 `MirrorFrame` 组件把 `/mirror/<name>/` 放进 iframe。因为和博客同域，iframe 的高度可以跟随内容，深浅色也能同步。
 
@@ -313,7 +314,14 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 - 在博客里时，指向其它网站的链接在新标签页打开（GitHub 等网站不允许被嵌在 iframe 里）。
 - 给 `<html>` 加上 `blog-mirror`（在博客里时再加 `blog-mirror-framed`），覆盖 CSS 可以用它只在博客里隐藏原站的主题按钮等。
 
-**原站更新后**：部署工作流每天自动重新构建一次（北京时间 03:41），镜像会在一天内跟上。想立刻更新，在 GitHub 仓库的 Actions → deploy → Run workflow 手动运行一次即可。如果某个文件抓取失败，部署会中止并保留线上的旧版本，不会发布残缺的镜像。
+**什么时候抓取**：`pnpm docs:build` 会先抓取镜像再构建，所以网站每次构建（Cloudflare Pages 在 `main` 有新提交时自动构建）都会拿到原站当时的最新版本。如果某个文件抓取失败，构建会失败，Cloudflare 继续使用上一次成功的版本，不会发布残缺的镜像。即使构建命令不是 `pnpm docs:build`，VuePress 插件在发现没有镜像文件时也会补抓一次。
+
+**原站更新、博客没有新提交时**：Cloudflare 不会自己重新构建。`.github/workflows/refresh-mirrors.yml` 每天（北京时间 03:41）调用一次 Cloudflare 的 Deploy Hook 让它重新构建，需要先设置一次：
+
+1. Cloudflare 控制台 → Workers & Pages → 博客的 Pages 项目 → Settings → Builds → Deploy hooks，添加一个（分支选 `main`），复制生成的地址。
+2. GitHub 仓库 → Settings → Secrets and variables → Actions → New repository secret，名字填 `CF_DEPLOY_HOOK`，值填上一步的地址。
+
+设置之后，想立刻更新时也可以在 GitHub 的 Actions → refresh-mirrors → Run workflow 手动运行。没有设置时这个工作流什么也不做。
 
 ### 添加一个镜像
 
