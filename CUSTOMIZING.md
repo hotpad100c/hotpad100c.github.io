@@ -307,7 +307,7 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 
 ## 镜像站点
 
-可以把自己的其它静态网站「镜像」到博客里：在博客的页面里直接使用，风格也改成和博客一致，而原站的代码不进入本仓库。目前有四个：
+可以把其它网站「镜像」到博客里：在博客的页面里直接使用，风格也改成和博客一致，而原站的代码不进入本仓库。目前有六个：
 
 | 原站 | 博客里的位置 |
 |---|---|
@@ -315,6 +315,8 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 | `https://modsite-4x9.pages.dev/` | 「项目」页上半部分（代替原来的「模组」卡片） |
 | `https://mcdeltasearch.hotpad100c.workers.dev/` | `/tools/mcdeltasearch/`，「项目」页「网页」分类里可以找到 |
 | `https://hotpad100c.github.io/Redstone-Modeler/` | `/tools/redstone-modeler/`，同上 |
+| `https://hotpad100c.github.io/TMCWords-Search/` | `/tools/tmcwords-search/`，同上 |
+| `https://www.techmc.wiki/`（GTMC，**别人的网站**） | `/tools/gtmc/`，同上；静态快照（见下） |
 
 ### 工作方式
 
@@ -389,9 +391,32 @@ description: 一句话介绍。
 
 **站内链接请写成 `/` 开头的路径**（例如 `/RyansRenderingKit/Overview`），不要写 `https://hotpad100c.github.io/...`：博客现在由 Cloudflare Pages 提供，`hotpad100c.github.io` 这个地址下已经没有博客了（`hotpad100c.github.io/Redstone-Modeler/` 等其它仓库的项目站点不受影响）。
 
+### 静态快照（GTMC）
+
+GTMC 是 Next.js 网站，页面由服务器渲染，切换页面也要向服务器请求数据，直接复制文件无法运行。所以它用 `"mode": "static"`：
+
+```json
+{
+  "name": "gtmc",
+  "url": "https://www.techmc.wiki/",
+  "mode": "static",
+  "entries": ["en/articles/preface", "zh/articles/preface"],
+  "crawl": ["en/articles/", "zh/articles/"],
+  "credit": "<footer class=\"blog-mirror-credit\">…</footer>"
+}
+```
+
+- 从 `entries` 开始，跟进 `crawl` 路径下的页面，每页存成 `<路径>/index.html`。不在 `crawl` 范围内的站内链接（作者页、编辑器等）指向原站。
+- **去掉所有脚本**，只保留服务器渲染出来的内容。Next.js 流式渲染时真正的内容藏在页面后面的 `<div hidden id="S:…">` 里、本来由脚本换进去，抓取时会先做这一步。
+- 以 `/` 开头的地址改写到 `/mirror/<name>/` 下；`/_next/image?url=…` 直接用原图。
+- `credit` 是插在每页底部的 HTML，`{url}` 会换成这一页的原文地址。GTMC 依 CC BY-NC-SA 4.0 授权，转载需要写明来源、授权和做过的修改，这里就是写这些的地方。**不要删掉它。**
+- 搜索、编辑、切换语言、主题按钮等需要脚本的功能在快照里不能用，风格覆盖 `gtmc.css` 把这些按钮隐藏了，并展开了目录里的所有分组；切换语言改用页面底部的链接。
+- 最多跟进 400 个页面（`maxPages` 可调），防止范围写错时抓下整个网站。
+
 ### 限制
 
-- 只适合**纯前端**的静态网站。原站如果调用自己的后端接口，换了域名之后可能被跨域限制拦下。
+- 普通模式只适合**纯前端**的静态网站。原站如果调用自己的后端接口，换了域名之后可能被跨域限制拦下；需要服务器的网站用静态快照，只能看、不能用交互功能。
+- 镜像**别人的网站**之前，先确认授权允许转载（GTMC 是 CC BY-NC-SA 4.0），并保留署名和原站链接。
 - 原站里写死的外部地址（下载链接、图片 CDN、第三方接口，例如 modsite 的机器翻译）保持原样，会直接访问原来的地址。
 - 风格覆盖依赖原站的类名和变量名。原站改版后，覆盖可能需要跟着调整。
 

@@ -34,5 +34,26 @@
     "entries": [
       "index.html"
     ]
+  },
+  {
+    "name": "tmcwords-search",
+    "url": "https://hotpad100c.github.io/TMCWords-Search/",
+    "entries": [
+      "index.html"
+    ]
+  },
+  {
+    "name": "gtmc",
+    "url": "https://www.techmc.wiki/",
+    "mode": "static",
+    "entries": [
+      "en/articles/preface",
+      "zh/articles/preface"
+    ],
+    "crawl": [
+      "en/articles/",
+      "zh/articles/"
+    ],
+    "credit": "<footer class=\"blog-mirror-credit\"><p class=\"blog-mirror-langs\"><a href=\"/mirror/gtmc/zh/articles/preface/\">中文目录</a> · <a href=\"/mirror/gtmc/en/articles/preface/\">English</a></p><p>本页是 <a href=\"https://www.techmc.wiki/\">GTMC（Graduate Texts in Technical Minecraft）</a> 的镜像快照。原文：<a href=\"{url}\">{url}</a></p><p>内容依 <a href=\"https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans\">CC BY-NC-SA 4.0</a> 授权，版权归原作者所有。镜像去掉了站点脚本（搜索、编辑、切换语言等功能不可用）并修改了样式，内容未改动。</p></footer>"
   }
 ]
