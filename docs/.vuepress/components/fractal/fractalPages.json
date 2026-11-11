@@ -1,0 +1,770 @@
+{
+  "home": {
+    "kind": "mandelbrot",
+    "power": 5,
+    "inverse": true,
+    "mode": "escape",
+    "iterations": 256,
+    "c": [
+      0.699047,
+      -0.239366
+    ],
+    "view": {
+      "x": -1.323589,
+      "y": -0.049085,
+      "zoom": -0.611,
+      "rotate": 0
+    },
+    "scroll": {
+      "speed": 0.5,
+      "parallax": 0.22
+    },
+    "veil": 0.33,
+    "palette": {
+      "dark": {
+        "stops": [
+          [
+            "#0b0910",
+            0.35
+          ],
+          [
+            "#2a1a4d",
+            0.425
+          ],
+          [
+            "#6c4bb0",
+            0.535
+          ],
+          [
+            "#f3ecff",
+            0.805
+          ]
+        ],
+        "inside": "#07060b",
+        "insideMode": "solid",
+        "gamma": 0.42,
+        "frequency": 1,
+        "offset": 0,
+        "cycle": false,
+        "post": {
+          "enabled": true,
+          "chroma": 0.006,
+          "bloom": {
+            "threshold": 0.57,
+            "intensity": 0.46,
+            "radius": 1.2
+          },
+          "soft": 0.18,
+          "streak": {
+            "type": "spiral",
+            "intensity": 0.45,
+            "length": 0.32
+          },
+          "gradient": {
+            "from": "#050826",
+            "to": "#22110c",
+            "angle": 21,
+            "strength": 0.75
+          },
+          "vignette": 0.4,
+          "grain": 0.018,
+          "saturation": 0.82,
+          "contrast": 1.06,
+          "exposure": -0.15
+        }
+      },
+      "light": {
+        "stops": [
+          [
+            "#efe9fb",
+            0
+          ],
+          [
+            "#cdbdf0",
+            0.4
+          ],
+          [
+            "#8a6cc8",
+            0.7
+          ],
+          [
+            "#2a1752",
+            1
+          ]
+        ],
+        "inside": "#e2d8f6",
+        "insideMode": "solid",
+        "gamma": 0.42,
+        "frequency": 1,
+        "offset": 0,
+        "cycle": false,
+        "post": {
+          "enabled": true,
+          "chroma": 0.004,
+          "bloom": {
+            "threshold": 0.75,
+            "intensity": 0.35,
+            "radius": 2
+          },
+          "soft": 0.12,
+          "streak": {
+            "type": "none",
+            "intensity": 0.4,
+            "length": 0.3
+          },
+          "gradient": {
+            "from": "#ffffff",
+            "to": "#e8dcf6",
+            "angle": 0,
+            "strength": 0
+          },
+          "vignette": 0.08,
+          "grain": 0.008,
+          "saturation": 0.9,
+          "contrast": 1,
+          "exposure": 0
+        }
+      }
+    }
+  },
+  "posts": {
+    "kind": "mandelbrot",
+    "power": 4,
+    "inverse": true,
+    "mode": "escape",
+    "iterations": 256,
+    "c": [
+      0.705289,
+      -0.792094
+    ],
+    "view": {
+      "x": -2.472928,
+      "y": -0.264691,
+      "zoom": -1.7649,
+      "rotate": 0
+    },
+    "scroll": {
+      "speed": 1,
+      "parallax": 0
+    },
+    "veil": 0.35,
+    "palette": {
+      "dark": {
+        "stops": [
+          [
+            "#0b0910",
+            0.245
+          ],
+          [
+            "#2a1a4d",
+            0.35
+          ],
+          [
+            "#f3ecff",
+            0.41
+          ],
+          [
+            "#6c4bb0",
+            0.455
+          ]
+        ],
+        "inside": "#07060b",
+        "insideMode": "solid",
+        "gamma": 0.42,
+        "frequency": 1,
+        "offset": 0,
+        "cycle": false,
+        "post": {
+          "enabled": true,
+          "chroma": 0.011,
+          "bloom": {
+            "threshold": 0.5,
+            "intensity": 0.85,
+            "radius": 1.8
+          },
+          "soft": 0.18,
+          "streak": {
+            "type": "spiral",
+            "intensity": 0.45,
+            "length": 0.32
+          },
+          "gradient": {
+            "from": "#050826",
+            "to": "#22110c",
+            "angle": 0,
+            "strength": 0.75
+          },
+          "vignette": 0.4,
+          "grain": 0.018,
+          "saturation": 0.82,
+          "contrast": 1.06,
+          "exposure": 0.35
+        }
+      },
+      "light": {
+        "stops": [
+          [
+            "#efe9fb",
+            0
+          ],
+          [
+            "#cdbdf0",
+            0.115
+          ],
+          [
+            "#8a6cc8",
+            0.325
+          ],
+          [
+            "#ffffff",
+            0.475
+          ]
+        ],
+        "inside": "#e2d8f6",
+        "insideMode": "solid",
+        "gamma": 0.42,
+        "frequency": 1,
+        "offset": 0,
+        "cycle": false,
+        "post": {
+          "enabled": true,
+          "chroma": 0.004,
+          "bloom": {
+            "threshold": 0.75,
+            "intensity": 0.35,
+            "radius": 2
+          },
+          "soft": 0.12,
+          "streak": {
+            "type": "none",
+            "intensity": 0.4,
+            "length": 0.3
+          },
+          "gradient": {
+            "from": "#ffffff",
+            "to": "#e8dcf6",
+            "angle": 0,
+            "strength": 0
+          },
+          "vignette": 0.08,
+          "grain": 0.008,
+          "saturation": 0.9,
+          "contrast": 1,
+          "exposure": 0
+        }
+      }
+    }
+  },
+  "projects": {
+    "kind": "mandelbrot",
+    "power": 2,
+    "inverse": false,
+    "mode": "escape",
+    "iterations": 256,
+    "c": [
+      -0.8,
+      0.156
+    ],
+    "view": {
+      "x": -0.425235,
+      "y": 0.006045,
+      "zoom": 0.9662,
+      "rotate": 0
+    },
+    "scroll": {
+      "speed": 6,
+      "parallax": 0.25
+    },
+    "veil": 0.35,
+    "palette": {
+      "dark": {
+        "stops": [
+          [
+            "#000000",
+            0
+          ],
+          [
+            "#0b0820",
+            0.4
+          ],
+          [
+            "#5a3f9e",
+            0.72
+          ],
+          [
+            "#ffffff",
+            1
+          ]
+        ],
+        "inside": "#000000",
+        "insideMode": "solid",
+        "gamma": 0.38,
+        "frequency": 1,
+        "offset": 0,
+        "cycle": false,
+        "post": {
+          "enabled": true,
+          "chroma": 0.0025,
+          "bloom": {
+            "threshold": 0.47,
+            "intensity": 3,
+            "radius": 1.8
+          },
+          "soft": 0,
+          "streak": {
+            "type": "spiral",
+            "intensity": 1.22,
+            "length": 0.32
+          },
+          "gradient": {
+            "from": "#050826",
+            "to": "#22110c",
+            "angle": 0,
+            "strength": 0.75
+          },
+          "vignette": 0.4,
+          "grain": 0.018,
+          "saturation": 0.82,
+          "contrast": 1.06,
+          "exposure": -0.34
+        }
+      },
+      "light": {
+        "stops": [
+          [
+            "#efe9fb",
+            0
+          ],
+          [
+            "#cdbdf0",
+            0.4
+          ],
+          [
+            "#8a6cc8",
+            0.7
+          ],
+          [
+            "#2a1752",
+            1
+          ]
+        ],
+        "inside": "#e2d8f6",
+        "insideMode": "solid",
+        "gamma": 0.42,
+        "frequency": 1,
+        "offset": 0,
+        "cycle": false,
+        "post": {
+          "enabled": true,
+          "chroma": 0.004,
+          "bloom": {
+            "threshold": 0.75,
+            "intensity": 0.35,
+            "radius": 2
+          },
+          "soft": 0.12,
+          "streak": {
+            "type": "none",
+            "intensity": 0.4,
+            "length": 0.3
+          },
+          "gradient": {
+            "from": "#ffffff",
+            "to": "#e8dcf6",
+            "angle": 0,
+            "strength": 0
+          },
+          "vignette": 0.08,
+          "grain": 0.008,
+          "saturation": 0.9,
+          "contrast": 1,
+          "exposure": 0
+        }
+      }
+    }
+  },
+  "about": {
+    "kind": "mandelbrot",
+    "power": 10,
+    "inverse": false,
+    "mode": "escape",
+    "iterations": 256,
+    "c": [
+      -0.336375,
+      0.710114
+    ],
+    "view": {
+      "x": -0.510868,
+      "y": -0.151893,
+      "zoom": 0.9743,
+      "rotate": -25
+    },
+    "scroll": {
+      "speed": 0.001,
+      "parallax": 0
+    },
+    "veil": 0.23,
+    "palette": {
+      "dark": {
+        "stops": [
+          [
+            "#0b0910",
+            0
+          ],
+          [
+            "#2a1a4d",
+            0.31
+          ],
+          [
+            "#6c4bb0",
+            0.62
+          ],
+          [
+            "#ffffff",
+            1
+          ]
+        ],
+        "inside": "#07060b",
+        "insideMode": "solid",
+        "gamma": 0.37,
+        "frequency": 1.05,
+        "offset": 0.14,
+        "cycle": true,
+        "post": {
+          "enabled": true,
+          "chroma": 0.007,
+          "bloom": {
+            "threshold": 0.5,
+            "intensity": 0.85,
+            "radius": 1.8
+          },
+          "soft": 0.18,
+          "streak": {
+            "type": "spiral",
+            "intensity": 0.45,
+            "length": 0.32
+          },
+          "gradient": {
+            "from": "#050826",
+            "to": "#22110c",
+            "angle": 0,
+            "strength": 0.75
+          },
+          "vignette": 0.4,
+          "grain": 0.018,
+          "saturation": 0.82,
+          "contrast": 1.06,
+          "exposure": -0.15
+        }
+      },
+      "light": {
+        "stops": [
+          [
+            "#efe9fb",
+            0
+          ],
+          [
+            "#cdbdf0",
+            0.45
+          ],
+          [
+            "#8a6cc8",
+            0.575
+          ],
+          [
+            "#2a1752",
+            1
+          ]
+        ],
+        "inside": "#e2d8f6",
+        "insideMode": "solid",
+        "gamma": 0.42,
+        "frequency": 1,
+        "offset": 0,
+        "cycle": false,
+        "post": {
+          "enabled": true,
+          "chroma": 0.004,
+          "bloom": {
+            "threshold": 0.75,
+            "intensity": 0.35,
+            "radius": 2
+          },
+          "soft": 0.12,
+          "streak": {
+            "type": "none",
+            "intensity": 0.4,
+            "length": 0.3
+          },
+          "gradient": {
+            "from": "#ffffff",
+            "to": "#e8dcf6",
+            "angle": 0,
+            "strength": 0
+          },
+          "vignette": 0.08,
+          "grain": 0.008,
+          "saturation": 0.9,
+          "contrast": 1,
+          "exposure": 0
+        }
+      }
+    }
+  },
+  "friends": {
+    "kind": "mandelbrot",
+    "power": 2,
+    "inverse": false,
+    "mode": "escape",
+    "iterations": 256,
+    "c": [
+      0.285,
+      0.01
+    ],
+    "view": {
+      "x": -0.533511,
+      "y": -0.027167,
+      "zoom": 0.5565,
+      "rotate": 0
+    },
+    "scroll": {
+      "speed": 0.5,
+      "parallax": 0
+    },
+    "veil": 0.59,
+    "palette": {
+      "dark": {
+        "stops": [
+          [
+            "#0b0910",
+            0
+          ],
+          [
+            "#2a1a4d",
+            0.35
+          ],
+          [
+            "#6c4bb0",
+            0.62
+          ],
+          [
+            "#f3ecff",
+            1
+          ]
+        ],
+        "inside": "#07060b",
+        "insideMode": "solid",
+        "gamma": 0.42,
+        "frequency": 1,
+        "offset": 0,
+        "cycle": false,
+        "post": {
+          "enabled": true,
+          "chroma": 0.011,
+          "bloom": {
+            "threshold": 0.5,
+            "intensity": 0.85,
+            "radius": 1.8
+          },
+          "soft": 0.18,
+          "streak": {
+            "type": "spiral",
+            "intensity": 0.45,
+            "length": 0.32
+          },
+          "gradient": {
+            "from": "#050826",
+            "to": "#22110c",
+            "angle": 0,
+            "strength": 0.75
+          },
+          "vignette": 0.4,
+          "grain": 0.018,
+          "saturation": 0.82,
+          "contrast": 1.06,
+          "exposure": -0.15
+        }
+      },
+      "light": {
+        "stops": [
+          [
+            "#efe9fb",
+            0
+          ],
+          [
+            "#cdbdf0",
+            0.4
+          ],
+          [
+            "#8a6cc8",
+            0.7
+          ],
+          [
+            "#2a1752",
+            1
+          ]
+        ],
+        "inside": "#e2d8f6",
+        "insideMode": "solid",
+        "gamma": 0.42,
+        "frequency": 1,
+        "offset": 0,
+        "cycle": false,
+        "post": {
+          "enabled": true,
+          "chroma": 0.004,
+          "bloom": {
+            "threshold": 0.75,
+            "intensity": 0.35,
+            "radius": 2
+          },
+          "soft": 0.12,
+          "streak": {
+            "type": "none",
+            "intensity": 0.4,
+            "length": 0.3
+          },
+          "gradient": {
+            "from": "#ffffff",
+            "to": "#e8dcf6",
+            "angle": 0,
+            "strength": 0
+          },
+          "vignette": 0.08,
+          "grain": 0.008,
+          "saturation": 0.9,
+          "contrast": 1,
+          "exposure": 0
+        }
+      }
+    }
+  },
+  "default": {
+    "kind": "mandelbrot",
+    "power": 2,
+    "inverse": true,
+    "mode": "escape",
+    "iterations": 256,
+    "c": [
+      0.356136,
+      -0.286667
+    ],
+    "view": {
+      "x": -4.46426,
+      "y": 1.195251,
+      "zoom": -1.9984,
+      "rotate": 0
+    },
+    "scroll": {
+      "speed": 6,
+      "parallax": 0.25
+    },
+    "veil": 0.35,
+    "palette": {
+      "dark": {
+        "stops": [
+          [
+            "#0b0910",
+            0
+          ],
+          [
+            "#2a1a4d",
+            0.35
+          ],
+          [
+            "#6c4bb0",
+            0.62
+          ],
+          [
+            "#f3ecff",
+            1
+          ]
+        ],
+        "inside": "#07060b",
+        "insideMode": "solid",
+        "gamma": 0.42,
+        "frequency": 1,
+        "offset": 0,
+        "cycle": false,
+        "post": {
+          "enabled": true,
+          "chroma": 0.011,
+          "bloom": {
+            "threshold": 0.5,
+            "intensity": 0.85,
+            "radius": 1.8
+          },
+          "soft": 0.18,
+          "streak": {
+            "type": "spiral",
+            "intensity": 0.45,
+            "length": 0.32
+          },
+          "gradient": {
+            "from": "#050826",
+            "to": "#22110c",
+            "angle": 0,
+            "strength": 0.75
+          },
+          "vignette": 0.4,
+          "grain": 0.018,
+          "saturation": 0.82,
+          "contrast": 1.06,
+          "exposure": -0.15
+        }
+      },
+      "light": {
+        "stops": [
+          [
+            "#efe9fb",
+            0
+          ],
+          [
+            "#cdbdf0",
+            0.4
+          ],
+          [
+            "#8a6cc8",
+            0.7
+          ],
+          [
+            "#2a1752",
+            1
+          ]
+        ],
+        "inside": "#e2d8f6",
+        "insideMode": "solid",
+        "gamma": 0.42,
+        "frequency": 1,
+        "offset": 0,
+        "cycle": false,
+        "post": {
+          "enabled": true,
+          "chroma": 0.004,
+          "bloom": {
+            "threshold": 0.75,
+            "intensity": 0.35,
+            "radius": 2
+          },
+          "soft": 0.12,
+          "streak": {
+            "type": "none",
+            "intensity": 0.4,
+            "length": 0.3
+          },
+          "gradient": {
+            "from": "#ffffff",
+            "to": "#e8dcf6",
+            "angle": 0,
+            "strength": 0
+          },
+          "vignette": 0.08,
+          "grain": 0.008,
+          "saturation": 0.9,
+          "contrast": 1,
+          "exposure": 0
+        }
+      }
+    }
+  }
+}

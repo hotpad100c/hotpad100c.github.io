@@ -1,0 +1,99 @@
+/**
+ * 全站分形背景（components/fractal/FractalBackground.vue）配套样式：
+ * 让 Plume 的各层透明，分形从后面透出来；需要阅读的区域放在半透明的深色 / 浅色面板上。
+ * 面板用 backdrop-filter 模糊并降低背景饱和度，文字不会被分形的颜色干扰。
+ */
+:root {
+  --fx-panel: rgba(250, 247, 255, 0.82);
+  --fx-panel-hover: rgba(255, 255, 255, 0.92);
+  --fx-panel-filter: blur(14px) saturate(0.5);
+  --vp-nav-bg-color: rgba(239, 233, 251, 0.74);
+  --vp-local-nav-bg-color: rgba(239, 233, 251, 0.74);
+  --vp-sidebar-bg-color: rgba(235, 228, 248, 0.8);
+}
+[data-theme='dark'] {
+  --fx-panel: rgba(12, 10, 18, 0.8);
+  --fx-panel-hover: rgba(26, 20, 38, 0.88);
+  --fx-panel-filter: blur(14px) saturate(0.35) brightness(0.8);
+  --vp-nav-bg-color: rgba(11, 9, 16, 0.7);
+  --vp-local-nav-bg-color: rgba(11, 9, 16, 0.7);
+  --vp-sidebar-bg-color: rgba(14, 11, 21, 0.78);
+}
+
+/* 页面本身不铺底色（底色由分形背景的遮罩提供） */
+.theme-plume.vp-layout,
+.theme-plume .vp-content { background: transparent !important; }
+
+/* 导航栏、侧边栏：半透明 + 模糊 */
+.theme-plume .vp-navbar:not(.home),
+.theme-plume .vp-local-nav,
+.theme-plume .vp-sidebar {
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+/* 文章列表：每一条是半透明的深色（浅色主题为浅色）面板 */
+.theme-plume .vp-post-list { background: transparent !important; border: none !important; gap: 8px !important; }
+.theme-plume .vp-post-item {
+  background: var(--fx-panel) !important;
+  border: 1px solid var(--vp-c-divider) !important;
+  -webkit-backdrop-filter: var(--fx-panel-filter);
+  backdrop-filter: var(--fx-panel-filter);
+}
+.theme-plume .vp-post-item:hover { background: var(--fx-panel-hover) !important; border-color: var(--vp-c-brand-1) !important; }
+
+/* 标签 / 分类 / 归档入口 */
+.theme-plume .vp-posts-nav .nav-link {
+  -webkit-backdrop-filter: var(--fx-panel-filter);
+  backdrop-filter: var(--fx-panel-filter);
+}
+
+/* 文章、文档页：正文放在阅读面板上；右侧目录也加一层 */
+.theme-plume .vp-doc-container .container > .content {
+  background: var(--fx-panel);
+  border: 1px solid var(--vp-c-divider);
+  -webkit-backdrop-filter: var(--fx-panel-filter);
+  backdrop-filter: var(--fx-panel-filter);
+  padding-top: 32px !important;
+  padding-bottom: 40px !important;
+}
+.theme-plume .vp-doc-container .aside-content .vp-doc-aside-outline {
+  background: var(--fx-panel);
+  border: 1px solid var(--vp-c-divider);
+  -webkit-backdrop-filter: var(--fx-panel-filter);
+  backdrop-filter: var(--fx-panel-filter);
+  padding: 14px 16px;
+}
+@media (max-width: 767px) {
+  .theme-plume .vp-doc-container .container > .content { border-inline: none; }
+}
+
+/* 友链页：标题与说明放在面板上 */
+.theme-plume .vp-friends > .title,
+.theme-plume .vp-friends > .description {
+  display: table;
+  margin-inline: auto;
+  padding: 6px 18px;
+  background: var(--fx-panel);
+  -webkit-backdrop-filter: var(--fx-panel-filter);
+  backdrop-filter: var(--fx-panel-filter);
+}
+.theme-plume .vp-friend {
+  -webkit-backdrop-filter: var(--fx-panel-filter);
+  backdrop-filter: var(--fx-panel-filter);
+}
+
+/* 页脚 */
+.theme-plume .vp-footer { background: var(--fx-panel) !important; }
+
+/* Plume 在右侧目录底部用页面底色画了一道渐变遮挡，透明背景下会变成一块色带 */
+.theme-plume .aside-curtain { display: none; }
+
+/* 斜切页面首屏的文字（例如「关于」）：放在阅读面板上 */
+.sl-hero-text {
+  padding: 18px 24px 12px;
+  background: var(--fx-panel);
+  border: 1px solid var(--vp-c-divider);
+  -webkit-backdrop-filter: var(--fx-panel-filter);
+  backdrop-filter: var(--fx-panel-filter);
+}

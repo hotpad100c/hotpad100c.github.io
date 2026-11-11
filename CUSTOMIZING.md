@@ -8,7 +8,10 @@
 
 | 文件 | 作用 |
 |---|---|
-| `docs/README.md` | 首页。`config` 里写 `type: HomeSlant`，并在这里配置背景图和封面图 |
+| `docs/README.md` | 首页。`config` 里写 `type: HomeSlant`，并在这里配置封面图 |
+| `docs/.vuepress/components/fractal/fractalPages.json` | **全站分形背景的参数**，每个页面一项，从 Julia 分形编辑器导出（见「分形背景」） |
+| `docs/.vuepress/components/fractal/` | 分形背景的渲染器（`FractalBackground.vue`、`renderer.ts`、`shaders.ts`） |
+| `docs/.vuepress/styles/fractal.css` | 分形背景配套样式：各层透明、半透明阅读面板 |
 | `docs/.vuepress/components/home/homeConfig.ts` | **首页内容配置**：文字、按钮、社交链接、显示数量、展示哪些项目 |
 | `docs/.vuepress/components/home/HomeSlant.vue` | 首页的布局和样式 |
 | `docs/.vuepress/components/home/useHomeData.ts` | 读取文章、标签、项目数据（一般不用改） |
@@ -24,7 +27,7 @@
 | `docs/.vuepress/styles/slant.css` | 全站形状规则：无圆角、发丝线、平行四边形、标题字体 |
 | `docs/.vuepress/config.ts` | 字体链接、文章数据插件、`date` → `createTime` 的日期修正 |
 | `docs/images/Bg.png` | 背景图原图 |
-| `docs/images/bg-main.jpg` | 默认背景图（`Bg.png` 的压缩版，约 80KB）：首页整页背景、`SlantPage` 的背景 |
+| `docs/images/bg-main.jpg` | `Bg.png` 的压缩版（约 80KB）：「关于」页首屏窗口；不支持 WebGL 的浏览器里代替分形背景 |
 | `docs/images/bg-cube.jpg` | 默认封面图（方块，约 100KB）：首页和 `SlantHero` 的斜切窗口 |
 
 ## 本地预览
@@ -74,33 +77,85 @@ pnpm docs:build
 
 大标题 “Ryan100c” 写在 `HomeSlant.vue` 的模板里（`<h1>Ryan<em>100c</em></h1>`），`<em>` 里的部分显示为斜体紫色。
 
-## 更换背景图和封面图
+## 分形背景
 
-首页有两张图：
+全站的背景是实时渲染的 Julia 分形：固定铺满窗口，在所有内容后面。每个页面有自己的参数，滚动时分形会跟着变化，有立体感。
 
-- **背景图**：铺满整页，加了模糊和暗化（浅色模式下是淡紫色蒙版）。
-- **封面图**：首屏右侧斜切窗口里的那张，不加蒙版。
+### 修改某个页面的分形
 
-在 `docs/README.md` 里配置：
+1. 打开 Julia 分形编辑器，在「页面」里选要调的页面，调好分形、配色和后期效果（深色、浅色主题分开调）。
+2. 点「复制这一页」，得到一段 JSON，形如 `{ "posts": { ... } }`。
+3. 打开 `docs/.vuepress/components/fractal/fractalPages.json`，用复制的内容替换同名的那一项（`"posts": { ... }` 整段）。
+
+JSON 里的字段和编辑器一一对应，也可以直接手改，例如：
+
+- `scroll.speed`：每向下滚动 1000px，C 绕原点转多少度。数值大时，滚动后分形变化很大（可能散成碎点）。
+- `scroll.parallax`：滚动时视图中心平移的幅度，0 为不动。
+- `veil`：分形上面盖的一层页面底色，0–1。数值越大背景越淡，文字越清楚。
+- `palette.dark` / `palette.light`：深色 / 浅色主题的配色；里面的 `post` 是后期效果（红蓝分光、光晕、光迹、背景渐变等）。
+
+### 哪个页面用哪一项
+
+| 项 | 页面 |
+|---|---|
+| `home` | 首页 |
+| `posts` | 文章列表和每篇文章（`/posts/` 下的所有页面） |
+| `projects` | 项目页，以及 `/tools/`、`/app/` 下的页面 |
+| `about` | 关于 |
+| `friends` | 友链 |
+| `default` | 其他页面（Ryan'sRenderingKit 文档等） |
+
+规则写在 `fractalPages.ts` 的 `ROUTES` 里，按路径前缀匹配。
+
+单独给某个页面指定一项：在它的 frontmatter 里写 `fractal: 名字`。例如让某篇文章用「关于」的分形：
+
+```yaml
+---
+title: ...
+fractal: about
+---
+```
+
+想给某个页面一套新参数：在 `fractalPages.json` 里新增一项（名字随意，例如 `"gtmc": { ... }`），再在那个页面写 `fractal: gtmc`。
+
+### 性能与兼容
+
+- 只在滚动、换页、换主题、改窗口大小时重画，静止时不占 GPU。
+- 滚动过程中用较低分辨率跟上，停下约 0.16 秒后再画一张清晰的（屏幕像素密度，最多 400 万像素）。
+- 系统设置了「减少动态效果」时，分形不随滚动变化。
+- 浏览器不支持 WebGL 时，背景换成静态图 `docs/images/bg-main.jpg`。
+- 渲染代码与编辑器完全相同（`shaders.ts`）。改了其中一边的计算方式，另一边也要改，否则编辑器里调好的样子和博客上不一致。
+
+### 用图片代替分形
+
+`HomeSlant` 和 `SlantPage` 仍然接受 `background`：写了就用这张图盖住分形（图片固定在窗口上，带模糊和蒙版）。
+
+```yaml
+# docs/README.md
+config:
+  - type: HomeSlant
+    background: /images/home-bg.jpg
+```
+
+```md
+<SlantPage background="/images/xxx.jpg">
+```
+
+## 更换封面图
+
+首页首屏右侧斜切窗口里的封面图，在 `docs/README.md` 里配置：
 
 ```yaml
 config:
   - type: HomeSlant
-    background: /images/home-bg.jpg
     cover: /images/home-cover.jpg
 ```
 
-1. 把图片放进 `docs/.vuepress/public/` 下（例如 `docs/.vuepress/public/images/home-bg.jpg`）。
-2. 用 `/` 开头的路径引用，路径从 `public/` 之后开始写，如上例。也可以直接填 `https://` 开头的完整地址。
-3. 只写 `background` 时，封面也用这张图。都不写时，背景用 `bg-main.jpg`，封面用 `bg-cube.jpg`。
+1. 把图片放进 `docs/.vuepress/public/` 下（例如 `docs/.vuepress/public/images/home-cover.jpg`）。
+2. 用 `/` 开头的路径引用，路径从 `public/` 之后开始写。也可以直接填 `https://` 开头的完整地址。
+3. 不写时用 `docs/images/bg-cube.jpg`。
 
-建议：
-
-- 背景图用 16:9 左右的横图，1920 宽足够。背景会被模糊，细节不重要。
-- 封面图会被斜切窗口裁掉左右两角，主体放在画面中间。窗口在横屏下约为 16:7 到 16:9。
-- 用 JPG 或 WebP，控制在 300KB 以内，首页加载会快很多。所以默认背景用的是 `Bg.png` 压缩后的 `bg-main.jpg`。
-
-想换掉默认图（不写配置时用的那张）：背景替换 `docs/images/bg-main.jpg`（原图可以放在 `Bg.png`），封面替换 `docs/images/bg-cube.jpg`，文件名保持不变。
+建议：封面图会被斜切窗口裁掉左右两角，主体放在画面中间。窗口在横屏下约为 16:7 到 16:9。用 JPG 或 WebP，控制在 300KB 以内。
 
 ## 首页布局
 
@@ -279,7 +334,7 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 
 | 组件 | 作用 | 参数 |
 |---|---|---|
-| `SlantPage` | 整页容器：配色、模糊背景图、最大宽度 | `background`：背景图，可选，默认 `bg-main.jpg` |
+| `SlantPage` | 整页容器：配色、最大宽度 | `background`：背景图，可选。不写时显示全站的分形背景 |
 | `SlantHero` | 首屏：左边是插槽里的 Markdown，右边是斜切窗口 | `label`：小标签；`image`：窗口里的前景图（透明 PNG 最好）；`cover`：窗口背景图，默认 `bg-cube.jpg`；`image-x`、`image-y`、`image-size`、`image-fill`：把前景图钉在背景图上的某个位置并放大（见下） |
 | `SlantRow` | 一行格子，横屏下是 12 列网格 | `kind`：`slant`（斜切 /）、`rev`（反向斜切 \）、`square`（方正面板） |
 | `SlantCell` | 一个格子，形状跟随所在的行 | `span`：占 12 列中的几列（默认 12）；`label`、`title`；`image`：顶部配图；`fit="contain"`：配图完整显示在深色底上；`max-height`：正文超出这个高度（像素）时在格子里滚动；`href`：整格变成链接 |
