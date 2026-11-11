@@ -2,6 +2,7 @@ import { defineClientConfig } from 'vuepress/client'
 
 import './styles/index.css'
 import './styles/slant.css'
+import './styles/fractal.css'
 import NavPage from './components/NavPage.vue'
 import HomeSlant from './components/home/HomeSlant.vue'
 import SlantPage from './components/slant/SlantPage.vue'
@@ -12,6 +13,7 @@ import SkillIcons from './components/slant/SkillIcons.vue'
 import SocialButtons from './components/slant/SocialButtons.vue'
 import ContactList from './components/slant/ContactList.vue'
 import MirrorFrame from './components/slant/MirrorFrame.vue'
+import FractalBackground from './components/fractal/FractalBackground.vue'
 
 /**
  * 每次部署后，页面脚本的文件名（带哈希）都会变，旧文件会被删除。
@@ -33,6 +35,8 @@ function reloadTo(url: string): void {
 }
 
 export default defineClientConfig({
+  // 全站背景：实时渲染的 Julia 分形（参数见 components/fractal/fractalPages.json）
+  rootComponents: [FractalBackground],
   enhance({ app, router }) {
     app.component('NavPage', NavPage) // 添加这一行来注册 NavPage 组件
     // 首页区块（在 docs/README.md 的 config 里以 type: HomeSlant 使用）

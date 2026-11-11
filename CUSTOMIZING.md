@@ -8,7 +8,11 @@
 
 | 文件 | 作用 |
 |---|---|
-| `docs/README.md` | 首页。`config` 里写 `type: HomeSlant`，并在这里配置背景图和封面图 |
+| `docs/README.md` | 首页。`config` 里写 `type: HomeSlant`，并在这里配置封面图 |
+| `docs/.vuepress/components/fractal/fractalPages.json` | **全站分形背景的参数**，每个页面一项，从 Julia 分形编辑器导出（见「分形背景」） |
+| `docs/.vuepress/components/fractal/` | 分形背景的渲染器（`FractalBackground.vue`、`renderer.ts`、`shaders.ts`） |
+| `docs/.vuepress/components/fractal/panels.json` | 半透明面板、导航栏、侧边栏的不透明度和模糊（深色 / 浅色各一套） |
+| `docs/.vuepress/styles/fractal.css` | 分形背景配套样式：各层透明、半透明阅读面板 |
 | `docs/.vuepress/components/home/homeConfig.ts` | **首页内容配置**：文字、按钮、社交链接、显示数量、展示哪些项目 |
 | `docs/.vuepress/components/home/HomeSlant.vue` | 首页的布局和样式 |
 | `docs/.vuepress/components/home/useHomeData.ts` | 读取文章、标签、项目数据（一般不用改） |
@@ -24,7 +28,7 @@
 | `docs/.vuepress/styles/slant.css` | 全站形状规则：无圆角、发丝线、平行四边形、标题字体 |
 | `docs/.vuepress/config.ts` | 字体链接、文章数据插件、`date` → `createTime` 的日期修正 |
 | `docs/images/Bg.png` | 背景图原图 |
-| `docs/images/bg-main.jpg` | 默认背景图（`Bg.png` 的压缩版，约 80KB）：首页整页背景、`SlantPage` 的背景 |
+| `docs/images/bg-main.jpg` | `Bg.png` 的压缩版（约 80KB）：「关于」页首屏窗口；不支持 WebGL 的浏览器里代替分形背景 |
 | `docs/images/bg-cube.jpg` | 默认封面图（方块，约 100KB）：首页和 `SlantHero` 的斜切窗口 |
 
 ## 本地预览
@@ -74,33 +78,102 @@ pnpm docs:build
 
 大标题 “Ryan100c” 写在 `HomeSlant.vue` 的模板里（`<h1>Ryan<em>100c</em></h1>`），`<em>` 里的部分显示为斜体紫色。
 
-## 更换背景图和封面图
+## 分形背景
 
-首页有两张图：
+全站的背景是实时渲染的 Julia 分形：固定铺满窗口，在所有内容后面。每个页面有自己的参数，滚动时分形会跟着变化，有立体感。
 
-- **背景图**：铺满整页，加了模糊和暗化（浅色模式下是淡紫色蒙版）。
-- **封面图**：首屏右侧斜切窗口里的那张，不加蒙版。
+### 在博客里直接调（调节器）
 
-在 `docs/README.md` 里配置：
+在任意页面地址后面加 `?fractal-tune`，例如 `https://…/posts/?fractal-tune`，右上角会出现「背景调节」面板：
+
+- **位置**：中心 X / Y、缩放、旋转。点「拖动背景」后可以直接用鼠标拖动分形、用滚轮缩放（以鼠标为中心），对着真实的页面内容摆位置。再点一次结束拖动。
+- **分形**：C、幂次、迭代次数、遮罩、滚动转速、滚动视差。
+- **后期**：曝光、光晕强度、红蓝分光、饱和度（当前主题）。
+- **面板**（全站，当前主题）：文章列表 / 正文 / 目录等半透明面板的不透明度、悬停时的不透明度、背景模糊、背景饱和度、背景亮度，以及导航栏、侧边栏的不透明度。
+
+调节器调的是当前页面用的那一项（标题里显示名字，例如 `posts`），深色 / 浅色主题的后期和面板分开调（用导航栏的开关切换主题）。改动立刻显示，并保存在这个浏览器里：换页、刷新都还在，可以一页一页调。调好后点「复制全部」，把复制的内容发回来（或自己拆开替换 `fractalPages.json` 和 `panels.json`）。「本页恢复原值」「面板恢复原值」撤销调节器里的改动。点 × 关闭调节器。
+
+完整的配色、后期效果在 Julia 分形编辑器里调。
+
+### 修改某个页面的分形
+
+1. 打开 Julia 分形编辑器，在「页面」里选要调的页面，调好分形、配色和后期效果（深色、浅色主题分开调）。
+2. 点「复制这一页」，得到一段 JSON，形如 `{ "posts": { ... } }`。
+3. 打开 `docs/.vuepress/components/fractal/fractalPages.json`，用复制的内容替换同名的那一项（`"posts": { ... }` 整段）。
+
+JSON 里的字段和编辑器一一对应，也可以直接手改，例如：
+
+- `scroll.speed`：每向下滚动 1000px，C 绕原点转多少度。数值大时，滚动后分形变化很大（可能散成碎点）。
+- `scroll.parallax`：滚动时视图中心平移的幅度，0 为不动。
+- `veil`：分形上面盖的一层页面底色，0–1。数值越大背景越淡，文字越清楚。
+- `palette.dark` / `palette.light`：深色 / 浅色主题的配色；里面的 `post` 是后期效果（红蓝分光、光晕、光迹、背景渐变等）。
+
+### 哪个页面用哪一项
+
+| 项 | 页面 |
+|---|---|
+| `home` | 首页 |
+| `posts` | 文章列表和每篇文章（`/posts/` 下的所有页面） |
+| `projects` | 项目页，以及 `/tools/`、`/app/` 下的页面 |
+| `about` | 关于 |
+| `friends` | 友链 |
+| `default` | 其他页面（Ryan'sRenderingKit 文档等） |
+
+规则写在 `fractalPages.ts` 的 `ROUTES` 里，按路径前缀匹配。
+
+单独给某个页面指定一项：在它的 frontmatter 里写 `fractal: 名字`。例如让某篇文章用「关于」的分形：
+
+```yaml
+---
+title: ...
+fractal: about
+---
+```
+
+想给某个页面一套新参数：在 `fractalPages.json` 里新增一项（名字随意，例如 `"gtmc": { ... }`），再在那个页面写 `fractal: gtmc`。
+
+### 性能与兼容
+
+- 只在滚动、换页、换主题、改窗口大小时重画，静止时不占 GPU。
+- 始终按屏幕像素密度渲染（最多 500 万像素）。运动时每个像素算 1 个样本；停下后每帧在略微错开的位置再取一个样本并平均，累积到 16 个（渐进超采样），几帧之内变清晰。每帧的开销始终只有 1 个样本。
+- 整数幂次（2–12）用复数连乘计算，比一般幂次快很多。
+- 分形不直接使用页面的滚动位置，而是像弹簧一样平滑地追随（`FractalBackground.vue` 的 `SMOOTH_TIME`，越大越慢、越软）。
+- 换页、换主题时参数在约 1.1 秒内平滑过渡（`TRANSITION_MS`）。反演、Burning Ship、模式这些开关在过渡到一半时直接切换，其余参数照常插值。
+- 地址后面加 `?fractal-debug`，右下角会显示当前页面用的哪一项、已累积的样本数、分辨率和运动时的帧率，用来排查模糊或卡顿（调节器面板底部也有这一行）。
+- 系统设置了「减少动态效果」时，分形不随滚动变化。
+- 浏览器不支持 WebGL 时，背景换成静态图 `docs/images/bg-main.jpg`。
+- 渲染代码与编辑器完全相同（`shaders.ts`）。改了其中一边的计算方式，另一边也要改，否则编辑器里调好的样子和博客上不一致。
+
+### 用图片代替分形
+
+`HomeSlant` 和 `SlantPage` 仍然接受 `background`：写了就用这张图盖住分形（图片固定在窗口上，带模糊和蒙版）。
+
+```yaml
+# docs/README.md
+config:
+  - type: HomeSlant
+    background: /images/home-bg.jpg
+```
+
+```md
+<SlantPage background="/images/xxx.jpg">
+```
+
+## 更换封面图
+
+首页首屏右侧斜切窗口里的封面图，在 `docs/README.md` 里配置：
 
 ```yaml
 config:
   - type: HomeSlant
-    background: /images/home-bg.jpg
     cover: /images/home-cover.jpg
 ```
 
-1. 把图片放进 `docs/.vuepress/public/` 下（例如 `docs/.vuepress/public/images/home-bg.jpg`）。
-2. 用 `/` 开头的路径引用，路径从 `public/` 之后开始写，如上例。也可以直接填 `https://` 开头的完整地址。
-3. 只写 `background` 时，封面也用这张图。都不写时，背景用 `bg-main.jpg`，封面用 `bg-cube.jpg`。
+1. 把图片放进 `docs/.vuepress/public/` 下（例如 `docs/.vuepress/public/images/home-cover.jpg`）。
+2. 用 `/` 开头的路径引用，路径从 `public/` 之后开始写。也可以直接填 `https://` 开头的完整地址。
+3. 不写时用 `docs/images/bg-cube.jpg`。
 
-建议：
-
-- 背景图用 16:9 左右的横图，1920 宽足够。背景会被模糊，细节不重要。
-- 封面图会被斜切窗口裁掉左右两角，主体放在画面中间。窗口在横屏下约为 16:7 到 16:9。
-- 用 JPG 或 WebP，控制在 300KB 以内，首页加载会快很多。所以默认背景用的是 `Bg.png` 压缩后的 `bg-main.jpg`。
-
-想换掉默认图（不写配置时用的那张）：背景替换 `docs/images/bg-main.jpg`（原图可以放在 `Bg.png`），封面替换 `docs/images/bg-cube.jpg`，文件名保持不变。
+建议：封面图会被斜切窗口裁掉左右两角，主体放在画面中间。窗口在横屏下约为 16:7 到 16:9。用 JPG 或 WebP，控制在 300KB 以内。
 
 ## 首页布局
 
@@ -279,7 +352,7 @@ frontmatter 里必须写 `pageLayout: page`，页面才会铺满宽度（没有�
 
 | 组件 | 作用 | 参数 |
 |---|---|---|
-| `SlantPage` | 整页容器：配色、模糊背景图、最大宽度 | `background`：背景图，可选，默认 `bg-main.jpg` |
+| `SlantPage` | 整页容器：配色、最大宽度 | `background`：背景图，可选。不写时显示全站的分形背景 |
 | `SlantHero` | 首屏：左边是插槽里的 Markdown，右边是斜切窗口 | `label`：小标签；`image`：窗口里的前景图（透明 PNG 最好）；`cover`：窗口背景图，默认 `bg-cube.jpg`；`image-x`、`image-y`、`image-size`、`image-fill`：把前景图钉在背景图上的某个位置并放大（见下） |
 | `SlantRow` | 一行格子，横屏下是 12 列网格 | `kind`：`slant`（斜切 /）、`rev`（反向斜切 \）、`square`（方正面板） |
 | `SlantCell` | 一个格子，形状跟随所在的行 | `span`：占 12 列中的几列（默认 12）；`label`、`title`；`image`：顶部配图；`fit="contain"`：配图完整显示在深色底上；`max-height`：正文超出这个高度（像素）时在格子里滚动；`href`：整格变成链接 |

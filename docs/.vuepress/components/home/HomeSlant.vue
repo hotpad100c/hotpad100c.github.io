@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouteLink } from 'vuepress/client'
-import { actions, bgCube, bgMain, featuredProjects, pickFeaturedProjects, profile, projects, recentCount, resolveImage, socials, useHomePosts, useHomeTags } from './useHomeData'
+import { actions, bgCube, featuredProjects, pickFeaturedProjects, profile, projects, recentCount, resolveImage, socials, useHomePosts, useHomeTags } from './useHomeData'
 
 /**
  * 作为 Plume 首页区块使用：docs/README.md 中
  *   config:
  *     - type: HomeSlant
- *       background: /images/home-bg.jpg   # 整页背景（可选）
+ *       background: /images/home-bg.jpg   # 整页背景图（可选，写了就盖住分形背景）
  *       cover: /images/home-cover.jpg      # 首屏斜切窗口里的封面（可选）
  * 图片放在 docs/.vuepress/public/ 下，以 / 开头引用；也可以填完整的 https:// 地址，
  * 或者 bg-main / bg-cube 两张内置图片。
- * 默认：背景用 docs/images/bg-main.jpg（Bg.png 的压缩版），封面用 bg-cube。
- * 只写 background 时，封面也用这张图。
+ * 默认：背景是全站的分形背景（components/fractal，参数在 fractalPages.json 的 home），
+ * 封面用 bg-cube；只写 background 时，封面也用这张图。
  *
  * 文字、链接、数量等内容在 homeConfig.ts 中修改；布局与样式说明见仓库根目录 CUSTOMIZING.md。
  */
@@ -21,7 +21,7 @@ const props = defineProps<{
   cover?: string
 }>()
 
-const bgImg = computed(() => `url(${resolveImage(props.background, bgMain)})`)
+const bgImg = computed(() => (props.background ? `url(${resolveImage(props.background, '')})` : ''))
 const coverImg = computed(() => `url(${resolveImage(props.cover ?? props.background, bgCube)})`)
 
 const posts = useHomePosts()
@@ -32,8 +32,8 @@ const mods = pickFeaturedProjects(featuredProjects)
 </script>
 
 <template>
-  <div class="sl-page" :style="{ '--bg-img': bgImg, '--cover-img': coverImg }">
-    <div class="backdrop" aria-hidden="true" />
+  <div class="sl-page" :style="{ '--bg-img': bgImg || undefined, '--cover-img': coverImg }">
+    <div v-if="bgImg" class="backdrop" aria-hidden="true" />
 
     <!-- 横屏：两列两行，一屏装下；竖屏：依次堆叠 -->
     <div class="stage">
@@ -143,7 +143,6 @@ const mods = pickFeaturedProjects(featuredProjects)
   --display: 'Playfair Display', 'Noto Serif SC', serif;
   --mono: 'JetBrains Mono', ui-monospace, Menlo, monospace;
   position: relative;
-  background: var(--bg);
   color: var(--fg);
   font-family: var(--serif);
   overflow: hidden;
@@ -163,8 +162,9 @@ const mods = pickFeaturedProjects(featuredProjects)
   --veil-2: rgba(239, 233, 251, 0.94);
 }
 .backdrop {
-  position: absolute;
+  position: fixed;
   inset: 0;
+  z-index: -1;
   background: linear-gradient(180deg, var(--veil-1), var(--veil-2) 55%, var(--bg)), var(--bg-img) center top / cover no-repeat;
   filter: blur(2px);
   transform: scale(1.03);
