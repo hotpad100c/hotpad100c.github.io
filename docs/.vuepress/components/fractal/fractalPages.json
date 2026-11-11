@@ -4,7 +4,7 @@
     "power": 5,
     "inverse": true,
     "mode": "escape",
-    "iterations": 100,
+    "iterations": 256,
     "c": [
       0.699047,
       -0.239366
@@ -132,7 +132,7 @@
     "power": 4,
     "inverse": true,
     "mode": "escape",
-    "iterations": 100,
+    "iterations": 256,
     "c": [
       0.705289,
       -0.792094
@@ -260,7 +260,7 @@
     "power": 2,
     "inverse": false,
     "mode": "escape",
-    "iterations": 100,
+    "iterations": 256,
     "c": [
       -0.8,
       0.156
@@ -388,7 +388,7 @@
     "power": 10,
     "inverse": false,
     "mode": "escape",
-    "iterations": 100,
+    "iterations": 256,
     "c": [
       -0.336375,
       0.710114
@@ -516,7 +516,7 @@
     "power": 2,
     "inverse": false,
     "mode": "escape",
-    "iterations": 100,
+    "iterations": 256,
     "c": [
       0.285,
       0.01
@@ -644,7 +644,7 @@
     "power": 2,
     "inverse": true,
     "mode": "escape",
-    "iterations": 100,
+    "iterations": 256,
     "c": [
       0.356136,
       -0.286667
