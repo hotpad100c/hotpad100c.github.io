@@ -70,6 +70,9 @@ let avgMs = 0
 let budget = 0
 /** 上一帧是否画过（帧间隔才能用来调整 budget） */
 let drewLast = false
+/** 页面滚动目标，以及它从什么时候起没再变（滚动快停下时才预先画终点画面） */
+let lastTarget = -1
+let targetSince = 0
 /** 调节器改了参数：这一帧按运动处理 */
 let nudged = false
 /** 运动模糊的时间常数（秒）：越大拖影越长 */
@@ -139,7 +142,13 @@ function draw() {
   prevTime = now
   let more = false
   try {
-    more = renderer.draw(f, v, { moving, reset: dirty || ended, budget, blend: 1 - Math.exp(-Math.max(dt, 1 / 240) / BLUR_TIME) })
+    // 停下后的画面是确定的（目标页的参数 + 滚动停下的位置）：换页过渡中、滚动快停下时，在屏幕外先把它画好
+    const keyAt = (scroll: number) => `${pageKey.value}|${theme.value}|${tune.version}|${Math.round(scroll)}|${v.w}x${v.h}`
+    if (target !== lastTarget) { lastTarget = target; targetSince = now }
+    const pre = moving && current && (trans || now - targetSince > 120)
+      ? { key: keyAt(target), f: current, v: { ...v, scroll: target } }
+      : undefined
+    more = renderer.draw(f, v, { moving, reset: dirty || ended, budget, blend: 1 - Math.exp(-Math.max(dt, 1 / 240) / BLUR_TIME), key: keyAt(shownScroll), pre })
     dirty = false
     setVeil(f)
   }

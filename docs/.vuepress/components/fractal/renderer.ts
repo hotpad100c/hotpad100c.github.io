@@ -8,9 +8,11 @@
  * 每帧的计算量由调用方给的 budget（像素数）决定，使每帧都在一帧时间之内：
  *   - 运动中（滚动、换页过渡、拖动）：按 budget 降低分辨率画一帧（带亚像素抖动），
  *     平滑放大后与上一帧按 blend 混合：既是运动模糊，也把低分辨率的锯齿抹平。
- *   - 停下后：按全分辨率逐帧累积样本（渐进超采样，最多 MAX_SAMPLES 个）。
- *     一个样本的全屏计算量超过 budget 时分成几条横带，在屏幕外几帧画完，画完再整幅混合进去
+ *   - 停下后：按全分辨率在屏幕外（pre）逐帧累积样本（渐进超采样，最多 MAX_SAMPLES 个）。
+ *     一个样本的全屏计算量超过 budget 时分成几条横带，几帧画完，画完再整幅更新到屏幕
  *     （第一个样本用 FADE_MS 淡入），不会卡住页面，也看不到一条一条的扫描。
+ *   - 停下后的画面是确定的，所以运动中（换页过渡、滚动快停下时）分一部分算力先在 pre 里画它；
+ *     停下时接着画，已经画好的直接淡入。画清晰的画面还会缓存几张，回到同一页时立刻清晰。
  */
 import { FS_BLUR, FS_BRIGHT, FS_COMP, FS_COPY, FS_STREAK, VS, VS2, fractalFS } from './shaders'
 import type { FractalPage, Palette, PostFx } from './fractalPages'
@@ -53,6 +55,10 @@ export const MAX_SAMPLES = 16
 const SCALE_STEPS = [1, 0.85, 0.72, 0.6, 0.5, 0.42, 0.35]
 /** 停下后，从运动时的低分辨率画面淡入到全分辨率画面的时长 */
 const FADE_MS = 350
+/** 运动中分给「预先画终点画面」的算力比例 */
+const PRE_SHARE = 0.4
+/** 缓存几张画清晰的画面（每张是一整屏的贴图） */
+const CACHE_SIZE = 4
 
 /** Halton 序列（2, 3）：均匀分布的亚像素偏移 */
 export function halton(i: number, b: number) {
@@ -99,6 +105,10 @@ export interface DrawOptions {
   budget: number
   /** 运动中新一帧所占的比例（越小拖影越长） */
   blend: number
+  /** 此刻画面的标识（页面、主题、参数版本、滚动位置、尺寸）：停下时用来找预先画好的画面 */
+  key?: string
+  /** 运动中顺便在屏幕外预先画「停下后的画面」（换页过渡的终点、滚动的终点） */
+  pre?: { key: string, f: Frame, v: View }
 }
 
 export class FractalRenderer {
@@ -120,6 +130,8 @@ export class FractalRenderer {
   /** 第一个全分辨率样本开始淡入的时间（-1：没有在淡入） */
   private fadeStart = -1
   private fadeE = 0
+  /** 淡入完成后算作已累积几个样本 */
+  private fadeTo = 1
   /** acc 里是否已经有画面 */
   private valid = false
   /** 运动中的分辨率档位 */
@@ -270,9 +282,12 @@ export class FractalRenderer {
     /** acc 这一帧有没有变（没变就不用重新输出到屏幕） */
     let changed = true
     if (o.moving || !this.valid) {
+      // 有要预先画的终点画面时，分 PRE_SHARE 的算力给它，其余给运动中的画面
+      const pre = o.pre && this.valid ? o.pre : undefined
+      const budget = pre ? o.budget * (1 - PRE_SHARE) : o.budget
       // 低分辨率画进 smp 的左下角，再用三次 B 样条平滑放大，混合进 acc。
       // 分辨率在一次运动中只会往下调（且隔一段时间才调一档），不会每帧变来变去；取样位置也固定，画面不会抖
-      const want = Math.sqrt(o.budget / (w * h))
+      const want = Math.sqrt(budget / (w * h))
       const now = performance.now()
       if (!this.inMotion) {
         this.stepIdx = SCALE_STEPS.findIndex(x => x <= want * 1.0001)
@@ -297,46 +312,43 @@ export class FractalRenderer {
         this.pass(this.copy, acc, { sc: [sw / w, sh / h], lim: [(sw - 0.5) / w, (sh - 0.5) / h], ts: s < 1 ? [w, h] : [0, 0] }, [['t', smp]]))
       this.valid = true
       this.restart()
+      if (pre) this.prerender(pre, o.budget * PRE_SHARE)
     }
     else {
       this.inMotion = false
       if (o.reset) this.restart()
-      const smp = this.target('smp', w, h)
-      const copyAll = () => this.pass(this.copy, acc, { sc: [1, 1], lim: [1, 1], ts: [0, 0] }, [['t', smp]])
+      const key = o.key ?? ''
       if (this.fadeStart >= 0) {
-        // 第一个全分辨率样本已经画好：从运动时的画面淡入（不是一条一条地出现）
+        // 新画面已经画好：从运动时的画面淡入（不是一条一条地出现）
         const el = Math.min(1, (performance.now() - this.fadeStart) / FADE_MS)
         const e = el * el * (3 - 2 * el)
         // acc = mix(原画面, 新画面, e)：每帧按剩下的比例补上
         const t = e >= 1 ? 1 : (e - this.fadeE) / Math.max(1e-6, 1 - this.fadeE)
-        this.blendInto(acc, t, copyAll)
+        this.blendInto(acc, t, () => this.pass(this.copy, acc, { sc: [1, 1], lim: [1, 1], ts: [0, 0] }, [['t', this.target('pre', w, h)]]))
         this.fadeE = e
-        if (e >= 1) { this.fadeStart = -1; this.samples = 1 }
+        if (e >= 1) { this.fadeStart = -1; this.samples = this.fadeTo }
       }
       else if (this.samples >= MAX_SAMPLES) {
         return false
       }
       else {
-        // 全分辨率的一个样本先画进 smp（一帧算不完就分几条横带，几帧画完），画完再一起混合进 acc
-        const n = this.samples
-        const jitter = n === 0 ? [0, 0] : [halton(n, 2) - 0.5, halton(n, 3) - 0.5]
-        const rows = Math.min(h, Math.max(8, Math.round(o.budget / w)))
-        const y0 = this.band
-        const y1 = Math.min(h, y0 + rows)
-        gl.enable(gl.SCISSOR_TEST)
-        gl.scissor(0, y0, w, y1 - y0)
-        this.drawFractal(f, v, smp, w, h, jitter, 1)
-        gl.disable(gl.SCISSOR_TEST)
-        this.band = y1 >= h ? 0 : y1
-        changed = false
-        if (this.band === 0) {
-          if (n === 0) { this.fadeStart = performance.now(); this.fadeE = 0 }
-          else {
-            // 之后的样本按权重 1 / (n + 1) 平均进去（变化很细微，直接混合）
-            this.blendInto(acc, 1 / (n + 1), copyAll)
-            this.samples = n + 1
-            changed = true
+        // 停下后的画面在屏幕外的 pre 里累积（运动中已经预先画了的部分接着画；缓存里有就直接用）。
+        // pre 每多一个样本，整幅更新到屏幕上：第一次淡入，之后直接替换（变化很细微）
+        this.prerender({ key, f, v }, o.budget)
+        if (this.pre.samples > this.samples) {
+          if (this.samples === 0) {
+            this.fadeTo = this.pre.samples
+            this.fadeStart = performance.now()
+            this.fadeE = 0
+            changed = false
           }
+          else {
+            this.pass(this.copy, acc, { sc: [1, 1], lim: [1, 1], ts: [0, 0] }, [['t', this.target('pre', w, h)]])
+            this.samples = this.pre.samples
+          }
+        }
+        else {
+          changed = false
         }
       }
       more = this.fadeStart >= 0 || this.samples < MAX_SAMPLES
@@ -346,6 +358,71 @@ export class FractalRenderer {
     if (P?.enabled) this.postProcess(acc, P, v, null)
     else this.pass(this.copy, null, { sc: [1, 1], lim: [1, 1], ts: [0, 0] }, [['t', acc]])
     return more
+  }
+
+  private nextBand = 0
+  /** 把第 n 个全分辨率样本从第 y0 行起画一条（约 budget 个像素）进 out；画完整幅时返回 true，否则 nextBand 是下一条的起点 */
+  private bandStep(f: Frame, v: View, out: Target, n: number, budget: number, y0: number): boolean {
+    const gl = this.gl
+    const { w, h } = v
+    const jitter = n === 0 ? [0, 0] : [halton(n, 2) - 0.5, halton(n, 3) - 0.5]
+    const rows = Math.min(h, Math.max(8, Math.round(budget / w)))
+    const y1 = Math.min(h, y0 + rows)
+    gl.enable(gl.SCISSOR_TEST)
+    gl.scissor(0, y0, w, y1 - y0)
+    this.drawFractal(f, v, out, w, h, jitter, 1)
+    gl.disable(gl.SCISSOR_TEST)
+    this.nextBand = y1
+    return y1 >= h
+  }
+
+  /** 预先画好的终点画面：key、已累积的样本数、画到第几行 */
+  private pre = { key: '', samples: 0, band: 0 }
+  /** 已经画清晰的画面（最多 CACHE_SIZE 张，最近用过的留下）：key → 贴图名 */
+  private cache = new Map<string, string>()
+
+  private prerender(p: { key: string, f: Frame, v: View }, budget: number) {
+    const { w, h } = p.v
+    const out = this.target('pre', w, h)
+    if (this.pre.key !== p.key) {
+      this.pre = { key: p.key, samples: 0, band: 0 }
+      const hit = this.cache.get(p.key)
+      if (hit) {
+        // 缓存里有：不用画了（挪到最近用过）
+        this.cache.delete(p.key)
+        this.cache.set(p.key, hit)
+        this.pass(this.copy, out, { sc: [1, 1], lim: [1, 1], ts: [0, 0] }, [['t', this.target(hit, w, h)]])
+        this.pre.samples = MAX_SAMPLES
+      }
+    }
+    if (this.pre.samples >= MAX_SAMPLES) return
+    const n = this.pre.samples
+    const psmp = this.target('psmp', w, h)
+    if (this.bandStep(p.f, p.v, psmp, n, budget, this.pre.band)) {
+      this.pre.band = 0
+      this.blendInto(out, 1 / (n + 1), () => this.pass(this.copy, out, { sc: [1, 1], lim: [1, 1], ts: [0, 0] }, [['t', psmp]]))
+      this.pre.samples = n + 1
+      if (this.pre.samples >= MAX_SAMPLES) this.store(p.key, out)
+    }
+    else {
+      this.pre.band = this.nextBand
+    }
+  }
+
+  /** 画清晰的画面存进缓存 */
+  private store(key: string, src: Target) {
+    if (this.cache.has(key)) return
+    let name: string
+    if (this.cache.size >= CACHE_SIZE) {
+      const [oldKey, oldName] = this.cache.entries().next().value as [string, string]
+      this.cache.delete(oldKey)
+      name = oldName
+    }
+    else {
+      name = `cache${this.cache.size}`
+    }
+    this.pass(this.copy, this.target(name, src.w, src.h), { sc: [1, 1], lim: [1, 1], ts: [0, 0] }, [['t', src]])
+    this.cache.set(key, name)
   }
 
   /** 停下后从第一个样本重新累积 */
