@@ -1,17 +1,11 @@
 /**
- * 换页 / 换主题时两帧之间的过渡。
- *
- * 结构相同（同为 Mandelbrot / Burning Ship、同样反演与否、同样的模式）的两帧可以直接插值：
- *   C、幂次、视图、迭代次数、滚动参数、遮罩、后期效果的每个数值和颜色都线性过渡，
+ * 换页 / 换主题时两帧之间的过渡：
+ *   C、幂次、视图、迭代次数、滚动参数、遮罩、后期效果的每个数值和颜色都连续过渡，
  *   配色交给着色器按比例混合两套配色。
- * 结构不同的两帧没有有意义的中间状态，改为两幅画面交叉淡化（见 FractalRenderer.drawCrossfade）。
+ *   不能连续变化的开关（反演、Mandelbrot / Burning Ship、模式）在过渡到一半时直接切换，其余参数照常插值。
  */
 import type { PostFx } from './fractalPages'
 import type { Frame } from './renderer'
-
-export function compatible(a: Frame, b: Frame): boolean {
-  return a.kind === b.kind && a.inverse === b.inverse && a.mode === b.mode
-}
 
 /** 先慢后快再慢 */
 export const ease = (t: number): number => t * t * t * (t * (t * 6 - 15) + 10)
@@ -83,12 +77,13 @@ function lerpAngle(a: number, b: number, t: number) {
   return a + d * t
 }
 
-/** 结构相同的两帧之间插值（a 只能用它的主配色 pal） */
+/** 两帧之间插值（a 只能用它的主配色 pal） */
 export function lerpFrame(a: Frame, b: Frame, t: number): Frame {
+  const s = t < 0.5 ? a : b
   return {
-    kind: b.kind,
-    inverse: b.inverse,
-    mode: b.mode,
+    kind: s.kind,
+    inverse: s.inverse,
+    mode: s.mode,
     power: lerp(a.power, b.power, t),
     iterations: lerp(a.iterations, b.iterations, t),
     c: [lerp(a.c[0], b.c[0], t), lerp(a.c[1], b.c[1], t)],

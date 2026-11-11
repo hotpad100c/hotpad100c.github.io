@@ -6,26 +6,32 @@
  * - 滚动时 C 绕原点旋转、视图中心轻微平移（每页的 scroll.speed / scroll.parallax）。
  *   分形不直接用页面的滚动位置：它有自己的「位置」和「速度」，像弹簧一样平滑地追随页面
  *   （临界阻尼，SMOOTH_TIME 秒左右追上，不过冲；速度连续变化，与帧率无关）
- * - 换页 / 换主题：参数在 TRANSITION_MS 内平滑过渡到新页面（见 transition.ts）；
- *   两页结构不同（例如一个反演、一个不反演）时两幅画面交叉淡化，不会先变黑
- * - 始终按屏幕像素密度、带超采样渲染；超采样次数（每个像素 1×1 / 2×2 / 3×3 个样本）
- *   在每次换页时按这台设备画一帧的耗时自动选择
- * - 只在滚动、换页、换主题、改窗口大小时重画，静止时不占 GPU
+ * - 换页 / 换主题：参数在 TRANSITION_MS 内平滑过渡到新页面（见 transition.ts），
+ *   反演等开关在过渡到一半时直接切换
+ * - 始终按屏幕像素密度渲染。运动中每个像素 1 个样本；停下后逐帧累积到 16 个样本（渐进超采样），
+ *   几帧之内变清晰。每帧的开销始终只有 1 个样本
+ * - 只在滚动、换页、换主题、改窗口大小时重画，累积完成后不占 GPU
  * - 系统设置了「减少动态效果」时不随滚动变化、换页不过渡
  * - 不支持 WebGL 时退回到静态背景图 docs/images/bg-main.jpg
- * - 地址后面加 ?fractal-debug 会在右下角显示超采样次数、分辨率和一帧的耗时
+ * - 地址后面加 ?fractal-debug 会在右下角显示累积的样本数、分辨率和运动时的帧率
+ * - 地址后面加 ?fractal-tune 打开调节器（FractalTuner.vue）：实时调分形位置、面板透明度等，并导出参数
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { usePageFrontmatter, useRoute } from 'vuepress/client'
 import { bgMain } from '../home/useHomeData'
-import { fractalFor, fractalPages } from './fractalPages'
+import FractalTuner from './FractalTuner.vue'
+import { fractalKeyFor, fractalPages } from './fractalPages'
+import { applyPanels, panelDefaults } from './panels'
 import type { Frame, View } from './renderer'
-import { FractalRenderer, frameOf } from './renderer'
-import { compatible, ease, lerpFrame, settle } from './transition'
+import { FractalRenderer, MAX_SAMPLES, frameOf, zoomToScale } from './renderer'
+import { ease, lerpFrame, settle } from './transition'
+import { changed, initTune, tune, tunePage } from './tuneStore'
 
 const route = useRoute()
 const frontmatter = usePageFrontmatter<{ fractal?: string }>()
-const page = computed(() => fractalFor(route.path, frontmatter.value.fractal))
+const pageKey = computed(() => fractalKeyFor(route.path, frontmatter.value.fractal))
+/** 调节器打开时，用调节器里改过的参数 */
+const page = computed(() => (tune.active && tune.pages[pageKey.value]) || fractalPages[pageKey.value])
 
 const canvas = ref<HTMLCanvasElement>()
 const theme = ref<'dark' | 'light'>('dark')
@@ -51,14 +57,14 @@ let shownScroll = 0
 let velocity = 0
 let lastTime = 0
 
-/** 每个像素 aa × aa 个样本；很慢的设备上 lowRes 会把分辨率降到 70% */
-let aa = 2
-let lowRes = false
-let frameMs = 0
+/** 下一帧是否要从头累积（换页、换主题、改窗口大小） */
+let dirty = true
+/** 运动时的平均帧间隔（调试用） */
+let avgMs = 0
 
 /** 当前目标帧；正在过渡时是 trans.to */
 let current: Frame | null = null
-let trans: { from: Frame, to: Frame, start: number, cross: boolean } | null = null
+let trans: { from: Frame, to: Frame, start: number } | null = null
 
 function readTheme() {
   theme.value = document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'
@@ -68,8 +74,8 @@ function view(): View {
   const cw = window.innerWidth
   const ch = window.innerHeight
   const dpr = Math.min(window.devicePixelRatio || 1, 2)
-  const scale = Math.min(dpr * (lowRes ? 0.7 : 1), Math.sqrt(MAX_PIXELS / Math.max(cw * ch, 1)))
-  return { w: Math.max(1, Math.round(cw * scale)), h: Math.max(1, Math.round(ch * scale)), scale, scroll: shownScroll, viewportH: ch, aa }
+  const scale = Math.min(dpr, Math.sqrt(MAX_PIXELS / Math.max(cw * ch, 1)))
+  return { w: Math.max(1, Math.round(cw * scale)), h: Math.max(1, Math.round(ch * scale)), scale, scroll: shownScroll, viewportH: ch }
 }
 
 /** 过渡进行到哪里（0–1，已缓动） */
@@ -77,12 +83,10 @@ function progress(now: number) {
   return trans ? ease(Math.min(1, (now - trans.start) / TRANSITION_MS)) : 1
 }
 
-/** 此刻画面上的帧（交叉淡化时取占比较大的一边） */
+/** 此刻画面上的帧 */
 function shownFrame(now: number): Frame | null {
   if (!trans) return current
-  const t = progress(now)
-  if (trans.cross) return t < 0.5 ? trans.from : trans.to
-  return lerpFrame(trans.from, trans.to, t)
+  return lerpFrame(trans.from, trans.to, progress(now))
 }
 
 function setVeil(f: Frame) {
@@ -96,43 +100,42 @@ function draw() {
   const dt = Math.min((now - (lastTime || now)) / 1000, 0.1)
   lastTime = now
   const target = reduceMotion ? 0 : window.scrollY
+  const before = shownScroll
   follow(target, dt)
 
-  const v = view()
+  let f = current
+  let ended = false
+  if (trans) {
+    const t = progress(now)
+    if (t >= 1) { trans = null; ended = true }
+    else f = lerpFrame(trans.from, trans.to, t)
+  }
+  const moving = !!trans || shownScroll !== before
+  if (moving && dt > 0) avgMs = avgMs ? avgMs * 0.9 + dt * 100 : dt * 1000
+  let more = false
   try {
-    if (trans) {
-      const t = progress(now)
-      if (t >= 1) {
-        trans = null
-      }
-      else if (trans.cross) {
-        renderer.drawCrossfade(trans.from, trans.to, t, v)
-        setVeil(lerpFrame(trans.from, trans.to, t)) // 遮罩照样插值
-      }
-      else {
-        const f = lerpFrame(trans.from, trans.to, t)
-        renderer.draw(f, v)
-        setVeil(f)
-      }
-    }
-    if (!trans) {
-      renderer.draw(current, v)
-      setVeil(current)
-    }
+    more = renderer.draw(f, view(), moving || dirty || ended)
+    dirty = false
+    setVeil(f)
   }
   catch (e) {
     console.error('[fractal background]', e)
     useFallback()
     return
   }
-  if (showDebug) {
-    debug.value = `${trans ? (trans.cross ? '交叉淡化 · ' : '插值 · ') : ''}${pageName()} · ${aa}×${aa} 超采样 · ${v.w}×${v.h}（×${v.scale.toFixed(2)}${lowRes ? '，已降分辨率' : ''}） · 一帧约 ${frameMs.toFixed(1)}ms`
+  if (showDebug || tune.active) {
+    const v = view()
+    debug.value = `${trans ? '过渡中 · ' : ''}${pageName()} · 已累积 ${renderer.samples}/${MAX_SAMPLES} 个样本 · ${v.w}×${v.h}（×${v.scale.toFixed(2)}） · 运动时约 ${avgMs ? (1000 / avgMs).toFixed(0) : '–'} 帧/秒（${avgMs.toFixed(0)}ms）`
   }
-  if (trans || shownScroll !== target) request()
+  if (trans || shownScroll !== target || more) request()
   else lastTime = 0
 }
 function request() {
   if (!raf) raf = requestAnimationFrame(draw)
+}
+function onResize() {
+  dirty = true
+  request()
 }
 
 /** 临界阻尼弹簧（SmoothDamp）：shownScroll 带着速度追随 target */
@@ -151,29 +154,8 @@ function follow(target: number, dt: number) {
   }
 }
 
-/**
- * 量一帧 2×2 超采样要多久，据此选超采样次数。
- * 和随后的正式绘制在同一个任务里完成，测量用的画面不会显示出来。
- */
-function calibrate(f: Frame) {
-  if (!renderer) return
-  try {
-    lowRes = false
-    const v = view()
-    renderer.draw(f, { ...v, aa: 1 })
-    renderer.finish() // 第一次画可能包含着色器编译，不计时
-    const t0 = performance.now()
-    renderer.draw(f, { ...v, aa: 2 })
-    renderer.finish()
-    frameMs = performance.now() - t0
-    aa = frameMs < 12 ? 3 : frameMs < 45 ? 2 : 1
-    lowRes = frameMs > 150
-  }
-  catch {}
-}
-
 function pageName() {
-  return Object.keys(fractalPages).find(k => fractalPages[k] === page.value) ?? '?'
+  return pageKey.value
 }
 
 function useFallback() {
@@ -193,16 +175,16 @@ function retarget() {
     trans = null
   }
   else {
-    const start = settle(from)
-    trans = { from: start, to: next, start: now, cross: !compatible(start, next) }
+    trans = { from: settle(from), to: next, start: now }
   }
-  calibrate(next)
-  if (trans) trans.start = performance.now() // 过渡从测量之后才开始计时
-  draw()
+  dirty = true
+  request()
 }
 
 onMounted(() => {
+  initTune()
   readTheme()
+  applyPanels(theme.value, tune.active ? tune.panels[theme.value] : panelDefaults[theme.value])
   showDebug = /[?&]fractal-debug\b/.test(window.location.search)
   observer = new MutationObserver(readTheme)
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] })
@@ -220,8 +202,7 @@ onMounted(() => {
   shownScroll = reduceMotion ? 0 : window.scrollY
   current = frameOf(page.value, theme.value)
   window.addEventListener('scroll', request, { passive: true })
-  window.addEventListener('resize', request, { passive: true })
-  calibrate(current)
+  window.addEventListener('resize', onResize, { passive: true })
   draw()
 })
 function onMotionPref(e: MediaQueryListEvent) {
@@ -231,7 +212,7 @@ function onMotionPref(e: MediaQueryListEvent) {
 
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', request)
-  window.removeEventListener('resize', request)
+  window.removeEventListener('resize', onResize)
   mql?.removeEventListener?.('change', onMotionPref)
   observer?.disconnect()
   cancelAnimationFrame(raf)
@@ -239,7 +220,57 @@ onBeforeUnmount(() => {
 })
 
 watch(page, (next, prev) => { if (next !== prev) retarget() })
-watch(theme, retarget)
+watch(theme, (t) => {
+  applyPanels(t, tune.active ? tune.panels[t] : panelDefaults[t])
+  retarget()
+})
+
+// 调节器改了参数：立刻用新参数重画（不做过渡）
+watch(() => tune.version, () => {
+  applyPanels(theme.value, tune.active ? tune.panels[theme.value] : panelDefaults[theme.value])
+  if (!renderer) return
+  current = frameOf(page.value, theme.value)
+  if (trans) trans.to = current
+  dirty = true
+  request()
+})
+
+// 「拖动背景」：拖动平移、滚轮缩放（以鼠标为中心），与 Julia 分形编辑器的手感一致
+let dragFrom: { x: number, y: number } | null = null
+/** 屏幕上的位移（CSS px，y 向下）→ 分形坐标里的位移 */
+function toWorld(dx: number, dy: number, zoom: number, rotate: number) {
+  const m = Math.min(window.innerWidth, window.innerHeight)
+  const s = zoomToScale(zoom)
+  const a = rotate * Math.PI / 180
+  const qx = dx / m
+  const qy = -dy / m
+  return [(Math.cos(a) * qx - Math.sin(a) * qy) * s, (Math.sin(a) * qx + Math.cos(a) * qy) * s]
+}
+function onDragStart(e: PointerEvent) {
+  dragFrom = { x: e.clientX, y: e.clientY };
+  (e.target as HTMLElement).setPointerCapture(e.pointerId)
+}
+function onDragMove(e: PointerEvent) {
+  if (!dragFrom) return
+  const p = tunePage(pageKey.value)
+  const [wx, wy] = toWorld(e.clientX - dragFrom.x, e.clientY - dragFrom.y, p.view.zoom, p.view.rotate)
+  p.view.x -= wx
+  p.view.y -= wy
+  dragFrom = { x: e.clientX, y: e.clientY }
+  changed()
+}
+function onDragEnd() { dragFrom = null }
+function onWheel(e: WheelEvent) {
+  const p = tunePage(pageKey.value)
+  const cx = e.clientX - window.innerWidth / 2
+  const cy = e.clientY - window.innerHeight / 2
+  const [ax, ay] = toWorld(cx, cy, p.view.zoom, p.view.rotate)
+  p.view.zoom = Math.min(12, Math.max(-6, p.view.zoom - e.deltaY * 0.0015))
+  const [bx, by] = toWorld(cx, cy, p.view.zoom, p.view.rotate)
+  p.view.x += ax - bx
+  p.view.y += ay - by
+  changed()
+}
 </script>
 
 <template>
@@ -247,7 +278,19 @@ watch(theme, retarget)
     <canvas v-show="!fallback" ref="canvas" class="fractal-canvas" />
     <div class="fractal-veil" :style="{ background: veil }" />
   </div>
-  <div v-if="debug" class="fractal-debug">{{ debug }}</div>
+  <div v-if="debug && !tune.active" class="fractal-debug">{{ debug }}</div>
+  <template v-if="tune.active">
+    <div
+      v-if="tune.drag"
+      class="fractal-drag"
+      @pointerdown.prevent="onDragStart"
+      @pointermove="onDragMove"
+      @pointerup="onDragEnd"
+      @pointercancel="onDragEnd"
+      @wheel.prevent="onWheel"
+    />
+    <FractalTuner :page-key="pageKey" :theme="theme" :debug="debug" />
+  </template>
 </template>
 
 <style scoped>
@@ -272,6 +315,17 @@ watch(theme, retarget)
 .is-fallback {
   background: var(--fallback-img) center / cover no-repeat;
 }
+.fractal-drag {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  cursor: grab;
+  background: rgba(181, 156, 242, 0.04);
+  outline: 2px dashed rgba(181, 156, 242, 0.5);
+  outline-offset: -6px;
+  touch-action: none;
+}
+.fractal-drag:active { cursor: grabbing; }
 .fractal-debug {
   position: fixed;
   right: 12px;

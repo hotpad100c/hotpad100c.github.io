@@ -2,6 +2,9 @@
  * 全站分形背景（components/fractal/FractalBackground.vue）配套样式：
  * 让 Plume 的各层透明，分形从后面透出来；需要阅读的区域放在半透明的深色 / 浅色面板上。
  * 面板用 backdrop-filter 模糊并降低背景饱和度，文字不会被分形的颜色干扰。
+ *
+ * 下面 :root 里的数值只是页面脚本加载前的默认值；实际值在
+ * components/fractal/panels.json（可以用 ?fractal-tune 调节器实时调整），两边最好保持一致。
  */
 :root {
   --fx-panel: rgba(250, 247, 255, 0.62);

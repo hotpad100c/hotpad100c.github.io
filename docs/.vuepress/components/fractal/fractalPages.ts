@@ -63,12 +63,18 @@ const ROUTES: [string, string][] = [
   ['/friends/', 'friends'],
 ]
 
-export function fractalFor(path: string, override?: unknown): FractalPage {
-  if (typeof override === 'string' && fractalPages[override]) return fractalPages[override]
-  const p = decodeURI(path)
-  if (p === '/' || p === '/index.html') return fractalPages.home
+/** 某个页面用哪一项（fractalPages.json 里的名字） */
+export function fractalKeyFor(path: string, override?: unknown): string {
+  if (typeof override === 'string' && fractalPages[override]) return override
+  let p = path
+  try { p = decodeURI(path) } catch {}
+  if (p === '/' || p === '/index.html') return 'home'
   for (const [prefix, key] of ROUTES) {
-    if (p.startsWith(prefix) && fractalPages[key]) return fractalPages[key]
+    if (p.startsWith(prefix) && fractalPages[key]) return key
   }
-  return fractalPages.default
+  return 'default'
+}
+
+export function fractalFor(path: string, override?: unknown): FractalPage {
+  return fractalPages[fractalKeyFor(path, override)]
 }

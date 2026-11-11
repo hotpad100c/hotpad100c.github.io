@@ -3,7 +3,11 @@
  * 同样的参数（fractalPages.ts 里从编辑器导出的数据）画出来的图一样。
  *
  * 画的是一个 Frame：某个页面在某个主题下的参数。换页 / 换主题时，Frame 由 transition.ts 插值得到
- * （配色用着色器里的第二套配色 pal2 按 palMix 混合）；结构不同、无法插值的两页用 drawCrossfade 交叉淡化。
+ * （配色用着色器里的第二套配色 pal2 按 palMix 混合）。
+ *
+ * 渐进超采样：每帧每个像素只算 1 个样本。画面不动时，每帧在略微错开的位置再取一个样本，
+ * 和之前的平均（最多 MAX_SAMPLES 个），几帧之内变得清晰；一动就从 1 个样本重新开始。
+ * 这样每帧的开销始终只有 1×1，分辨率也不用降低。
  */
 import { FS, FS_BLUR, FS_BRIGHT, FS_COMP, FS_MIX, FS_STREAK, VS, VS2 } from './shaders'
 import type { FractalPage, Palette, PostFx } from './fractalPages'
@@ -38,9 +42,18 @@ export function frameOf(page: FractalPage, theme: 'dark' | 'light'): Frame {
 }
 
 const PAL_UNIFORMS = ['uStops', 'uPos', 'uCount', 'uInside', 'uInsideMode', 'uGamma', 'uFreq', 'uOffset', 'uCycle']
-const FRACTAL_UNIFORMS = ['uRes', 'uCenter', 'uScale', 'uRot', 'uC', 'uIter', 'uPower', 'uShip', 'uInv', 'uMandel', 'uMode', 'uPalMix', 'uAA',
+const FRACTAL_UNIFORMS = ['uRes', 'uCenter', 'uScale', 'uRot', 'uC', 'uIter', 'uPower', 'uShip', 'uInv', 'uMandel', 'uMode', 'uPalMix', 'uAA', 'uJitter',
   ...PAL_UNIFORMS, ...PAL_UNIFORMS.map(n => `${n}2`)]
 const INT_UNIFORMS = new Set(['type'])
+export const MAX_SAMPLES = 16
+
+/** Halton 序列（2, 3）：均匀分布的亚像素偏移 */
+function halton(i: number, b: number) {
+  let f = 1
+  let r = 0
+  while (i > 0) { f /= b; r += f * (i % b); i = Math.floor(i / b) }
+  return r
+}
 const STREAK_TYPES: Record<string, number> = { none: 0, rotate: 1, zoom: 2, spiral: 3 }
 
 export function hex(h: string): [number, number, number] {
@@ -65,7 +78,7 @@ export function effective(f: Frame, scroll: number, viewportH: number) {
 }
 
 /** 画布尺寸与滚动：w / h 是画布像素，scale 是画布像素 / CSS 像素；scroll、viewportH 用 CSS 像素 */
-export interface View { w: number, h: number, scale: number, scroll: number, viewportH: number, aa: number }
+export interface View { w: number, h: number, scale: number, scroll: number, viewportH: number }
 
 export class FractalRenderer {
   readonly gl: WebGLRenderingContext
@@ -77,6 +90,8 @@ export class FractalRenderer {
   private comp: WebGLProgram
   private mixer: WebGLProgram
   private targets: Record<string, Target> = {}
+  /** 已累积的样本数 */
+  samples = 0
   private locs = new Map<WebGLProgram, Map<string, WebGLUniformLocation | null>>()
 
   /** 不支持 WebGL 或着色器编译失败时抛出异常 */
@@ -183,38 +198,39 @@ export class FractalRenderer {
     gl.uniform1i(L('uCycle'), pal.cycle ? 1 : 0)
   }
 
-  private size(v: View) {
-    if (this.canvas.width !== v.w || this.canvas.height !== v.h) { this.canvas.width = v.w; this.canvas.height = v.h }
+  /**
+   * 画一帧。reset：画面参数变了（滚动、过渡、换页…），从 1 个样本重新累积。
+   * 返回 true 表示还可以继续累积（调用方应在下一帧再调用一次）。
+   */
+  draw(f: Frame, v: View, reset: boolean): boolean {
+    const sized = this.canvas.width !== v.w || this.canvas.height !== v.h
+    if (sized) { this.canvas.width = v.w; this.canvas.height = v.h }
+    if (reset || sized) this.samples = 0
+    if (this.samples >= MAX_SAMPLES) return false
+    const n = this.samples
+    // 第一个样本取像素中心，之后按 Halton 序列错开
+    const jitter = n === 0 ? [0, 0] : [halton(n, 2) - 0.5, halton(n, 3) - 0.5]
+    const smp = this.target('smp', v.w, v.h)
+    this.drawFractal(f, v, smp, jitter)
+    // 与之前的结果平均：acc = mix(acc, 新样本, 1 / (n + 1))
+    const dst = this.target(n % 2 ? 'accA' : 'accB', v.w, v.h)
+    const src = this.target(n % 2 ? 'accB' : 'accA', v.w, v.h)
+    this.pass(this.mixer, dst, { t: 1 / (n + 1) }, [['a', src], ['b', smp]])
+    this.samples = n + 1
+    const P = f.post
+    if (P?.enabled) this.postProcess(dst, P, v, null)
+    else this.pass(this.mixer, null, { t: 0 }, [['a', dst], ['b', dst]])
+    return this.samples < MAX_SAMPLES
   }
 
-  /** 画一帧到画面上 */
-  draw(f: Frame, v: View) {
-    this.size(v)
-    this.render(f, v, null, '')
-  }
-
-  /** 两个结构不同的分形交叉淡化：t = 0 只有 a，t = 1 只有 b */
-  drawCrossfade(a: Frame, b: Frame, t: number, v: View) {
-    this.size(v)
-    const ta = this.target('xa', v.w, v.h)
-    const tb = this.target('xb', v.w, v.h)
-    this.render(a, v, ta, 'a')
-    this.render(b, v, tb, 'b')
-    this.pass(this.mixer, null, { t }, [['a', ta], ['b', tb]])
-  }
-
-  /** 把一帧画进 out（null 为画面）；tag 区分交叉淡化时两边各自的中间贴图 */
-  private render(f: Frame, v: View, out: Target | null, tag: string) {
+  /** 把分形（1 个样本，带亚像素偏移）画进 out */
+  private drawFractal(f: Frame, v: View, out: Target, jitter: number[]) {
     const gl = this.gl
     const L = this.L
     const { w, h } = v
-    const P = f.post
-    const usePost = !!P?.enabled
     const e = effective(f, v.scroll, v.viewportH)
-    const base = usePost ? this.target(`base${tag}`, w, h) : out
-
     gl.useProgram(this.fractal)
-    gl.bindFramebuffer(gl.FRAMEBUFFER, base ? base.fb : null)
+    gl.bindFramebuffer(gl.FRAMEBUFFER, out.fb)
     gl.viewport(0, 0, w, h)
     gl.uniform2f(L.uRes, w, h)
     gl.uniform2f(L.uCenter, e.cx, e.cy)
@@ -227,24 +243,24 @@ export class FractalRenderer {
     gl.uniform1i(L.uInv, f.inverse ? 1 : 0)
     gl.uniform1i(L.uMandel, 0)
     gl.uniform1i(L.uMode, f.mode === 'min' ? 1 : 0)
-    gl.uniform1i(L.uAA, v.aa)
+    gl.uniform1i(L.uAA, 1)
+    gl.uniform2f(L.uJitter, jitter[0], jitter[1])
     this.setPalette(f.pal, '')
     if (f.pal2 && f.palMix > 0) this.setPalette(f.pal2, '2')
     gl.uniform1f(L.uPalMix, f.pal2 ? f.palMix : 0)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
-    if (usePost && base && P) this.postProcess(base, P, v, out, tag)
   }
 
   /** 后期用的小图按 CSS 像素的 1/4 建立：不管画布分辨率多高，光晕 / 柔焦的范围都和编辑器里一样 */
-  private postProcess(base: Target, P: PostFx, v: View, out: Target | null, tag: string) {
+  private postProcess(base: Target, P: PostFx, v: View, out: Target | null) {
     const { w, h, scale } = v
     const qw = Math.max(1, Math.round(w / scale / 4))
     const qh = Math.max(1, Math.round(h / scale / 4))
-    const q1 = this.target(`q1${tag}`, qw, qh)
-    const q2 = this.target(`q2${tag}`, qw, qh)
-    const s1 = this.target(`s1${tag}`, qw, qh)
-    const s2 = this.target(`s2${tag}`, qw, qh)
-    const st = this.target(`st${tag}`, qw, qh)
+    const q1 = this.target('q1', qw, qh)
+    const q2 = this.target('q2', qw, qh)
+    const s1 = this.target('s1', qw, qh)
+    const s2 = this.target('s2', qw, qh)
+    const st = this.target('st', qw, qh)
     const px = [scale / w, scale / h]
     const qx = [1 / qw, 1 / qh]
     const rad = P.bloom.radius
@@ -279,13 +295,6 @@ export class FractalRenderer {
       aspect: w / h,
       seed: 17,
     }, [['base', base], ['bloom', q1], ['soft', s1], ['streak', st]])
-  }
-
-  /** 等 GPU 画完（用来测一帧要多久） */
-  finish() {
-    const px = new Uint8Array(4)
-    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null)
-    this.gl.readPixels(0, 0, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, px)
   }
 
   dispose() {
