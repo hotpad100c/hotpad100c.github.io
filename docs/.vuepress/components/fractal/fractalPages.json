@@ -385,22 +385,22 @@
   },
   "about": {
     "kind": "mandelbrot",
-    "power": 10,
+    "power": 5,
     "inverse": false,
     "mode": "escape",
-    "iterations": 256,
+    "iterations": 150,
     "c": [
-      -0.336375,
-      0.710114
+      -0.4055,
+      0.6718
     ],
     "view": {
-      "x": -0.339791,
-      "y": 0.137217,
-      "zoom": 1.87,
+      "x": -0.3617,
+      "y": 0.304088,
+      "zoom": 0.7,
       "rotate": -25
     },
     "scroll": {
-      "speed": 0.001,
+      "speed": -0.45,
       "parallax": 0
     },
     "veil": 0,
