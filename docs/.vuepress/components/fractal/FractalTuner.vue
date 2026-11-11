@@ -6,10 +6,16 @@
 import { computed, ref, watch } from 'vue'
 import { changed, closeTune, exportAll, exportPage, resetPage, resetPanels, tune, tunePage } from './tuneStore'
 
-const props = defineProps<{ pageKey: string, theme: 'dark' | 'light', debug: string }>()
+const props = defineProps<{ pageKey: string, theme: 'dark' | 'light', debug: string, profile: () => string }>()
 
 const open = ref(true)
 const msg = ref('')
+const report = ref('')
+function runProfile() {
+  report.value = '正在测量……'
+  // 先让「正在测量」显示出来，再开始（测量时页面会卡一两秒）
+  setTimeout(() => { report.value = props.profile() }, 50)
+}
 const page = computed(() => { void tune.version; return tunePage(props.pageKey) })
 const panel = computed(() => tune.panels[props.theme])
 const post = computed(() => page.value.palette[props.theme].post)
@@ -44,6 +50,8 @@ const PANEL: Ctl[] = [
   { label: '背景亮度', path: 'brightness', min: 0.2, max: 1.5, step: 0.01 },
   { label: '导航栏不透明度', path: 'nav', min: 0, max: 1, step: 0.01, fmt: v => `${Math.round(v * 100)}%` },
   { label: '侧边栏不透明度', path: 'sidebar', min: 0, max: 1, step: 0.01, fmt: v => `${Math.round(v * 100)}%` },
+  { label: '文字影子', path: 'shadow', min: 0, max: 1, step: 0.01, fmt: v => `${Math.round(v * 100)}%` },
+  { label: '影子半径', path: 'shadowBlur', min: 0, max: 20, step: 0.5, fmt: v => `${v}px` },
 ]
 
 function get(o: any, path: string): number {
@@ -85,9 +93,17 @@ watch(() => props.pageKey, k => tunePage(k), { immediate: true })
         <button type="button" :class="{ on: tune.drag }" @click="tune.drag = !tune.drag">{{ tune.drag ? '拖动中（再点结束）' : '拖动背景' }}</button>
         <button type="button" @click="copy(exportPage(pageKey), '已复制本页参数')">复制本页</button>
         <button type="button" @click="copy(exportAll(), '已复制全部参数（所有页面 + 面板）')">复制全部</button>
+        <button type="button" title="把这一帧的每个步骤单独计时，找出最耗时的部分" @click="runProfile">性能分析</button>
       </div>
       <p v-if="tune.drag" class="hint">拖动：移动分形 · 滚轮：缩放（以鼠标为中心）。拖动时页面不能点击。</p>
       <p v-if="msg" class="msg">{{ msg }}</p>
+      <div v-if="report" class="report">
+        <pre>{{ report }}</pre>
+        <div class="actions">
+          <button type="button" @click="copy(report, '已复制分析结果')">复制结果</button>
+          <button type="button" @click="report = ''">收起</button>
+        </div>
+      </div>
 
       <h3>位置</h3>
       <label v-for="c in VIEW" :key="c.path" class="row">
@@ -163,5 +179,6 @@ h3 { margin: 12px 0 4px; font-size: 11px; letter-spacing: 0.1em; color: #b59cf2;
 .actions button:hover, .actions button.on { background: #b59cf2; color: #0b0910; }
 .hint { color: #6f6690; margin: 6px 0; }
 .msg { color: #9be7a8; margin: 4px 0; }
+.report pre { margin: 6px 0; padding: 6px; background: #0b0910; border: 1px solid rgba(181, 156, 242, 0.25); white-space: pre-wrap; font-size: 11px; line-height: 1.45; color: #d9d0f0; }
 .debug { color: #6f6690; margin-top: 8px; border-top: 1px solid rgba(181, 156, 242, 0.2); padding-top: 6px; }
 </style>

@@ -13,6 +13,7 @@
   --vp-nav-bg-color: rgba(239, 233, 251, 0.74);
   --vp-local-nav-bg-color: rgba(239, 233, 251, 0.74);
   --vp-sidebar-bg-color: rgba(235, 228, 248, 0.8);
+  --fx-text-shadow: 0 0 6px rgba(239, 233, 251, 0.85);
 }
 [data-theme='dark'] {
   --fx-panel: rgba(12, 10, 18, 0.58);
@@ -21,6 +22,7 @@
   --vp-nav-bg-color: rgba(11, 9, 16, 0.7);
   --vp-local-nav-bg-color: rgba(11, 9, 16, 0.7);
   --vp-sidebar-bg-color: rgba(14, 11, 21, 0.78);
+  --fx-text-shadow: 0 0 6px rgba(11, 9, 16, 0.75);
 }
 
 /* 页面本身不铺底色（底色由分形背景的遮罩提供） */
@@ -91,3 +93,7 @@
 
 /* Plume 在右侧目录底部用页面底色画了一道渐变遮挡，透明背景下会变成一块色带 */
 .theme-plume .aside-curtain { display: none; }
+
+/* 文字背后一层与页面底色相同的模糊影子：背景很亮时文字也看得清（panels.json 的 shadow / shadowBlur） */
+.theme-plume.vp-layout { text-shadow: var(--fx-text-shadow); }
+.theme-plume.vp-layout :is(pre, code, img, svg, .vp-button, button, input, textarea) { text-shadow: none; }
