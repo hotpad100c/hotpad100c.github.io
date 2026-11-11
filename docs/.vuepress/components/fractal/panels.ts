@@ -6,6 +6,7 @@
  *   blur：面板后面背景的模糊半径（px）
  *   saturate / brightness：面板后面背景的饱和度 / 亮度（越低，文字越不受分形颜色干扰）
  *   nav / sidebar：导航栏 / 侧边栏的不透明度
+ *   shadow / shadowBlur：文字背后与页面底色相同的模糊影子（不透明度 / 半径 px），背景太亮时文字也看得清
  *
  * styles/fractal.css 里有同样的默认值（页面脚本加载前使用），改这里时最好一并改掉。
  */
@@ -19,6 +20,8 @@ export interface PanelStyle {
   brightness: number
   nav: number
   sidebar: number
+  shadow: number
+  shadowBlur: number
 }
 export type Panels = Record<'dark' | 'light', PanelStyle>
 
@@ -40,4 +43,5 @@ export function applyPanels(theme: 'dark' | 'light', s: PanelStyle) {
   root.setProperty('--vp-nav-bg-color', `rgba(${b.nav}, ${s.nav})`)
   root.setProperty('--vp-local-nav-bg-color', `rgba(${b.nav}, ${s.nav})`)
   root.setProperty('--vp-sidebar-bg-color', `rgba(${b.sidebar}, ${s.sidebar})`)
+  root.setProperty('--fx-text-shadow', s.shadow > 0 ? `0 0 ${s.shadowBlur}px rgba(${b.nav}, ${s.shadow})` : 'none')
 }

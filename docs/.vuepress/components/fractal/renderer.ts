@@ -5,11 +5,13 @@
  * 画的是一个 Frame：某个页面在某个主题下的参数。换页 / 换主题时，Frame 由 transition.ts 插值得到
  * （配色用着色器里的第二套配色 pal2 按 palMix 混合）。
  *
- * 渐进超采样：每帧每个像素只算 1 个样本。画面不动时，每帧在略微错开的位置再取一个样本，
- * 和之前的平均（最多 MAX_SAMPLES 个），几帧之内变得清晰；一动就从 1 个样本重新开始。
- * 这样每帧的开销始终只有 1×1，分辨率也不用降低。
+ * 每帧的计算量由调用方给的 budget（像素数）决定，使每帧都在一帧时间之内：
+ *   - 运动中（滚动、换页过渡、拖动）：按 budget 降低分辨率画一帧（带亚像素抖动），
+ *     平滑放大后与上一帧按 blend 混合：既是运动模糊，也把低分辨率的锯齿抹平。
+ *   - 停下后：按全分辨率逐帧累积样本（渐进超采样，最多 MAX_SAMPLES 个）。
+ *     一个样本的全屏计算量超过 budget 时分成几条横带，几帧画完，不会卡住页面。
  */
-import { FS, FS_BLUR, FS_BRIGHT, FS_COMP, FS_MIX, FS_STREAK, VS, VS2 } from './shaders'
+import { FS_BLUR, FS_BRIGHT, FS_COMP, FS_COPY, FS_STREAK, VS, VS2, fractalFS } from './shaders'
 import type { FractalPage, Palette, PostFx } from './fractalPages'
 
 type Target = { tex: WebGLTexture, fb: WebGLFramebuffer, w: number, h: number }
@@ -48,7 +50,7 @@ const INT_UNIFORMS = new Set(['type'])
 export const MAX_SAMPLES = 16
 
 /** Halton 序列（2, 3）：均匀分布的亚像素偏移 */
-function halton(i: number, b: number) {
+export function halton(i: number, b: number) {
   let f = 1
   let r = 0
   while (i > 0) { f /= b; r += f * (i % b); i = Math.floor(i / b) }
@@ -80,18 +82,38 @@ export function effective(f: Frame, scroll: number, viewportH: number) {
 /** 画布尺寸与滚动：w / h 是画布像素，scale 是画布像素 / CSS 像素；scroll、viewportH 用 CSS 像素 */
 export interface View { w: number, h: number, scale: number, scroll: number, viewportH: number }
 
+export interface DrawOptions {
+  /** 画面在动：降低分辨率并做运动模糊 */
+  moving: boolean
+  /** 画面参数变了，停下时从头累积 */
+  reset: boolean
+  /** 这一帧最多算多少个像素 */
+  budget: number
+  /** 运动中新一帧所占的比例（越小拖影越长） */
+  blend: number
+}
+
 export class FractalRenderer {
   readonly gl: WebGLRenderingContext
-  private fractal: WebGLProgram
+  private fractal!: WebGLProgram
   private L: Record<string, WebGLUniformLocation | null> = {}
+  /** 每个整数幂次一个专用的着色器（'f' 是通用的） */
+  private variants = new Map<string, { prog: WebGLProgram, L: Record<string, WebGLUniformLocation | null> }>()
   private bright: WebGLProgram
   private blur: WebGLProgram
   private streak: WebGLProgram
   private comp: WebGLProgram
-  private mixer: WebGLProgram
+  private copy: WebGLProgram
   private targets: Record<string, Target> = {}
   /** 已累积的样本数 */
   samples = 0
+  /** 停下后正在画的样本已经画到第几行 */
+  private band = 0
+  /** acc 里是否已经有画面 */
+  private valid = false
+  private tick = 0
+  /** 上一帧运动时的分辨率比例（调试用） */
+  lastScale = 1
   private locs = new Map<WebGLProgram, Map<string, WebGLUniformLocation | null>>()
 
   /** 不支持 WebGL 或着色器编译失败时抛出异常 */
@@ -99,18 +121,17 @@ export class FractalRenderer {
     const gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, stencil: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' })
     if (!gl) throw new Error('WebGL unavailable')
     this.gl = gl
-    this.fractal = this.program(VS, FS)
     this.bright = this.program(VS2, FS_BRIGHT)
     this.blur = this.program(VS2, FS_BLUR)
     this.streak = this.program(VS2, FS_STREAK)
     this.comp = this.program(VS2, FS_COMP)
-    this.mixer = this.program(VS2, FS_MIX)
+    this.copy = this.program(VS2, FS_COPY)
     const buf = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buf)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
     gl.enableVertexAttribArray(0)
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
-    for (const n of FRACTAL_UNIFORMS) this.L[n] = gl.getUniformLocation(this.fractal, n)
+    this.useVariant(2.5)
   }
 
   private program(vs: string, fs: string): WebGLProgram {
@@ -129,6 +150,26 @@ export class FractalRenderer {
     gl.linkProgram(p)
     if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p) || 'link')
     return p
+  }
+
+  /** 选用某个幂次的分形着色器（第一次用到时编译） */
+  private useVariant(power: number) {
+    const key = Number.isInteger(power) && power >= 2 && power <= 16 ? String(power) : 'f'
+    let v = this.variants.get(key)
+    if (!v) {
+      const prog = this.program(VS, fractalFS(key === 'f' ? null : power))
+      const L: Record<string, WebGLUniformLocation | null> = {}
+      for (const n of FRACTAL_UNIFORMS) L[n] = this.gl.getUniformLocation(prog, n)
+      v = { prog, L }
+      this.variants.set(key, v)
+    }
+    this.fractal = v.prog
+    this.L = v.L
+  }
+
+  /** 先把这些幂次的着色器编译好（换页时不会因为编译卡一下） */
+  prepare(powers: number[]) {
+    for (const p of powers) this.useVariant(p)
   }
 
   private loc(p: WebGLProgram, name: string) {
@@ -199,35 +240,74 @@ export class FractalRenderer {
   }
 
   /**
-   * 画一帧。reset：画面参数变了（滚动、过渡、换页…），从 1 个样本重新累积。
-   * 返回 true 表示还可以继续累积（调用方应在下一帧再调用一次）。
+   * 画一帧。返回 true 表示还要继续画（调用方应在下一帧再调用一次）。
    */
-  draw(f: Frame, v: View, reset: boolean): boolean {
-    const sized = this.canvas.width !== v.w || this.canvas.height !== v.h
-    if (sized) { this.canvas.width = v.w; this.canvas.height = v.h }
-    if (reset || sized) this.samples = 0
-    if (this.samples >= MAX_SAMPLES) return false
-    const n = this.samples
-    // 第一个样本取像素中心，之后按 Halton 序列错开
-    const jitter = n === 0 ? [0, 0] : [halton(n, 2) - 0.5, halton(n, 3) - 0.5]
-    const smp = this.target('smp', v.w, v.h)
-    this.drawFractal(f, v, smp, jitter)
-    // 与之前的结果平均：acc = mix(acc, 新样本, 1 / (n + 1))
-    const dst = this.target(n % 2 ? 'accA' : 'accB', v.w, v.h)
-    const src = this.target(n % 2 ? 'accB' : 'accA', v.w, v.h)
-    this.pass(this.mixer, dst, { t: 1 / (n + 1) }, [['a', src], ['b', smp]])
-    this.samples = n + 1
+  draw(f: Frame, v: View, o: DrawOptions): boolean {
+    const gl = this.gl
+    const { w, h } = v
+    if (this.canvas.width !== w || this.canvas.height !== h) {
+      this.canvas.width = w
+      this.canvas.height = h
+      this.valid = false
+    }
+    const acc = this.target('acc', w, h)
+    if (!this.valid) { this.samples = 0; this.band = 0 }
+    let more: boolean
+    if (o.moving || !this.valid) {
+      // 低分辨率画进 smp 的左下角，再放大混合进 acc
+      const s = Math.min(1, Math.max(0.35, Math.sqrt(o.budget / (w * h))))
+      this.lastScale = s
+      const sw = Math.max(1, Math.round(w * s))
+      const sh = Math.max(1, Math.round(h * s))
+      const smp = this.target('smp', w, h)
+      this.tick = (this.tick % 64) + 1
+      this.drawFractal(f, v, smp, sw, sh, [halton(this.tick, 2) - 0.5, halton(this.tick, 3) - 0.5], 1)
+      this.blendInto(acc, this.valid ? o.blend : 1, () =>
+        this.pass(this.copy, acc, { sc: [sw / w, sh / h], lim: [(sw - 0.5) / w, (sh - 0.5) / h] }, [['t', smp]]))
+      this.valid = true
+      this.samples = 0
+      this.band = 0
+      more = true
+    }
+    else {
+      if (o.reset) { this.samples = 0; this.band = 0 }
+      if (this.samples >= MAX_SAMPLES) return false
+      const n = this.samples
+      // 第一个样本取像素中心，之后按 Halton 序列错开；直接按权重 1 / (n + 1) 混合进 acc
+      const jitter = n === 0 ? [0, 0] : [halton(n, 2) - 0.5, halton(n, 3) - 0.5]
+      const rows = Math.min(h, Math.max(8, Math.round(o.budget / w)))
+      const y0 = this.band
+      const y1 = Math.min(h, y0 + rows)
+      gl.enable(gl.SCISSOR_TEST)
+      gl.scissor(0, y0, w, y1 - y0)
+      this.blendInto(acc, 1 / (n + 1), () => this.drawFractal(f, v, acc, w, h, jitter, 1))
+      gl.disable(gl.SCISSOR_TEST)
+      this.band = y1 >= h ? 0 : y1
+      if (this.band === 0) this.samples = n + 1
+      more = this.samples < MAX_SAMPLES
+    }
     const P = f.post
-    if (P?.enabled) this.postProcess(dst, P, v, null)
-    else this.pass(this.mixer, null, { t: 0 }, [['a', dst], ['b', dst]])
-    return this.samples < MAX_SAMPLES
+    if (P?.enabled) this.postProcess(acc, P, v, null)
+    else this.pass(this.copy, null, { sc: [1, 1], lim: [1, 1] }, [['t', acc]])
+    return more
   }
 
-  /** 把分形（1 个样本，带亚像素偏移）画进 out */
-  private drawFractal(f: Frame, v: View, out: Target, jitter: number[]) {
+  /** 在 draw() 里画到 out 的内容按 out = mix(out, 新内容, t) 混合 */
+  private blendInto(_out: Target, t: number, draw: () => void) {
     const gl = this.gl
+    if (t >= 1) { draw(); return }
+    gl.enable(gl.BLEND)
+    gl.blendColor(0, 0, 0, t)
+    gl.blendFunc(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA)
+    draw()
+    gl.disable(gl.BLEND)
+  }
+
+  /** 把分形（每像素 1 个样本，带亚像素偏移）画进 out 左下角 w × h 的范围 */
+  private drawFractal(f: Frame, v: View, out: Target, w: number, h: number, jitter: number[], aa: number) {
+    const gl = this.gl
+    this.useVariant(f.power)
     const L = this.L
-    const { w, h } = v
     const e = effective(f, v.scroll, v.viewportH)
     gl.useProgram(this.fractal)
     gl.bindFramebuffer(gl.FRAMEBUFFER, out.fb)
@@ -243,16 +323,22 @@ export class FractalRenderer {
     gl.uniform1i(L.uInv, f.inverse ? 1 : 0)
     gl.uniform1i(L.uMandel, 0)
     gl.uniform1i(L.uMode, f.mode === 'min' ? 1 : 0)
-    gl.uniform1i(L.uAA, 1)
+    gl.uniform1i(L.uAA, aa)
     gl.uniform2f(L.uJitter, jitter[0], jitter[1])
     this.setPalette(f.pal, '')
-    if (f.pal2 && f.palMix > 0) this.setPalette(f.pal2, '2')
-    gl.uniform1f(L.uPalMix, f.pal2 ? f.palMix : 0)
+    const mix2 = !!f.pal2 && f.palMix > 0
+    if (mix2) this.setPalette(f.pal2!, '2')
+    gl.uniform1f(L.uPalMix, mix2 ? f.palMix : 0)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
   }
 
   /** 后期用的小图按 CSS 像素的 1/4 建立：不管画布分辨率多高，光晕 / 柔焦的范围都和编辑器里一样 */
   private postProcess(base: Target, P: PostFx, v: View, out: Target | null) {
+    for (const [, run] of this.postStages(base, P, v, out)) run()
+  }
+
+  /** 后期的各个步骤（性能分析时分开计时）。没用到的步骤（柔焦为 0、没有光迹）直接跳过 */
+  private postStages(base: Target, P: PostFx, v: View, out: Target | null): [string, () => void][] {
     const { w, h, scale } = v
     const qw = Math.max(1, Math.round(w / scale / 4))
     const qh = Math.max(1, Math.round(h / scale / 4))
@@ -264,37 +350,91 @@ export class FractalRenderer {
     const px = [scale / w, scale / h]
     const qx = [1 / qw, 1 / qh]
     const rad = P.bloom.radius
-    // 光晕：取亮部 → 两轮模糊
-    this.pass(this.bright, q1, { tx: px, thr: P.bloom.threshold }, [['t', base]])
-    for (const k of [rad, rad * 2]) {
-      this.pass(this.blur, q2, { dir: [qx[0] * k, 0] }, [['t', q1]])
-      this.pass(this.blur, q1, { dir: [0, qx[1] * k] }, [['t', q2]])
-    }
-    // 柔焦：整幅缩小 → 模糊
-    this.pass(this.bright, s1, { tx: px, thr: -1 }, [['t', base]])
-    this.pass(this.blur, s2, { dir: [qx[0] * 2, 0] }, [['t', s1]])
-    this.pass(this.blur, s1, { dir: [0, qx[1] * 2] }, [['t', s2]])
-    // 光迹
     const type = STREAK_TYPES[P.streak.type] ?? 0
-    this.pass(this.streak, st, { type, len: P.streak.length, aspect: w / h }, [['t', q1]])
+    const useStreak = type > 0 && P.streak.intensity > 0
+    const useSoft = P.soft > 0
+    const stages: [string, () => void][] = [
+      // 光晕：取亮部 → 两轮模糊
+      [`后期 · 光晕（${qw}×${qh}）`, () => {
+        this.pass(this.bright, q1, { tx: px, thr: P.bloom.threshold }, [['t', base]])
+        for (const k of [rad, rad * 2]) {
+          this.pass(this.blur, q2, { dir: [qx[0] * k, 0] }, [['t', q1]])
+          this.pass(this.blur, q1, { dir: [0, qx[1] * k] }, [['t', q2]])
+        }
+      }],
+    ]
+    // 柔焦：整幅缩小 → 模糊
+    if (useSoft) {
+      stages.push(['后期 · 柔焦', () => {
+        this.pass(this.bright, s1, { tx: px, thr: -1 }, [['t', base]])
+        this.pass(this.blur, s2, { dir: [qx[0] * 2, 0] }, [['t', s1]])
+        this.pass(this.blur, s1, { dir: [0, qx[1] * 2] }, [['t', s2]])
+      }])
+    }
+    // 光迹
+    if (useStreak) stages.push(['后期 · 光迹', () => this.pass(this.streak, st, { type, len: P.streak.length, aspect: w / h }, [['t', q1]])])
     // 合成
-    this.pass(this.comp, out, {
+    stages.push([`后期 · 合成（${w}×${h}）`, () => this.pass(this.comp, out, {
       chroma: P.chroma,
       bloomI: P.bloom.intensity,
-      softMix: P.soft,
-      streakI: type ? P.streak.intensity : 0,
+      softMix: useSoft ? P.soft : 0,
+      streakI: useStreak ? P.streak.intensity : 0,
       gA: hex(P.gradient.from),
       gB: hex(P.gradient.to),
       gAng: P.gradient.angle * Math.PI / 180,
       gStr: P.gradient.strength,
       vig: P.vignette,
-      grain: P.grain,
       sat: P.saturation,
       con: P.contrast,
       expo: P.exposure,
       aspect: w / h,
-      seed: 17,
-    }, [['base', base], ['bloom', q1], ['soft', s1], ['streak', st]])
+    }, [['base', base], ['bloom', q1], ['soft', useSoft ? s1 : q1], ['streak', useStreak ? st : q1]])])
+    return stages
+  }
+
+  /**
+   * 性能分析：把一帧的每个步骤单独画几次，等 GPU 画完再计时（会卡一下）。
+   * 另外测几种对照（非整数幂次、迭代减半、半分辨率），看哪里最耗时。
+   */
+  profile(f: Frame, v: View): { name: string, ms: number }[] {
+    const gl = this.gl
+    const { w, h } = v
+    const acc = this.target('acc', w, h)
+    const smp = this.target('smp', w, h)
+    const px = new Uint8Array(4)
+    const time = (run: () => void) => {
+      const once = () => {
+        const t0 = performance.now()
+        run()
+        gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px) // 等 GPU 画完
+        return performance.now() - t0
+      }
+      once()
+      const r = [once(), once(), once()].sort((a, b) => a - b)
+      return r[1]
+    }
+    const frac = { ...f, power: Math.floor(f.power) + 0.37 }
+    const rows: { name: string, ms: number }[] = []
+    const add = (name: string, run: () => void) => rows.push({ name, ms: time(run) })
+    add(`分形 · 全分辨率 ${w}×${h} · 1 个样本（当前参数，幂次 ${+f.power.toFixed(3)}）`, () => this.drawFractal(f, v, smp, w, h, [0, 0], 1))
+    add(`　对照：非整数幂次 ${frac.power}（换页过渡时）`, () => this.drawFractal(frac, v, smp, w, h, [0, 0], 1))
+    add(`　对照：迭代次数减半（${Math.round(f.iterations / 2)}）`, () => this.drawFractal({ ...f, iterations: f.iterations / 2 }, v, smp, w, h, [0, 0], 1))
+    add('　对照：一半分辨率（像素数 1/4）', () => this.drawFractal(f, v, smp, Math.round(w / 2), Math.round(h / 2), [0, 0], 1))
+    add('运动模糊（放大 + 混合）', () => this.blendInto(acc, 0.5, () => this.pass(this.copy, acc, { sc: [0.5, 0.5], lim: [0.5, 0.5] }, [['t', smp]])))
+    if (f.post?.enabled) {
+      for (const [name, run] of this.postStages(acc, f.post, v, null)) add(name, run)
+    }
+    else add('输出到屏幕（未开后期）', () => this.pass(this.copy, null, { sc: [1, 1], lim: [1, 1] }, [['t', acc]]))
+    // 测量时 acc 被弄乱了：下一帧整幅重画
+    this.valid = false
+    return rows
+  }
+
+  /** 显卡名称（浏览器允许时） */
+  gpuName(): string {
+    const gl = this.gl
+    const ext = gl.getExtension('WEBGL_debug_renderer_info')
+    return String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER))
   }
 
   dispose() {

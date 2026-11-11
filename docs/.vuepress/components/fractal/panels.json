@@ -1,4 +1,4 @@
 {
-  "dark": { "alpha": 0.58, "hoverAlpha": 0.74, "blur": 14, "saturate": 0.35, "brightness": 0.8, "nav": 0.7, "sidebar": 0.78 },
-  "light": { "alpha": 0.62, "hoverAlpha": 0.78, "blur": 14, "saturate": 0.5, "brightness": 1, "nav": 0.74, "sidebar": 0.8 }
+  "dark": { "alpha": 0.58, "hoverAlpha": 0.74, "blur": 14, "saturate": 0.35, "brightness": 0.8, "nav": 0.7, "sidebar": 0.78, "shadow": 0.75, "shadowBlur": 6 },
+  "light": { "alpha": 0.62, "hoverAlpha": 0.78, "blur": 14, "saturate": 0.5, "brightness": 1, "nav": 0.74, "sidebar": 0.8, "shadow": 0.85, "shadowBlur": 6 }
 }

@@ -5,7 +5,7 @@
  *   VS / FS：画 Julia 集（逃逸时间或最近点模式，渐变色标，内部颜色）
  *   VS2 + FS_BRIGHT / FS_BLUR / FS_STREAK / FS_COMP：后期效果
  *     取亮部 → 高斯模糊（光晕）、整幅缩小模糊（柔焦）、旋转 / 径向模糊（光迹）
- *     → 合成（红蓝分光、背景渐变、曝光 / 对比度 / 饱和度、暗角、颗粒）
+ *     → 合成（红蓝分光、背景渐变、曝光 / 对比度 / 饱和度、暗角；博客里不画颗粒）
  */
 export const VS = 'attribute vec2 a; void main(){ gl_Position = vec4(a, 0.0, 1.0); }';
 export const FS = [
@@ -131,13 +131,13 @@ export const FS_STREAK = [
   '  }',
   '  gl_FragColor = vec4(acc / ws, 1.0);',
   '}'].join('\n');
-// 合成：红蓝分光、光晕、光迹、柔焦、背景渐变、曝光 / 对比度 / 饱和度、暗角、颗粒
+// 合成：红蓝分光、光晕、光迹、柔焦、背景渐变、曝光 / 对比度 / 饱和度、暗角
 export const FS_COMP = [
   'precision highp float; varying vec2 v;',
   'uniform sampler2D base; uniform sampler2D bloom; uniform sampler2D soft; uniform sampler2D streak;',
   'uniform float chroma; uniform float bloomI; uniform float softMix; uniform float streakI;',
   'uniform vec3 gA; uniform vec3 gB; uniform float gAng; uniform float gStr;',
-  'uniform float vig; uniform float grain; uniform float sat; uniform float con; uniform float expo; uniform float aspect; uniform float seed;',
+  'uniform float vig; uniform float sat; uniform float con; uniform float expo; uniform float aspect;',
   'void main(){',
   '  vec2 d = v - 0.5; vec2 off = d * chroma;',
   '  vec3 col = vec3(texture2D(base, v + off).r, texture2D(base, v).g, texture2D(base, v - off).b);',
@@ -152,12 +152,38 @@ export const FS_COMP = [
   '  col = (col - 0.5) * con + 0.5;',
   '  float l = dot(col, vec3(0.299, 0.587, 0.114)); col = mix(vec3(l), col, sat);',
   '  float r = length(d * k) / length(k * 0.5); col *= 1.0 - vig * smoothstep(0.35, 1.0, r);',
-  '  float n = fract(sin(dot(gl_FragCoord.xy + seed, vec2(12.9898, 78.233))) * 43758.5453); col += (n - 0.5) * grain;',
   '  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);',
   '}'].join('\n');
 
-// 两幅画面按 t 混合（换页时结构不同的两个分形交叉淡化）
-export const FS_MIX = [
-  'precision mediump float; varying vec2 v; uniform sampler2D a; uniform sampler2D b; uniform float t;',
-  'void main(){ gl_FragColor = vec4(mix(texture2D(a, v).rgb, texture2D(b, v).rgb, t), 1.0); }'
+// 复制一幅画面（可以只取左下角 sc 的部分：运动时低分辨率的那一帧放大到全屏）。lim 防止取到范围外
+export const FS_COPY = [
+  'precision mediump float; varying vec2 v; uniform sampler2D t; uniform vec2 sc; uniform vec2 lim;',
+  'void main(){ gl_FragColor = vec4(texture2D(t, min(v * sc, lim)).rgb, 1.0); }'
 ].join('\n');
+
+/**
+ * 博客用的分形着色器：整数幂次（2–16）各编译一个专用版本，z^n 展开成固定的几次复数乘法
+ * （平方-乘法，例如 z^10 = ((z²)²·z)²，4 次），没有内层循环；其他幂次用极坐标形式。
+ * 画出来与 FS 完全相同，只是更快。
+ */
+export function fractalFS(power: number | null): string {
+  const a = FS.indexOf('vec2 cpow(vec2 z, float p) {')
+  const b = FS.indexOf('vec3 grad(float t, int P)')
+  let body: string
+  if (power !== null && Number.isInteger(power) && power >= 2 && power <= 16) {
+    const bits = power.toString(2).slice(1)
+    body = 'vec2 r = z;'
+    for (const bit of bits) body += ' r = csq(r);' + (bit === '1' ? ' r = cmul(r, z);' : '')
+    body += ' return r;'
+  }
+  else {
+    body = [
+      'float r2 = dot(z, z);',
+      'if (r2 == 0.0) return p > 0.0 ? vec2(0.0) : vec2(1e10, 0.0);',
+      'float a = atan(z.y, z.x) * p;',
+      'float m = exp2(0.5 * p * log2(r2));',
+      'return m * vec2(cos(a), sin(a));',
+    ].join(' ')
+  }
+  return `${FS.slice(0, a)}vec2 csq(vec2 z) { return vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y); }\nvec2 cpow(vec2 z, float p) { ${body} }\n${FS.slice(b)}`
+}
