@@ -162,15 +162,24 @@ export const FS_COMP = [
   '}'].join('\n');
 
 // 复制一幅画面（可以只取左下角 sc 的部分：运动时低分辨率的那一帧放大到全屏）。lim 防止取到范围外。
-// px > 0 时在 ±px 处取 4 个点平均（约等于 3×3 的帐篷模糊），放大时把低分辨率的锯齿和闪烁抹掉
+// ts > 0（源贴图的像素尺寸）时用三次 B 样条放大：4 次双线性取样拼出 4×4 的平滑核，
+// 没有双线性放大那种一格一格的方块感，代价是略软（正好盖住低分辨率）
 export const FS_COPY = [
-  'precision mediump float; varying vec2 v; uniform sampler2D t; uniform vec2 sc; uniform vec2 lim; uniform vec2 px;',
+  'precision highp float; varying vec2 v; uniform sampler2D t; uniform vec2 sc; uniform vec2 lim; uniform vec2 ts;',
   'vec3 at(vec2 u) { return texture2D(t, clamp(u, vec2(0.0), lim)).rgb; }',
   'void main(){',
   '  vec2 u = v * sc;',
-  '  vec3 c = px.x > 0.0',
-  '    ? (at(u + vec2(-px.x, -px.y)) + at(u + vec2(px.x, -px.y)) + at(u + vec2(-px.x, px.y)) + at(u + px)) * 0.25',
-  '    : at(u);',
+  '  if (ts.x <= 0.0) { gl_FragColor = vec4(at(u), 1.0); return; }',
+  '  vec2 p = u * ts - 0.5; vec2 i = floor(p); vec2 f = p - i;',
+  '  vec2 f2 = f * f; vec2 f3 = f2 * f;',
+  '  vec2 w0 = (1.0 - 3.0 * f + 3.0 * f2 - f3) / 6.0;',
+  '  vec2 w1 = (4.0 - 6.0 * f2 + 3.0 * f3) / 6.0;',
+  '  vec2 w2 = (1.0 + 3.0 * f + 3.0 * f2 - 3.0 * f3) / 6.0;',
+  '  vec2 w3 = f3 / 6.0;',
+  '  vec2 g0 = w0 + w1; vec2 g1 = w2 + w3;',
+  '  vec2 h0 = (i - 0.5 + w1 / g0) / ts; vec2 h1 = (i + 1.5 + w3 / g1) / ts;',
+  '  vec3 c = g0.y * (g0.x * at(vec2(h0.x, h0.y)) + g1.x * at(vec2(h1.x, h0.y)))',
+  '         + g1.y * (g0.x * at(vec2(h0.x, h1.y)) + g1.x * at(vec2(h1.x, h1.y)));',
   '  gl_FragColor = vec4(c, 1.0);',
   '}'
 ].join('\n');

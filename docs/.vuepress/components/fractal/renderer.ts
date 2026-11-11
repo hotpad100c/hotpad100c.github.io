@@ -270,7 +270,7 @@ export class FractalRenderer {
     /** acc 这一帧有没有变（没变就不用重新输出到屏幕） */
     let changed = true
     if (o.moving || !this.valid) {
-      // 低分辨率画进 smp 的左下角，再放大（带一点模糊）混合进 acc。
+      // 低分辨率画进 smp 的左下角，再用三次 B 样条平滑放大，混合进 acc。
       // 分辨率在一次运动中只会往下调（且隔一段时间才调一档），不会每帧变来变去；取样位置也固定，画面不会抖
       const want = Math.sqrt(o.budget / (w * h))
       const now = performance.now()
@@ -286,13 +286,15 @@ export class FractalRenderer {
       }
       const s = SCALE_STEPS[this.stepIdx]
       this.lastScale = s
-      const sw = Math.max(1, Math.round(w * s))
-      const sh = Math.max(1, Math.round(h * s))
+      // 分辨率低时改为「再低一半 + 每像素 2×2 取样」：计算量相同，但每个像素是 4 个点的平均，
+      // 细节不会变成一颗颗闪烁的噪点，放大后是柔和的模糊
+      const aa = s < 0.85 ? 2 : 1
+      const sw = Math.max(1, Math.round(w * s / aa))
+      const sh = Math.max(1, Math.round(h * s / aa))
       const smp = this.target('smp', w, h)
-      this.drawFractal(f, v, smp, sw, sh, [0, 0], 1)
-      const soft = s < 1 ? 0.6 : 0
+      this.drawFractal(f, v, smp, sw, sh, [0, 0], aa)
       this.blendInto(acc, this.valid ? o.blend : 1, () =>
-        this.pass(this.copy, acc, { sc: [sw / w, sh / h], lim: [(sw - 0.5) / w, (sh - 0.5) / h], px: [soft / w, soft / h] }, [['t', smp]]))
+        this.pass(this.copy, acc, { sc: [sw / w, sh / h], lim: [(sw - 0.5) / w, (sh - 0.5) / h], ts: s < 1 ? [w, h] : [0, 0] }, [['t', smp]]))
       this.valid = true
       this.restart()
     }
@@ -300,7 +302,7 @@ export class FractalRenderer {
       this.inMotion = false
       if (o.reset) this.restart()
       const smp = this.target('smp', w, h)
-      const copyAll = () => this.pass(this.copy, acc, { sc: [1, 1], lim: [1, 1], px: [0, 0] }, [['t', smp]])
+      const copyAll = () => this.pass(this.copy, acc, { sc: [1, 1], lim: [1, 1], ts: [0, 0] }, [['t', smp]])
       if (this.fadeStart >= 0) {
         // 第一个全分辨率样本已经画好：从运动时的画面淡入（不是一条一条地出现）
         const el = Math.min(1, (performance.now() - this.fadeStart) / FADE_MS)
@@ -342,7 +344,7 @@ export class FractalRenderer {
     if (!changed) return more
     const P = f.post
     if (P?.enabled) this.postProcess(acc, P, v, null)
-    else this.pass(this.copy, null, { sc: [1, 1], lim: [1, 1], px: [0, 0] }, [['t', acc]])
+    else this.pass(this.copy, null, { sc: [1, 1], lim: [1, 1], ts: [0, 0] }, [['t', acc]])
     return more
   }
 
@@ -479,11 +481,11 @@ export class FractalRenderer {
     add(`　对照：非整数幂次 ${frac.power}（换页过渡时）`, () => this.drawFractal(frac, v, smp, w, h, [0, 0], 1))
     add(`　对照：迭代次数减半（${Math.round(f.iterations / 2)}）`, () => this.drawFractal({ ...f, iterations: f.iterations / 2 }, v, smp, w, h, [0, 0], 1))
     add('　对照：一半分辨率（像素数 1/4）', () => this.drawFractal(f, v, smp, Math.round(w / 2), Math.round(h / 2), [0, 0], 1))
-    add('运动模糊（放大 + 混合）', () => this.blendInto(acc, 0.5, () => this.pass(this.copy, acc, { sc: [0.5, 0.5], lim: [0.5, 0.5], px: [0.6 / w, 0.6 / h] }, [['t', smp]])))
+    add('运动模糊（放大 + 混合）', () => this.blendInto(acc, 0.5, () => this.pass(this.copy, acc, { sc: [0.5, 0.5], lim: [0.5, 0.5], ts: [w, h] }, [['t', smp]])))
     if (f.post?.enabled) {
       for (const [name, run] of this.postStages(acc, f.post, v, null)) add(name, run)
     }
-    else add('输出到屏幕（未开后期）', () => this.pass(this.copy, null, { sc: [1, 1], lim: [1, 1], px: [0, 0] }, [['t', acc]]))
+    else add('输出到屏幕（未开后期）', () => this.pass(this.copy, null, { sc: [1, 1], lim: [1, 1], ts: [0, 0] }, [['t', acc]]))
     // 测量时 acc 被弄乱了：下一帧整幅重画
     this.valid = false
     return rows
