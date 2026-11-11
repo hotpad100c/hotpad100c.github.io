@@ -19,7 +19,7 @@
       "speed": 0.5,
       "parallax": 0.08
     },
-    "veil": 0.33,
+    "veil": 0,
     "palette": {
       "dark": {
         "stops": [
@@ -147,7 +147,7 @@
       "speed": 1,
       "parallax": 0
     },
-    "veil": 0.35,
+    "veil": 0,
     "palette": {
       "dark": {
         "stops": [
@@ -275,7 +275,7 @@
       "speed": 6,
       "parallax": 0.25
     },
-    "veil": 0.35,
+    "veil": 0,
     "palette": {
       "dark": {
         "stops": [
@@ -403,7 +403,7 @@
       "speed": 0.001,
       "parallax": 0
     },
-    "veil": 0.23,
+    "veil": 0,
     "palette": {
       "dark": {
         "stops": [
@@ -531,7 +531,7 @@
       "speed": -1.75,
       "parallax": 0
     },
-    "veil": 0.2,
+    "veil": 0,
     "palette": {
       "dark": {
         "stops": [
@@ -659,7 +659,7 @@
       "speed": 6,
       "parallax": 0.25
     },
-    "veil": 0.35,
+    "veil": 0,
     "palette": {
       "dark": {
         "stops": [
