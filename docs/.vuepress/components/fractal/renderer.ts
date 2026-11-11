@@ -1,15 +1,45 @@
 /**
  * 分形背景的 WebGL 渲染器。计算方式与 Julia 分形编辑器一致：
  * 同样的参数（fractalPages.ts 里从编辑器导出的数据）画出来的图一样。
+ *
+ * 画的是一个 Frame：某个页面在某个主题下的参数。换页 / 换主题时，Frame 由 transition.ts 插值得到
+ * （配色用着色器里的第二套配色 pal2 按 palMix 混合）；结构不同、无法插值的两页用 drawCrossfade 交叉淡化。
  */
-import { FS, FS_BLUR, FS_BRIGHT, FS_COMP, FS_STREAK, VS, VS2 } from './shaders'
+import { FS, FS_BLUR, FS_BRIGHT, FS_COMP, FS_MIX, FS_STREAK, VS, VS2 } from './shaders'
 import type { FractalPage, Palette, PostFx } from './fractalPages'
 
 type Target = { tex: WebGLTexture, fb: WebGLFramebuffer, w: number, h: number }
 type Uniforms = Record<string, number | number[]>
 
-const FRACTAL_UNIFORMS = ['uRes', 'uCenter', 'uScale', 'uRot', 'uC', 'uIter', 'uPower', 'uShip', 'uInv', 'uMandel', 'uMode',
-  'uStops', 'uPos', 'uCount', 'uInside', 'uInsideMode', 'uGamma', 'uFreq', 'uOffset', 'uCycle', 'uAA']
+/** 画一帧需要的全部参数 */
+export interface Frame {
+  kind: FractalPage['kind']
+  power: number
+  inverse: boolean
+  mode: FractalPage['mode']
+  iterations: number
+  c: [number, number]
+  view: FractalPage['view']
+  scroll: FractalPage['scroll']
+  veil: number
+  /** 遮罩颜色（页面底色，随主题） */
+  veilColor: [number, number, number]
+  pal: Palette
+  /** 第二套配色与混合比例（0 = 只用 pal） */
+  pal2?: Palette
+  palMix: number
+  post?: PostFx
+}
+
+export function frameOf(page: FractalPage, theme: 'dark' | 'light'): Frame {
+  const pal = page.palette[theme]
+  const veilColor: [number, number, number] = theme === 'light' ? [239, 233, 251] : [11, 9, 16]
+  return { ...page, veilColor, pal, palMix: 0, post: pal.post }
+}
+
+const PAL_UNIFORMS = ['uStops', 'uPos', 'uCount', 'uInside', 'uInsideMode', 'uGamma', 'uFreq', 'uOffset', 'uCycle']
+const FRACTAL_UNIFORMS = ['uRes', 'uCenter', 'uScale', 'uRot', 'uC', 'uIter', 'uPower', 'uShip', 'uInv', 'uMandel', 'uMode', 'uPalMix', 'uAA',
+  ...PAL_UNIFORMS, ...PAL_UNIFORMS.map(n => `${n}2`)]
 const INT_UNIFORMS = new Set(['type'])
 const STREAK_TYPES: Record<string, number> = { none: 0, rotate: 1, zoom: 2, spiral: 3 }
 
@@ -26,13 +56,16 @@ export const zoomToScale = (z: number): number => 3.2 / 2 ** z
  * 滚动后的 C 与视图中心（与编辑器的「模拟滚动」一致）：
  *   C 绕原点旋转 speed° / 1000px；视图中心随滚动平移，用 tanh 限制在一个范围内。
  */
-export function effective(page: FractalPage, scroll: number, viewportH: number) {
-  const a = (scroll / 1000) * page.scroll.speed * Math.PI / 180
-  const c: [number, number] = [page.c[0] * Math.cos(a) - page.c[1] * Math.sin(a), page.c[0] * Math.sin(a) + page.c[1] * Math.cos(a)]
-  const scale = zoomToScale(page.view.zoom)
-  const k = Math.tanh((scroll / Math.max(viewportH, 1)) * page.scroll.parallax)
-  return { c, cx: page.view.x + k * scale * 0.12, cy: page.view.y - k * scale * 0.22, scale }
+export function effective(f: Frame, scroll: number, viewportH: number) {
+  const a = (scroll / 1000) * f.scroll.speed * Math.PI / 180
+  const c: [number, number] = [f.c[0] * Math.cos(a) - f.c[1] * Math.sin(a), f.c[0] * Math.sin(a) + f.c[1] * Math.cos(a)]
+  const scale = zoomToScale(f.view.zoom)
+  const k = Math.tanh((scroll / Math.max(viewportH, 1)) * f.scroll.parallax)
+  return { c, cx: f.view.x + k * scale * 0.12, cy: f.view.y - k * scale * 0.22, scale }
 }
+
+/** 画布尺寸与滚动：w / h 是画布像素，scale 是画布像素 / CSS 像素；scroll、viewportH 用 CSS 像素 */
+export interface View { w: number, h: number, scale: number, scroll: number, viewportH: number, aa: number }
 
 export class FractalRenderer {
   readonly gl: WebGLRenderingContext
@@ -42,12 +75,13 @@ export class FractalRenderer {
   private blur: WebGLProgram
   private streak: WebGLProgram
   private comp: WebGLProgram
+  private mixer: WebGLProgram
   private targets: Record<string, Target> = {}
   private locs = new Map<WebGLProgram, Map<string, WebGLUniformLocation | null>>()
 
   /** 不支持 WebGL 或着色器编译失败时抛出异常 */
   constructor(readonly canvas: HTMLCanvasElement) {
-    const gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, stencil: false, preserveDrawingBuffer: false, powerPreference: 'low-power' })
+    const gl = canvas.getContext('webgl', { antialias: false, alpha: false, depth: false, stencil: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' })
     if (!gl) throw new Error('WebGL unavailable')
     this.gl = gl
     this.fractal = this.program(VS, FS)
@@ -55,6 +89,7 @@ export class FractalRenderer {
     this.blur = this.program(VS2, FS_BLUR)
     this.streak = this.program(VS2, FS_STREAK)
     this.comp = this.program(VS2, FS_COMP)
+    this.mixer = this.program(VS2, FS_MIX)
     const buf = gl.createBuffer()
     gl.bindBuffer(gl.ARRAY_BUFFER, buf)
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
@@ -126,9 +161,9 @@ export class FractalRenderer {
     gl.drawArrays(gl.TRIANGLES, 0, 3)
   }
 
-  private setPalette(pal: Palette) {
+  private setPalette(pal: Palette, suffix: '' | '2') {
     const gl = this.gl
-    const L = this.L
+    const L = (n: string) => this.L[n + suffix]
     const stops = pal.stops.slice().sort((a, b) => a[1] - b[1]).slice(0, 8)
     const cols: number[] = []
     const pos: number[] = []
@@ -137,30 +172,46 @@ export class FractalRenderer {
       cols.push(...hex(s[0]))
       pos.push(s[1])
     }
-    gl.uniform3fv(L.uStops, new Float32Array(cols))
-    gl.uniform1fv(L.uPos, new Float32Array(pos))
-    gl.uniform1i(L.uCount, stops.length)
-    gl.uniform3fv(L.uInside, hex(pal.inside))
-    gl.uniform1i(L.uInsideMode, ({ solid: 0, min: 1, angle: 2 } as Record<string, number>)[pal.insideMode] ?? 0)
-    gl.uniform1f(L.uGamma, pal.gamma)
-    gl.uniform1f(L.uFreq, pal.frequency)
-    gl.uniform1f(L.uOffset, pal.offset)
-    gl.uniform1i(L.uCycle, pal.cycle ? 1 : 0)
+    gl.uniform3fv(L('uStops'), new Float32Array(cols))
+    gl.uniform1fv(L('uPos'), new Float32Array(pos))
+    gl.uniform1i(L('uCount'), stops.length)
+    gl.uniform3fv(L('uInside'), hex(pal.inside))
+    gl.uniform1i(L('uInsideMode'), ({ solid: 0, min: 1, angle: 2 } as Record<string, number>)[pal.insideMode] ?? 0)
+    gl.uniform1f(L('uGamma'), pal.gamma)
+    gl.uniform1f(L('uFreq'), pal.frequency)
+    gl.uniform1f(L('uOffset'), pal.offset)
+    gl.uniform1i(L('uCycle'), pal.cycle ? 1 : 0)
   }
 
-  /**
-   * 画一帧。w / h 是画布像素尺寸，scale 是画布像素 / CSS 像素；scroll 与 viewportH 用 CSS 像素（和编辑器一致）。
-   * aa：超采样，每个像素取 aa × aa 个样本（1–3）。
-   */
-  draw(page: FractalPage, theme: 'dark' | 'light', scroll: number, viewportH: number, w: number, h: number, scale: number, aa = 2) {
+  private size(v: View) {
+    if (this.canvas.width !== v.w || this.canvas.height !== v.h) { this.canvas.width = v.w; this.canvas.height = v.h }
+  }
+
+  /** 画一帧到画面上 */
+  draw(f: Frame, v: View) {
+    this.size(v)
+    this.render(f, v, null, '')
+  }
+
+  /** 两个结构不同的分形交叉淡化：t = 0 只有 a，t = 1 只有 b */
+  drawCrossfade(a: Frame, b: Frame, t: number, v: View) {
+    this.size(v)
+    const ta = this.target('xa', v.w, v.h)
+    const tb = this.target('xb', v.w, v.h)
+    this.render(a, v, ta, 'a')
+    this.render(b, v, tb, 'b')
+    this.pass(this.mixer, null, { t }, [['a', ta], ['b', tb]])
+  }
+
+  /** 把一帧画进 out（null 为画面）；tag 区分交叉淡化时两边各自的中间贴图 */
+  private render(f: Frame, v: View, out: Target | null, tag: string) {
     const gl = this.gl
     const L = this.L
-    if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h }
-    const pal = page.palette[theme]
-    const P = pal.post
+    const { w, h } = v
+    const P = f.post
     const usePost = !!P?.enabled
-    const e = effective(page, scroll, viewportH)
-    const base = usePost ? this.target('base', w, h) : null
+    const e = effective(f, v.scroll, v.viewportH)
+    const base = usePost ? this.target(`base${tag}`, w, h) : out
 
     gl.useProgram(this.fractal)
     gl.bindFramebuffer(gl.FRAMEBUFFER, base ? base.fb : null)
@@ -168,29 +219,32 @@ export class FractalRenderer {
     gl.uniform2f(L.uRes, w, h)
     gl.uniform2f(L.uCenter, e.cx, e.cy)
     gl.uniform1f(L.uScale, e.scale)
-    gl.uniform1f(L.uRot, page.view.rotate * Math.PI / 180)
+    gl.uniform1f(L.uRot, f.view.rotate * Math.PI / 180)
     gl.uniform2f(L.uC, e.c[0], e.c[1])
-    gl.uniform1f(L.uIter, page.iterations)
-    gl.uniform1f(L.uPower, page.power)
-    gl.uniform1i(L.uShip, page.kind === 'ship' ? 1 : 0)
-    gl.uniform1i(L.uInv, page.inverse ? 1 : 0)
+    gl.uniform1f(L.uIter, Math.round(f.iterations))
+    gl.uniform1f(L.uPower, f.power)
+    gl.uniform1i(L.uShip, f.kind === 'ship' ? 1 : 0)
+    gl.uniform1i(L.uInv, f.inverse ? 1 : 0)
     gl.uniform1i(L.uMandel, 0)
-    gl.uniform1i(L.uMode, page.mode === 'min' ? 1 : 0)
-    gl.uniform1i(L.uAA, aa)
-    this.setPalette(pal)
+    gl.uniform1i(L.uMode, f.mode === 'min' ? 1 : 0)
+    gl.uniform1i(L.uAA, v.aa)
+    this.setPalette(f.pal, '')
+    if (f.pal2 && f.palMix > 0) this.setPalette(f.pal2, '2')
+    gl.uniform1f(L.uPalMix, f.pal2 ? f.palMix : 0)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
-    if (base && P) this.postProcess(base, P, w, h, scale)
+    if (usePost && base && P) this.postProcess(base, P, v, out, tag)
   }
 
   /** 后期用的小图按 CSS 像素的 1/4 建立：不管画布分辨率多高，光晕 / 柔焦的范围都和编辑器里一样 */
-  private postProcess(base: Target, P: PostFx, w: number, h: number, scale: number) {
+  private postProcess(base: Target, P: PostFx, v: View, out: Target | null, tag: string) {
+    const { w, h, scale } = v
     const qw = Math.max(1, Math.round(w / scale / 4))
     const qh = Math.max(1, Math.round(h / scale / 4))
-    const q1 = this.target('q1', qw, qh)
-    const q2 = this.target('q2', qw, qh)
-    const s1 = this.target('s1', qw, qh)
-    const s2 = this.target('s2', qw, qh)
-    const st = this.target('st', qw, qh)
+    const q1 = this.target(`q1${tag}`, qw, qh)
+    const q2 = this.target(`q2${tag}`, qw, qh)
+    const s1 = this.target(`s1${tag}`, qw, qh)
+    const s2 = this.target(`s2${tag}`, qw, qh)
+    const st = this.target(`st${tag}`, qw, qh)
     const px = [scale / w, scale / h]
     const qx = [1 / qw, 1 / qh]
     const rad = P.bloom.radius
@@ -207,8 +261,8 @@ export class FractalRenderer {
     // 光迹
     const type = STREAK_TYPES[P.streak.type] ?? 0
     this.pass(this.streak, st, { type, len: P.streak.length, aspect: w / h }, [['t', q1]])
-    // 合成到画面
-    this.pass(this.comp, null, {
+    // 合成
+    this.pass(this.comp, out, {
       chroma: P.chroma,
       bloomI: P.bloom.intensity,
       softMix: P.soft,
@@ -230,6 +284,7 @@ export class FractalRenderer {
   /** 等 GPU 画完（用来测一帧要多久） */
   finish() {
     const px = new Uint8Array(4)
+    this.gl.bindFramebuffer(this.gl.FRAMEBUFFER, null)
     this.gl.readPixels(0, 0, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, px)
   }
 
