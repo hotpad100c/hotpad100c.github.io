@@ -4,16 +4,16 @@
  * 面板用 backdrop-filter 模糊并降低背景饱和度，文字不会被分形的颜色干扰。
  */
 :root {
-  --fx-panel: rgba(250, 247, 255, 0.82);
-  --fx-panel-hover: rgba(255, 255, 255, 0.92);
+  --fx-panel: rgba(250, 247, 255, 0.62);
+  --fx-panel-hover: rgba(255, 255, 255, 0.78);
   --fx-panel-filter: blur(14px) saturate(0.5);
   --vp-nav-bg-color: rgba(239, 233, 251, 0.74);
   --vp-local-nav-bg-color: rgba(239, 233, 251, 0.74);
   --vp-sidebar-bg-color: rgba(235, 228, 248, 0.8);
 }
 [data-theme='dark'] {
-  --fx-panel: rgba(12, 10, 18, 0.8);
-  --fx-panel-hover: rgba(26, 20, 38, 0.88);
+  --fx-panel: rgba(12, 10, 18, 0.58);
+  --fx-panel-hover: rgba(26, 20, 38, 0.74);
   --fx-panel-filter: blur(14px) saturate(0.35) brightness(0.8);
   --vp-nav-bg-color: rgba(11, 9, 16, 0.7);
   --vp-local-nav-bg-color: rgba(11, 9, 16, 0.7);

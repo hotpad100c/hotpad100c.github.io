@@ -15,6 +15,7 @@ export const FS = [
   'uniform int uShip; uniform int uInv; uniform int uMandel; uniform int uMode;',
   'uniform vec3 uStops[8]; uniform float uPos[8]; uniform int uCount;',
   'uniform vec3 uInside; uniform int uInsideMode; uniform float uGamma; uniform float uFreq; uniform float uOffset; uniform int uCycle;',
+  'uniform int uAA;',
   'vec2 cpow(vec2 z, float p) {',
   '  if (p == 2.0) return vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y);',
   '  float r2 = dot(z, z);',
@@ -34,8 +35,8 @@ export const FS = [
   '  return col;',
   '}',
   'float shape(float t) { return pow(max(t, 0.0), uGamma) * uFreq + uOffset; }',
-  'void main() {',
-  '  vec2 q = (gl_FragCoord.xy - 0.5 * uRes) / min(uRes.x, uRes.y);',
+  'vec3 shade(vec2 fc) {',
+  '  vec2 q = (fc - 0.5 * uRes) / min(uRes.x, uRes.y);',
   '  float cr = cos(uRot), sr = sin(uRot);',
   '  vec2 p = vec2(cr * q.x - sr * q.y, sr * q.x + cr * q.y) * uScale + uCenter;',
   '  if (uInv == 1) { float d = dot(p, p); p = d > 0.0 ? vec2(p.x, -p.y) / d : vec2(1e10, 0.0); }',
@@ -64,7 +65,17 @@ export const FS = [
   '    float sn = n + 1.0 - log(max(0.5 * log(m2), 1e-6)) / lp;',
   '    col = grad(shape(clamp(sn / uIter, 0.0, 1.0)));',
   '  }',
-  '  gl_FragColor = vec4(col, 1.0);',
+  '  return col;',
+  '}',
+  // 超采样：每个像素在 uAA × uAA 的网格上取样再平均，细丝不会闪烁、不会像像素画
+  'void main() {',
+  '  vec3 acc = vec3(0.0); float k = float(uAA);',
+  '  for (int i = 0; i < 3; i++) { if (i >= uAA) break;',
+  '    for (int j = 0; j < 3; j++) { if (j >= uAA) break;',
+  '      acc += shade(gl_FragCoord.xy - 0.5 + (vec2(float(i), float(j)) + 0.5) / k);',
+  '    }',
+  '  }',
+  '  gl_FragColor = vec4(acc / (k * k), 1.0);',
   '}'
 ].join('\n');
 

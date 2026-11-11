@@ -9,7 +9,7 @@ type Target = { tex: WebGLTexture, fb: WebGLFramebuffer, w: number, h: number }
 type Uniforms = Record<string, number | number[]>
 
 const FRACTAL_UNIFORMS = ['uRes', 'uCenter', 'uScale', 'uRot', 'uC', 'uIter', 'uPower', 'uShip', 'uInv', 'uMandel', 'uMode',
-  'uStops', 'uPos', 'uCount', 'uInside', 'uInsideMode', 'uGamma', 'uFreq', 'uOffset', 'uCycle']
+  'uStops', 'uPos', 'uCount', 'uInside', 'uInsideMode', 'uGamma', 'uFreq', 'uOffset', 'uCycle', 'uAA']
 const INT_UNIFORMS = new Set(['type'])
 const STREAK_TYPES: Record<string, number> = { none: 0, rotate: 1, zoom: 2, spiral: 3 }
 
@@ -150,8 +150,9 @@ export class FractalRenderer {
 
   /**
    * 画一帧。w / h 是画布像素尺寸，scale 是画布像素 / CSS 像素；scroll 与 viewportH 用 CSS 像素（和编辑器一致）。
+   * aa：超采样，每个像素取 aa × aa 个样本（1–3）。
    */
-  draw(page: FractalPage, theme: 'dark' | 'light', scroll: number, viewportH: number, w: number, h: number, scale: number) {
+  draw(page: FractalPage, theme: 'dark' | 'light', scroll: number, viewportH: number, w: number, h: number, scale: number, aa = 2) {
     const gl = this.gl
     const L = this.L
     if (this.canvas.width !== w || this.canvas.height !== h) { this.canvas.width = w; this.canvas.height = h }
@@ -175,6 +176,7 @@ export class FractalRenderer {
     gl.uniform1i(L.uInv, page.inverse ? 1 : 0)
     gl.uniform1i(L.uMandel, 0)
     gl.uniform1i(L.uMode, page.mode === 'min' ? 1 : 0)
+    gl.uniform1i(L.uAA, aa)
     this.setPalette(pal)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
     if (base && P) this.postProcess(base, P, w, h, scale)
@@ -223,6 +225,12 @@ export class FractalRenderer {
       aspect: w / h,
       seed: 17,
     }, [['base', base], ['bloom', q1], ['soft', s1], ['streak', st]])
+  }
+
+  /** 等 GPU 画完（用来测一帧要多久） */
+  finish() {
+    const px = new Uint8Array(4)
+    this.gl.readPixels(0, 0, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, px)
   }
 
   dispose() {
