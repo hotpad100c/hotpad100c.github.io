@@ -11,7 +11,7 @@
  *   - 停下后：按全分辨率在屏幕外（pre）逐帧累积样本（渐进超采样，最多 MAX_SAMPLES 个）。
  *     一个样本的全屏计算量超过 budget 时分成几条横带，几帧画完，画完再整幅更新到屏幕
  *     （第一个样本用 FADE_MS 淡入），不会卡住页面，也看不到一条一条的扫描。
- *   - 停下后的画面是确定的，所以运动中（换页过渡、滚动快停下时）分一部分算力先在 pre 里画它；
+ *   - 停下后的画面是确定的，所以换页过渡中分一部分算力先在 pre 里画它；
  *     停下时接着画，已经画好的直接淡入。画清晰的画面还会缓存几张，回到同一页时立刻清晰。
  */
 import { FS_BLUR, FS_BRIGHT, FS_COMP, FS_COPY, FS_STREAK, VS, VS2, fractalFS } from './shaders'
@@ -107,7 +107,9 @@ export interface DrawOptions {
   blend: number
   /** 此刻画面的标识（页面、主题、参数版本、滚动位置、尺寸）：停下时用来找预先画好的画面 */
   key?: string
-  /** 运动中顺便在屏幕外预先画「停下后的画面」（换页过渡的终点、滚动的终点） */
+  /** 换页过渡中：低分辨率时用「再低一半 + 2×2 取样」换取柔和（整幅画面都在变，碎点最明显） */
+  soft?: boolean
+  /** 运动中顺便在屏幕外预先画「停下后的画面」（换页过渡的终点） */
   pre?: { key: string, f: Frame, v: View }
 }
 
@@ -301,9 +303,9 @@ export class FractalRenderer {
       }
       const s = SCALE_STEPS[this.stepIdx]
       this.lastScale = s
-      // 分辨率低时改为「再低一半 + 每像素 2×2 取样」：计算量相同，但每个像素是 4 个点的平均，
-      // 细节不会变成一颗颗闪烁的噪点，放大后是柔和的模糊
-      const aa = s < 0.85 ? 2 : 1
+      // 换页过渡中分辨率低时改为「再低一半 + 每像素 2×2 取样」：计算量相同，但每个像素是 4 个点的平均，
+      // 细节不会变成一颗颗闪烁的噪点，放大后是柔和的模糊。同页滚动时画面变化慢，保持清晰（不这样做）
+      const aa = o.soft && s < 0.85 ? 2 : 1
       const sw = Math.max(1, Math.round(w * s / aa))
       const sh = Math.max(1, Math.round(h * s / aa))
       const smp = this.target('smp', w, h)
