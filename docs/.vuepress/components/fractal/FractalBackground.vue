@@ -40,6 +40,8 @@ const fallback = ref(false)
 const veil = ref('transparent')
 const debug = ref('')
 
+/** 渲染比例上限：高分屏也最多按 1.5 倍渲染（浏览器放大时自带一点柔化，看不出差别，像素数少了约一半） */
+const MAX_DPR = 1.5
 /** 画布最多多少像素（超过时整体降低分辨率） */
 const MAX_PIXELS = 5_000_000
 /** 滚动追随的平滑时间（秒）：越大越「慢、软」 */
@@ -84,7 +86,7 @@ function readTheme() {
 function view(): View {
   const cw = window.innerWidth
   const ch = window.innerHeight
-  const dpr = Math.min(window.devicePixelRatio || 1, 2)
+  const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
   const scale = Math.min(dpr, Math.sqrt(MAX_PIXELS / Math.max(cw * ch, 1)))
   return { w: Math.max(1, Math.round(cw * scale)), h: Math.max(1, Math.round(ch * scale)), scale, scroll: shownScroll, viewportH: ch }
 }

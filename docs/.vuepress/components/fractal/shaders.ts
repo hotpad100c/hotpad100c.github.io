@@ -161,10 +161,18 @@ export const FS_COMP = [
   '  gl_FragColor = vec4(clamp(col, 0.0, 1.0), 1.0);',
   '}'].join('\n');
 
-// 复制一幅画面（可以只取左下角 sc 的部分：运动时低分辨率的那一帧放大到全屏）。lim 防止取到范围外
+// 复制一幅画面（可以只取左下角 sc 的部分：运动时低分辨率的那一帧放大到全屏）。lim 防止取到范围外。
+// px > 0 时在 ±px 处取 4 个点平均（约等于 3×3 的帐篷模糊），放大时把低分辨率的锯齿和闪烁抹掉
 export const FS_COPY = [
-  'precision mediump float; varying vec2 v; uniform sampler2D t; uniform vec2 sc; uniform vec2 lim;',
-  'void main(){ gl_FragColor = vec4(texture2D(t, min(v * sc, lim)).rgb, 1.0); }'
+  'precision mediump float; varying vec2 v; uniform sampler2D t; uniform vec2 sc; uniform vec2 lim; uniform vec2 px;',
+  'vec3 at(vec2 u) { return texture2D(t, clamp(u, vec2(0.0), lim)).rgb; }',
+  'void main(){',
+  '  vec2 u = v * sc;',
+  '  vec3 c = px.x > 0.0',
+  '    ? (at(u + vec2(-px.x, -px.y)) + at(u + vec2(px.x, -px.y)) + at(u + vec2(-px.x, px.y)) + at(u + px)) * 0.25',
+  '    : at(u);',
+  '  gl_FragColor = vec4(c, 1.0);',
+  '}'
 ].join('\n');
 
 /**
