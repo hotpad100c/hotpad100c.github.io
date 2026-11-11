@@ -88,12 +88,3 @@
 
 /* Plume 在右侧目录底部用页面底色画了一道渐变遮挡，透明背景下会变成一块色带 */
 .theme-plume .aside-curtain { display: none; }
-
-/* 斜切页面首屏的文字（例如「关于」）：放在阅读面板上 */
-.sl-hero-text {
-  padding: 18px 24px 12px;
-  background: var(--fx-panel);
-  border: 1px solid var(--vp-c-divider);
-  -webkit-backdrop-filter: var(--fx-panel-filter);
-  backdrop-filter: var(--fx-panel-filter);
-}
