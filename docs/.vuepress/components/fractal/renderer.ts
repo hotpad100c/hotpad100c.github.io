@@ -9,7 +9,8 @@
  *   - 运动中（滚动、换页过渡、拖动）：按 budget 降低分辨率画一帧（带亚像素抖动），
  *     平滑放大后与上一帧按 blend 混合：既是运动模糊，也把低分辨率的锯齿抹平。
  *   - 停下后：按全分辨率逐帧累积样本（渐进超采样，最多 MAX_SAMPLES 个）。
- *     一个样本的全屏计算量超过 budget 时分成几条横带，几帧画完，不会卡住页面。
+ *     一个样本的全屏计算量超过 budget 时分成几条横带，在屏幕外几帧画完，画完再整幅混合进去
+ *     （第一个样本用 FADE_MS 淡入），不会卡住页面，也看不到一条一条的扫描。
  */
 import { FS_BLUR, FS_BRIGHT, FS_COMP, FS_COPY, FS_STREAK, VS, VS2, fractalFS } from './shaders'
 import type { FractalPage, Palette, PostFx } from './fractalPages'
@@ -48,6 +49,8 @@ const FRACTAL_UNIFORMS = ['uRes', 'uCenter', 'uScale', 'uRot', 'uC', 'uIter', 'u
   ...PAL_UNIFORMS, ...PAL_UNIFORMS.map(n => `${n}2`)]
 const INT_UNIFORMS = new Set(['type'])
 export const MAX_SAMPLES = 16
+/** 停下后，从运动时的低分辨率画面淡入到全分辨率画面的时长 */
+const FADE_MS = 350
 
 /** Halton 序列（2, 3）：均匀分布的亚像素偏移 */
 export function halton(i: number, b: number) {
@@ -56,6 +59,9 @@ export function halton(i: number, b: number) {
   while (i > 0) { f /= b; r += f * (i % b); i = Math.floor(i / b) }
   return r
 }
+/** 高斯模糊的 σ（1/4 分辨率的像素）：光晕 = BLOOM_SIGMA × 半径；柔焦固定。大小与原来的两轮模糊相当 */
+const BLOOM_SIGMA = 3.67
+const SOFT_SIGMA = 3.3
 const STREAK_TYPES: Record<string, number> = { none: 0, rotate: 1, zoom: 2, spiral: 3 }
 
 export function hex(h: string): [number, number, number] {
@@ -109,6 +115,9 @@ export class FractalRenderer {
   samples = 0
   /** 停下后正在画的样本已经画到第几行 */
   private band = 0
+  /** 第一个全分辨率样本开始淡入的时间（-1：没有在淡入） */
+  private fadeStart = -1
+  private fadeE = 0
   /** acc 里是否已经有画面 */
   private valid = false
   private tick = 0
@@ -251,8 +260,10 @@ export class FractalRenderer {
       this.valid = false
     }
     const acc = this.target('acc', w, h)
-    if (!this.valid) { this.samples = 0; this.band = 0 }
-    let more: boolean
+    if (!this.valid) this.restart()
+    let more = true
+    /** acc 这一帧有没有变（没变就不用重新输出到屏幕） */
+    let changed = true
     if (o.moving || !this.valid) {
       // 低分辨率画进 smp 的左下角，再放大混合进 acc
       const s = Math.min(1, Math.max(0.35, Math.sqrt(o.budget / (w * h))))
@@ -265,31 +276,62 @@ export class FractalRenderer {
       this.blendInto(acc, this.valid ? o.blend : 1, () =>
         this.pass(this.copy, acc, { sc: [sw / w, sh / h], lim: [(sw - 0.5) / w, (sh - 0.5) / h] }, [['t', smp]]))
       this.valid = true
-      this.samples = 0
-      this.band = 0
-      more = true
+      this.restart()
     }
     else {
-      if (o.reset) { this.samples = 0; this.band = 0 }
-      if (this.samples >= MAX_SAMPLES) return false
-      const n = this.samples
-      // 第一个样本取像素中心，之后按 Halton 序列错开；直接按权重 1 / (n + 1) 混合进 acc
-      const jitter = n === 0 ? [0, 0] : [halton(n, 2) - 0.5, halton(n, 3) - 0.5]
-      const rows = Math.min(h, Math.max(8, Math.round(o.budget / w)))
-      const y0 = this.band
-      const y1 = Math.min(h, y0 + rows)
-      gl.enable(gl.SCISSOR_TEST)
-      gl.scissor(0, y0, w, y1 - y0)
-      this.blendInto(acc, 1 / (n + 1), () => this.drawFractal(f, v, acc, w, h, jitter, 1))
-      gl.disable(gl.SCISSOR_TEST)
-      this.band = y1 >= h ? 0 : y1
-      if (this.band === 0) this.samples = n + 1
-      more = this.samples < MAX_SAMPLES
+      if (o.reset) this.restart()
+      const smp = this.target('smp', w, h)
+      const copyAll = () => this.pass(this.copy, acc, { sc: [1, 1], lim: [1, 1] }, [['t', smp]])
+      if (this.fadeStart >= 0) {
+        // 第一个全分辨率样本已经画好：从运动时的画面淡入（不是一条一条地出现）
+        const el = Math.min(1, (performance.now() - this.fadeStart) / FADE_MS)
+        const e = el * el * (3 - 2 * el)
+        // acc = mix(原画面, 新画面, e)：每帧按剩下的比例补上
+        const t = e >= 1 ? 1 : (e - this.fadeE) / Math.max(1e-6, 1 - this.fadeE)
+        this.blendInto(acc, t, copyAll)
+        this.fadeE = e
+        if (e >= 1) { this.fadeStart = -1; this.samples = 1 }
+      }
+      else if (this.samples >= MAX_SAMPLES) {
+        return false
+      }
+      else {
+        // 全分辨率的一个样本先画进 smp（一帧算不完就分几条横带，几帧画完），画完再一起混合进 acc
+        const n = this.samples
+        const jitter = n === 0 ? [0, 0] : [halton(n, 2) - 0.5, halton(n, 3) - 0.5]
+        const rows = Math.min(h, Math.max(8, Math.round(o.budget / w)))
+        const y0 = this.band
+        const y1 = Math.min(h, y0 + rows)
+        gl.enable(gl.SCISSOR_TEST)
+        gl.scissor(0, y0, w, y1 - y0)
+        this.drawFractal(f, v, smp, w, h, jitter, 1)
+        gl.disable(gl.SCISSOR_TEST)
+        this.band = y1 >= h ? 0 : y1
+        changed = false
+        if (this.band === 0) {
+          if (n === 0) { this.fadeStart = performance.now(); this.fadeE = 0 }
+          else {
+            // 之后的样本按权重 1 / (n + 1) 平均进去（变化很细微，直接混合）
+            this.blendInto(acc, 1 / (n + 1), copyAll)
+            this.samples = n + 1
+            changed = true
+          }
+        }
+      }
+      more = this.fadeStart >= 0 || this.samples < MAX_SAMPLES
     }
+    if (!changed) return more
     const P = f.post
     if (P?.enabled) this.postProcess(acc, P, v, null)
     else this.pass(this.copy, null, { sc: [1, 1], lim: [1, 1] }, [['t', acc]])
     return more
+  }
+
+  /** 停下后从第一个样本重新累积 */
+  private restart() {
+    this.samples = 0
+    this.band = 0
+    this.fadeStart = -1
   }
 
   /** 在 draw() 里画到 out 的内容按 out = mix(out, 新内容, t) 混合 */
@@ -354,21 +396,19 @@ export class FractalRenderer {
     const useStreak = type > 0 && P.streak.intensity > 0
     const useSoft = P.soft > 0
     const stages: [string, () => void][] = [
-      // 光晕：取亮部 → 两轮模糊
+      // 光晕：取亮部 → 高斯模糊
       [`后期 · 光晕（${qw}×${qh}）`, () => {
         this.pass(this.bright, q1, { tx: px, thr: P.bloom.threshold }, [['t', base]])
-        for (const k of [rad, rad * 2]) {
-          this.pass(this.blur, q2, { dir: [qx[0] * k, 0] }, [['t', q1]])
-          this.pass(this.blur, q1, { dir: [0, qx[1] * k] }, [['t', q2]])
-        }
+        this.pass(this.blur, q2, { dir: [qx[0], 0], sigma: BLOOM_SIGMA * rad }, [['t', q1]])
+        this.pass(this.blur, q1, { dir: [0, qx[1]], sigma: BLOOM_SIGMA * rad }, [['t', q2]])
       }],
     ]
     // 柔焦：整幅缩小 → 模糊
     if (useSoft) {
       stages.push(['后期 · 柔焦', () => {
         this.pass(this.bright, s1, { tx: px, thr: -1 }, [['t', base]])
-        this.pass(this.blur, s2, { dir: [qx[0] * 2, 0] }, [['t', s1]])
-        this.pass(this.blur, s1, { dir: [0, qx[1] * 2] }, [['t', s2]])
+        this.pass(this.blur, s2, { dir: [qx[0], 0], sigma: SOFT_SIGMA }, [['t', s1]])
+        this.pass(this.blur, s1, { dir: [0, qx[1]], sigma: SOFT_SIGMA }, [['t', s2]])
       }])
     }
     // 光迹

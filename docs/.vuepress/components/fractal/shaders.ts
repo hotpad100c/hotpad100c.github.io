@@ -108,14 +108,20 @@ export const FS_BRIGHT = [
   '  float k = thr < 0.0 ? 1.0 : smoothstep(thr, thr + 0.2, l);',
   '  gl_FragColor = vec4(c * k, 1.0);',
   '}'].join('\n');
-// 可分离的高斯模糊
+// 可分离的高斯模糊：dir 是一个像素的步长（横或竖），sigma 以像素计；在 ±3σ 内取样（最多每边 32 个，σ 大时加大间隔）
 export const FS_BLUR = [
-  'precision mediump float; varying vec2 v; uniform sampler2D t; uniform vec2 dir;',
+  'precision highp float; varying vec2 v; uniform sampler2D t; uniform vec2 dir; uniform float sigma;',
   'void main(){',
-  '  vec3 s = texture2D(t, v).rgb * 0.227027;',
-  '  s += (texture2D(t, v + dir * 1.3846).rgb + texture2D(t, v - dir * 1.3846).rgb) * 0.3162162;',
-  '  s += (texture2D(t, v + dir * 3.2308).rgb + texture2D(t, v - dir * 3.2308).rgb) * 0.0702703;',
-  '  gl_FragColor = vec4(s, 1.0);',
+  '  float st = max(1.0, sigma * 3.0 / 32.0);',
+  '  float n = ceil(sigma * 3.0 / st);',
+  '  float k = -0.5 / max(sigma * sigma, 1e-4);',
+  '  vec3 s = texture2D(t, v).rgb; float ws = 1.0;',
+  '  for (int i = 1; i <= 32; i++) {',
+  '    if (float(i) > n) break;',
+  '    float x = float(i) * st; float w = exp(k * x * x);',
+  '    s += (texture2D(t, v + dir * x).rgb + texture2D(t, v - dir * x).rgb) * w; ws += 2.0 * w;',
+  '  }',
+  '  gl_FragColor = vec4(s / ws, 1.0);',
   '}'].join('\n');
 // 光迹：绕画面中心旋转 / 向中心缩放 / 两者一起（螺旋）的模糊
 export const FS_STREAK = [
