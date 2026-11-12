@@ -5,8 +5,8 @@
  * - 每个页面的参数见 fractalPages.ts / fractalPages.json（从 Julia 分形编辑器导出）
  * - 滚动时 C 绕原点旋转、视图中心轻微平移（每页的 scroll.speed / scroll.parallax）。
  *   分形不直接用页面的滚动位置：它有自己的「位置」和「速度」，像弹簧一样平滑地追随页面
- *   （临界阻尼，SMOOTH_TIME 秒左右追上，不过冲；速度连续变化，与帧率无关）
- * - 换页 / 换主题：参数在 TRANSITION_MS 内平滑过渡到新页面（见 transition.ts），
+ *   （临界阻尼，render.json 的 smoothTime 秒左右追上，不过冲；速度连续变化，与帧率无关）
+ * - 换页 / 换主题：参数在 render.json 的 transitionMs 内平滑过渡到新页面（见 transition.ts），
  *   反演等开关在过渡到一半时直接切换
  * - 每帧的计算量按实际帧率自动调整（budget，像素数）：
  *   运动中降低分辨率并做运动模糊（新一帧与上一帧混合）；停下后按全分辨率逐帧累积到 16 个样本，
@@ -24,9 +24,9 @@ import FractalTuner from './FractalTuner.vue'
 import { fractalKeyFor, fractalPages } from './fractalPages'
 import { applyPanels, panelDefaults } from './panels'
 import type { Frame, View } from './renderer'
-import { FractalRenderer, MAX_SAMPLES, frameOf, zoomToScale } from './renderer'
+import { FractalRenderer, frameOf, zoomToScale } from './renderer'
 import { ease, lerpFrame, settle } from './transition'
-import { changed, initTune, tune, tunePage } from './tuneStore'
+import { changed, initTune, renderSettings, tune, tunePage } from './tuneStore'
 
 const route = useRoute()
 const frontmatter = usePageFrontmatter<{ fractal?: string }>()
@@ -40,14 +40,6 @@ const fallback = ref(false)
 const veil = ref('transparent')
 const debug = ref('')
 
-/** 渲染比例上限：跟随屏幕像素密度（高分屏按真实像素渲染，最清晰），最多 3 倍；总像素数另有 MAX_PIXELS 限制 */
-const MAX_DPR = 3
-/** 画布最多多少像素（超过时整体降低分辨率） */
-const MAX_PIXELS = 5_000_000
-/** 滚动追随的平滑时间（秒）：越大越「慢、软」 */
-const SMOOTH_TIME = 0.45
-/** 换页过渡的时长 */
-const TRANSITION_MS = 1100
 
 let renderer: FractalRenderer | null = null
 let raf = 0
@@ -66,14 +58,15 @@ let prevTime = 0
 let dirty = true
 /** 运动时的平均帧间隔（调试用） */
 let avgMs = 0
-/** 每帧最多算多少个像素：按实际帧间隔自动调整 */
+/** 每帧最多算多少个像素：按实际帧间隔自动调整（运动中 / 停下后各一个） */
 let budget = 0
+let budgetMove = 0
+let budgetStill = 0
+let lastMoving = false
 /** 上一帧是否画过（帧间隔才能用来调整 budget） */
 let drewLast = false
 /** 调节器改了参数：这一帧按运动处理 */
 let nudged = false
-/** 运动模糊的时间常数（秒）：越大拖影越长 */
-const BLUR_TIME = 0.03
 
 /** 当前目标帧；正在过渡时是 trans.to */
 let current: Frame | null = null
@@ -86,14 +79,15 @@ function readTheme() {
 function view(): View {
   const cw = window.innerWidth
   const ch = window.innerHeight
-  const dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR)
-  const scale = Math.min(dpr, Math.sqrt(MAX_PIXELS / Math.max(cw * ch, 1)))
+  const R = renderSettings()
+  const dpr = Math.min(window.devicePixelRatio || 1, Math.max(0.25, R.maxDpr))
+  const scale = Math.min(dpr, Math.sqrt(Math.max(0.1, R.maxMegapixels) * 1e6 / Math.max(cw * ch, 1)))
   return { w: Math.max(1, Math.round(cw * scale)), h: Math.max(1, Math.round(ch * scale)), scale, scroll: shownScroll, viewportH: ch }
 }
 
 /** 过渡进行到哪里（0–1，已缓动） */
 function progress(now: number) {
-  return trans ? ease(Math.min(1, (now - trans.start) / TRANSITION_MS)) : 1
+  return trans ? ease(Math.min(1, (now - trans.start) / Math.max(1, renderSettings().transitionMs))) : 1
 }
 
 /** 此刻画面上的帧 */
@@ -128,14 +122,31 @@ function draw() {
   if (moving && dt > 0) avgMs = avgMs ? avgMs * 0.9 + dt * 100 : dt * 1000
   const v = view()
   const full = v.w * v.h
-  // 按上一帧实际花的时间调整计算量：慢了马上减，快了慢慢加
+  // 按上一帧实际花的时间调整计算量：慢了马上减，快了慢慢加。
+  // 运动中和停下后分开调（目标帧率见 render.json 的 moveFps / stillFps）：运动中要流畅；停下后只是在补清晰度，
+  // 帧率低一些也行，而且每帧至少画 stillMinShare 屏，保证一定能很快画完一幅清晰画面。
+  // （一帧的时间里还有后期、浏览器合成等与分形无关的固定开销，高分辨率下不小，
+  //   如果都算到分形头上，计算量会被一直压到最低，停下后迟迟不变清晰）
   const ms = (now - prevTime) || 0
-  if (!budget) budget = full
+  if (!budgetMove) budgetMove = full
+  if (!budgetStill) budgetStill = full
+  const R = renderSettings()
   if (drewLast && ms > 0) {
-    if (ms > 24) budget *= Math.max(0.5, 18 / ms)
-    else if (ms < 19) budget *= 1.06
+    // 帧间隔超过目标的 1.1 倍就按比例减，低于 0.9 倍就慢慢加
+    const target = 1000 / Math.max(5, lastMoving ? R.moveFps : R.stillFps)
+    if (lastMoving) {
+      if (ms > target * 1.1) budgetMove *= Math.max(0.5, target * 0.8 / ms)
+      else if (ms < target * 0.9) budgetMove *= 1.06
+    }
+    else {
+      if (ms > target * 1.1) budgetStill *= Math.max(0.5, target * 0.9 / ms)
+      else if (ms < target * 0.9) budgetStill *= 1.1
+    }
   }
-  budget = Math.min(full, Math.max(20000, budget))
+  budgetMove = Math.min(full, Math.max(20000, budgetMove))
+  budgetStill = Math.min(full, Math.max(full * Math.min(1, Math.max(0.01, R.stillMinShare)), budgetStill))
+  budget = moving ? budgetMove : budgetStill
+  lastMoving = moving
   prevTime = now
   let more = false
   try {
@@ -143,7 +154,8 @@ function draw() {
     // 同页滚动时不分算力给它，滚动中的画面保持尽量清晰
     const keyAt = (scroll: number) => `${pageKey.value}|${theme.value}|${tune.version}|${Math.round(scroll)}|${v.w}x${v.h}`
     const pre = trans && current ? { key: keyAt(target), f: current, v: { ...v, scroll: target } } : undefined
-    more = renderer.draw(f, v, { moving, reset: dirty || ended, budget, blend: 1 - Math.exp(-Math.max(dt, 1 / 240) / BLUR_TIME), key: keyAt(shownScroll), soft: !!trans, pre })
+    renderer.cfg = renderSettings()
+    more = renderer.draw(f, v, { moving, reset: dirty || ended, budget, blend: renderSettings().motionBlur > 0 ? 1 - Math.exp(-Math.max(dt, 1 / 240) / renderSettings().motionBlur) : 1, key: keyAt(shownScroll), soft: !!trans, pre })
     dirty = false
     setVeil(f)
   }
@@ -153,7 +165,7 @@ function draw() {
     return
   }
   if (showDebug || tune.active) {
-    debug.value = `${trans ? '过渡中 · ' : ''}${pageName()} · 已累积 ${renderer.samples}/${MAX_SAMPLES} 个样本 · ${v.w}×${v.h}（×${v.scale.toFixed(2)}） · 每帧 ${(budget / full * 100).toFixed(0)}% 像素，运动时分辨率 ×${renderer.lastScale.toFixed(2)} · 运动时约 ${avgMs ? (1000 / avgMs).toFixed(0) : '–'} 帧/秒（${avgMs.toFixed(0)}ms）`
+    debug.value = `${trans ? '过渡中 · ' : ''}${pageName()} · 已累积 ${renderer.samples}/${renderer.maxS} 个样本 · ${v.w}×${v.h}（×${v.scale.toFixed(2)}） · 每帧算 运动 ${(budgetMove / full * 100).toFixed(0)}% / 停下 ${(budgetStill / full * 100).toFixed(0)}% 像素，运动时分辨率 ×${renderer.lastScale.toFixed(2)} · 运动时约 ${avgMs ? (1000 / avgMs).toFixed(0) : '–'} 帧/秒（${avgMs.toFixed(0)}ms）`
   }
   drewLast = trans !== null || shownScroll !== target || more
   if (trans || shownScroll !== target || more) request()
@@ -170,7 +182,7 @@ function onResize() {
 /** 临界阻尼弹簧（SmoothDamp）：shownScroll 带着速度追随 target */
 function follow(target: number, dt: number) {
   if (dt <= 0) return
-  const omega = 2 / SMOOTH_TIME
+  const omega = 2 / Math.max(0.01, renderSettings().smoothTime)
   const x = omega * dt
   const exp = 1 / (1 + x + 0.48 * x * x + 0.235 * x * x * x)
   const change = shownScroll - target
@@ -195,7 +207,7 @@ function runProfile(): string {
   const lines = [
     `页面 ${pageKey.value} · ${theme.value === 'dark' ? '深色' : '浅色'} · 显卡：${renderer.gpuName()}`,
     `画布 ${v.w}×${v.h}（屏幕像素比 ${(window.devicePixelRatio || 1).toFixed(2)}，渲染比例 ×${v.scale.toFixed(2)}） · 迭代 ${Math.round(f.iterations)} · 反演 ${f.inverse ? '开' : '关'}`,
-    `自动调整：每帧最多算 ${(budget / full * 100).toFixed(0)}% 的像素，运动时分辨率 ×${renderer.lastScale.toFixed(2)}，运动时约 ${avgMs ? (1000 / avgMs).toFixed(0) : '–'} 帧/秒`,
+    `自动调整：每帧最多算 运动中 ${(budgetMove / (view().w * view().h) * 100).toFixed(0)}% / 停下后 ${(budgetStill / (view().w * view().h) * 100).toFixed(0)}% 的像素，运动时分辨率 ×${renderer.lastScale.toFixed(2)}，运动时约 ${avgMs ? (1000 / avgMs).toFixed(0) : '–'} 帧/秒`,
     '',
     ...rows.map(r => `${r.ms.toFixed(1).padStart(7)} ms  ${r.name}`),
   ]
@@ -252,7 +264,7 @@ onMounted(() => {
   try {
     renderer = new FractalRenderer(canvas.value!)
     canvas.value!.addEventListener('webglcontextlost', useFallback)
-    if (/[?&]fractal-nocache\b/.test(q)) renderer.cacheSize = 0
+    if (/[?&]fractal-nocache\b/.test(q)) renderer.noCache = true
     // 其他页面要用的着色器在空闲时一个个编译（第一次换页时就不用现编）
     renderer.prepare(Object.values(fractalPages))
     const idle = (cb: () => void) => ('requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 2000 }) : setTimeout(cb, 200))
@@ -343,7 +355,8 @@ function onWheel(e: WheelEvent) {
     <canvas v-show="!fallback" ref="canvas" class="fractal-canvas" />
     <div class="fractal-veil" :style="{ background: veil }" />
   </div>
-  <div v-if="debug && !tune.active" class="fractal-debug">{{ debug }}</div>
+  <!-- 调试信息单独放：放进调节器会让它每帧重新渲染，正在输入的数字会被改回去 -->
+  <div v-if="debug" class="fractal-debug" :class="{ 'with-tuner': tune.active }">{{ debug }}</div>
   <template v-if="tune.active">
     <div
       v-if="tune.drag"
@@ -354,7 +367,7 @@ function onWheel(e: WheelEvent) {
       @pointercancel="onDragEnd"
       @wheel.prevent="onWheel"
     />
-    <FractalTuner :page-key="pageKey" :theme="theme" :debug="debug" :profile="runProfile" />
+    <FractalTuner :page-key="pageKey" :theme="theme" :profile="runProfile" />
   </template>
 </template>
 
@@ -391,6 +404,7 @@ function onWheel(e: WheelEvent) {
   touch-action: none;
 }
 .fractal-drag:active { cursor: grabbing; }
+.fractal-debug.with-tuner { right: auto; left: 12px; max-width: min(420px, calc(100vw - 24px)); z-index: 121; }
 .fractal-debug {
   position: fixed;
   right: 12px;
