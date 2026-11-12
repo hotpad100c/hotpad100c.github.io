@@ -242,7 +242,11 @@ onMounted(() => {
   try {
     renderer = new FractalRenderer(canvas.value!)
     canvas.value!.addEventListener('webglcontextlost', useFallback)
-    renderer.prepare(Object.values(fractalPages).map(p => p.power))
+    // 其他页面要用的着色器在空闲时一个个编译（第一次换页时就不用现编）
+    renderer.prepare(Object.values(fractalPages))
+    const idle = (cb: () => void) => ('requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 2000 }) : setTimeout(cb, 200))
+    const step = () => { if (renderer?.prepareStep()) idle(step) }
+    idle(step)
   }
   catch {
     useFallback()

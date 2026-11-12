@@ -15,6 +15,7 @@
  *     停下时接着画，已经画好的直接淡入。画清晰的画面还会缓存几张，回到同一页时立刻清晰。
  */
 import { FS_BLUR, FS_BRIGHT, FS_COMP, FS_COPY, FS_STREAK, VS, VS2, fractalFS } from './shaders'
+import type { Variant } from './shaders'
 import type { FractalPage, Palette, PostFx } from './fractalPages'
 
 type Target = { tex: WebGLTexture, fb: WebGLFramebuffer, w: number, h: number }
@@ -70,6 +71,11 @@ export function halton(i: number, b: number) {
 /** 高斯模糊的 σ（1/4 分辨率的像素）：光晕 = BLOOM_SIGMA × 半径；柔焦固定。大小与原来的两轮模糊相当 */
 const BLOOM_SIGMA = 3.67
 const SOFT_SIGMA = 3.3
+/** 需要记录轨道离原点最近的距离吗（最近点模式，或内部不是纯色） */
+function needMinR(mode: FractalPage['mode'], pal: Palette) {
+  return mode === 'min' || pal.insideMode !== 'solid'
+}
+
 const STREAK_TYPES: Record<string, number> = { none: 0, rotate: 1, zoom: 2, spiral: 3 }
 
 export function hex(h: string): [number, number, number] {
@@ -159,7 +165,7 @@ export class FractalRenderer {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
     gl.enableVertexAttribArray(0)
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
-    this.useVariant(2.5)
+    this.useVariant({ power: null, ship: false, minR: true, aa: 1 })
   }
 
   private program(vs: string, fs: string): WebGLProgram {
@@ -180,12 +186,13 @@ export class FractalRenderer {
     return p
   }
 
-  /** 选用某个幂次的分形着色器（第一次用到时编译） */
-  private useVariant(power: number) {
-    const key = Number.isInteger(power) && power >= 2 && power <= 16 ? String(power) : 'f'
+  /** 选用某个专用的分形着色器（第一次用到时编译） */
+  private useVariant(o: Variant) {
+    const power = Number.isInteger(o.power) && o.power! >= 2 && o.power! <= 16 ? o.power : null
+    const key = `${power ?? 'f'}|${+o.ship}|${+o.minR}|${o.aa}`
     let v = this.variants.get(key)
     if (!v) {
-      const prog = this.program(VS, fractalFS(key === 'f' ? null : power))
+      const prog = this.program(VS, fractalFS({ ...o, power }))
       const L: Record<string, WebGLUniformLocation | null> = {}
       for (const n of FRACTAL_UNIFORMS) L[n] = this.gl.getUniformLocation(prog, n)
       v = { prog, L }
@@ -195,9 +202,32 @@ export class FractalRenderer {
     this.L = v.L
   }
 
-  /** 先把这些幂次的着色器编译好（换页时不会因为编译卡一下） */
-  prepare(powers: number[]) {
-    for (const p of powers) this.useVariant(p)
+  /** 等着在空闲时编译的着色器 */
+  private pending: Variant[] = []
+
+  /** 记下这些页面要用的着色器，之后用 prepareStep() 在空闲时一个个编译好（换页时不会因为编译卡一下） */
+  prepare(pages: FractalPage[]) {
+    for (const p of pages) {
+      for (const pal of [p.palette.dark, p.palette.light]) {
+        const o = { ship: p.kind === 'ship', minR: needMinR(p.mode, pal) }
+        for (const aa of [1, 2] as const) {
+          this.pending.push({ power: p.power, aa, ...o }, { power: null, aa, ...o })
+        }
+      }
+    }
+  }
+
+  /** 编译一个还没编译的着色器；全部编译完返回 false */
+  prepareStep(): boolean {
+    const keep = { fractal: this.fractal, L: this.L }
+    while (this.pending.length) {
+      const before = this.variants.size
+      this.useVariant(this.pending.shift()!)
+      if (this.variants.size > before) break
+    }
+    this.fractal = keep.fractal
+    this.L = keep.L
+    return this.pending.length > 0
   }
 
   private loc(p: WebGLProgram, name: string) {
@@ -448,7 +478,13 @@ export class FractalRenderer {
   /** 把分形（每像素 1 个样本，带亚像素偏移）画进 out 左下角 w × h 的范围 */
   private drawFractal(f: Frame, v: View, out: Target, w: number, h: number, jitter: number[], aa: number) {
     const gl = this.gl
-    this.useVariant(f.power)
+    const mix2 = !!f.pal2 && f.palMix > 0
+    this.useVariant({
+      power: f.power,
+      ship: f.kind === 'ship',
+      minR: needMinR(f.mode, f.pal) || (mix2 && needMinR(f.mode, f.pal2!)),
+      aa: aa >= 2 ? 2 : 1,
+    })
     const L = this.L
     const e = effective(f, v.scroll, v.viewportH)
     gl.useProgram(this.fractal)
@@ -468,7 +504,6 @@ export class FractalRenderer {
     gl.uniform1i(L.uAA, aa)
     gl.uniform2f(L.uJitter, jitter[0], jitter[1])
     this.setPalette(f.pal, '')
-    const mix2 = !!f.pal2 && f.palMix > 0
     if (mix2) this.setPalette(f.pal2!, '2')
     gl.uniform1f(L.uPalMix, mix2 ? f.palMix : 0)
     gl.drawArrays(gl.TRIANGLES, 0, 3)
