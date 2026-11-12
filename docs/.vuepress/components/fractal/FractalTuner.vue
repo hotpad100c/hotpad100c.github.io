@@ -4,9 +4,9 @@
  * 改动立刻显示在页面上，并保存在浏览器里；调好后「复制全部」发回来，替换 fractalPages.json / panels.json。
  */
 import { computed, ref, watch } from 'vue'
-import { changed, closeTune, exportAll, exportPage, resetPage, resetPanels, tune, tunePage } from './tuneStore'
+import { changed, closeTune, exportAll, exportPage, resetPage, resetPanels, resetRender, tune, tunePage } from './tuneStore'
 
-const props = defineProps<{ pageKey: string, theme: 'dark' | 'light', debug: string, profile: () => string }>()
+const props = defineProps<{ pageKey: string, theme: 'dark' | 'light', profile: () => string }>()
 
 const open = ref(true)
 const msg = ref('')
@@ -52,6 +52,25 @@ const PANEL: Ctl[] = [
   { label: '侧边栏不透明度', path: 'sidebar', min: 0, max: 1, step: 0.01, fmt: v => `${Math.round(v * 100)}%` },
   { label: '文字影子', path: 'shadow', min: 0, max: 1, step: 0.01, fmt: v => `${Math.round(v * 100)}%` },
   { label: '影子半径', path: 'shadowBlur', min: 0, max: 20, step: 0.5, fmt: v => `${v}px` },
+]
+
+const pct = (v: number) => `${Math.round(v * 100)}%`
+const RENDER: Ctl[] = [
+  { label: '渲染比例上限', path: 'maxDpr', min: 0.5, max: 3, step: 0.05, fmt: v => `×${v.toFixed(2)}（屏幕 ×${(window.devicePixelRatio || 1).toFixed(2)}）` },
+  { label: '最多像素', path: 'maxMegapixels', min: 0.5, max: 16, step: 0.1, fmt: v => `${v.toFixed(1)} 百万` },
+  { label: '运动目标帧率', path: 'moveFps', min: 15, max: 144, step: 1, fmt: v => `${v} 帧/秒` },
+  { label: '停下目标帧率', path: 'stillFps', min: 5, max: 144, step: 1, fmt: v => `${v} 帧/秒` },
+  { label: '停下每帧至少', path: 'stillMinShare', min: 0.01, max: 1, step: 0.01, fmt: v => `${pct(v)} 屏` },
+  { label: '运动分辨率下限', path: 'moveMinScale', min: 0.1, max: 1, step: 0.01, fmt: v => `×${v.toFixed(2)}` },
+  { label: '运动分辨率上限', path: 'moveMaxScale', min: 0.1, max: 1, step: 0.01, fmt: v => `×${v.toFixed(2)}` },
+  { label: '换页柔化', path: 'softTransitions', min: 0, max: 1, step: 1, fmt: v => (v >= 0.5 ? '开（2×2 取样）' : '关') },
+  { label: '运动模糊', path: 'motionBlur', min: 0, max: 0.2, step: 0.005, fmt: v => (v > 0 ? `${Math.round(v * 1000)}ms` : '关') },
+  { label: '淡入时长', path: 'fadeMs', min: 0, max: 1500, step: 10, fmt: v => `${v}ms` },
+  { label: '累积样本数', path: 'maxSamples', min: 1, max: 64, step: 1, fmt: v => `${Math.round(v)} 个` },
+  { label: '预渲染算力', path: 'preShare', min: 0, max: 0.9, step: 0.05, fmt: pct },
+  { label: '缓存张数', path: 'cacheSize', min: 0, max: 12, step: 1, fmt: v => `${Math.round(v)} 张` },
+  { label: '换页过渡时长', path: 'transitionMs', min: 100, max: 4000, step: 50, fmt: v => `${v}ms` },
+  { label: '滚动追随', path: 'smoothTime', min: 0.02, max: 2, step: 0.01, fmt: v => `${v.toFixed(2)} 秒` },
 ]
 
 function get(o: any, path: string): number {
@@ -139,12 +158,21 @@ watch(() => props.pageKey, k => tunePage(k), { immediate: true })
         <em>{{ show(c, get(panel, c.path)) }}</em>
       </label>
 
+      <h3>渲染与性能（全站）</h3>
+      <p class="hint">运动中达不到「运动目标帧率」就降分辨率（在上下限之间一档档降）；停下后按「停下目标帧率」补清晰度。想更清晰就提高上限 / 降低目标帧率，想更流畅就反过来。</p>
+      <label v-for="c in RENDER" :key="c.path" class="row">
+        <span>{{ c.label }}</span>
+        <input type="range" :min="c.min" :max="c.max" :step="c.step" :value="get(tune.render, c.path)" @input="input(tune.render, c, $event)">
+        <input class="num" type="number" :step="c.step" :value="Number(get(tune.render, c.path).toFixed(6))" @change="input(tune.render, c, $event)">
+        <em>{{ show(c, get(tune.render, c.path)) }}</em>
+      </label>
+
       <div class="actions">
         <button type="button" @click="resetPage(pageKey)">本页恢复原值</button>
         <button type="button" @click="resetPanels()">面板恢复原值</button>
+        <button type="button" @click="resetRender()">渲染恢复原值</button>
       </div>
-      <p class="hint">改动保存在这个浏览器里，换页、刷新都还在。深色 / 浅色分开调：用导航栏的开关切换主题。完整的配色和后期在 Julia 分形编辑器里调。</p>
-      <p v-if="debug" class="debug">{{ debug }}</p>
+      <p class="hint">改动保存在这个浏览器里，换页、刷新都还在；「复制全部」会一起导出 render.json。深色 / 浅色分开调：用导航栏的开关切换主题。完整的配色和后期在 Julia 分形编辑器里调。</p>
     </div>
   </div>
 </template>
@@ -180,5 +208,4 @@ h3 { margin: 12px 0 4px; font-size: 11px; letter-spacing: 0.1em; color: #b59cf2;
 .hint { color: #6f6690; margin: 6px 0; }
 .msg { color: #9be7a8; margin: 4px 0; }
 .report pre { margin: 6px 0; padding: 6px; background: #0b0910; border: 1px solid rgba(181, 156, 242, 0.25); white-space: pre-wrap; font-size: 11px; line-height: 1.45; color: #d9d0f0; }
-.debug { color: #6f6690; margin-top: 8px; border-top: 1px solid rgba(181, 156, 242, 0.2); padding-top: 6px; }
 </style>

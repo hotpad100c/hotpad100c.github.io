@@ -1,0 +1,17 @@
+{
+  "maxDpr": 3,
+  "maxMegapixels": 5,
+  "moveFps": 45,
+  "stillFps": 30,
+  "stillMinShare": 0.083,
+  "moveMinScale": 0.72,
+  "moveMaxScale": 1,
+  "softTransitions": 1,
+  "motionBlur": 0.02,
+  "fadeMs": 630,
+  "maxSamples": 16,
+  "preShare": 0.4,
+  "cacheSize": 4,
+  "transitionMs": 2300,
+  "smoothTime": 0.45
+}

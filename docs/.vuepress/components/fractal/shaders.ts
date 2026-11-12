@@ -184,19 +184,35 @@ export const FS_COPY = [
   '}'
 ].join('\n');
 
+/** 生成专用着色器的选项（都在编译时决定，避免着色器里的动态分支和循环） */
+export interface Variant {
+  /** 整数幂次（2–16）展开成固定的乘法；null 用通用的极坐标公式 */
+  power: number | null
+  /** Burning Ship */
+  ship: boolean
+  /** 需要记录轨道离原点最近的距离（最近点模式，或内部颜色不是纯色） */
+  minR: boolean
+  /** 每像素取样 aa × aa 个（1 或 2），展开成固定的几次调用 */
+  aa: 1 | 2
+}
+
 /**
- * 博客用的分形着色器：整数幂次（2–16）各编译一个专用版本，z^n 展开成固定的几次复数乘法
- * （平方-乘法，例如 z^10 = ((z²)²·z)²，4 次），没有内层循环；其他幂次用极坐标形式。
- * 画出来与 FS 完全相同，只是更快。
+ * 博客用的分形着色器：画出来与 FS 完全相同，只是把能在编译时确定的东西都定死：
+ *   - 整数幂次（2–16）展开成平方-乘法（例如 z^10 = ((z²)²·z)²，4 次），没有内层循环
+ *   - 不需要的东西（Burning Ship 的绝对值、最近点距离、逃逸后继续迭代）从迭代循环里去掉
+ *   - 每像素的取样数展开成固定的调用，不再用包着 shade() 的动态循环
+ *     （这一层循环即使只取 1 个样本也会让整体慢 1.5–2.5 倍：编译器没法优化循环里的循环）
  */
-export function fractalFS(power: number | null): string {
-  const a = FS.indexOf('vec2 cpow(vec2 z, float p) {')
-  const b = FS.indexOf('vec3 grad(float t, int P)')
+export function fractalFS(o: Variant): string {
+  let src = FS
+  // 1. 幂次
+  const a = src.indexOf('vec2 cpow(vec2 z, float p) {')
+  const b = src.indexOf('vec3 grad(float t, int P)')
   let body: string
-  if (power !== null && Number.isInteger(power) && power >= 2 && power <= 16) {
-    const bits = power.toString(2).slice(1)
+  const pw = o.power
+  if (pw !== null && Number.isInteger(pw) && pw >= 2 && pw <= 16) {
     body = 'vec2 r = z;'
-    for (const bit of bits) body += ' r = csq(r);' + (bit === '1' ? ' r = cmul(r, z);' : '')
+    for (const bit of pw.toString(2).slice(1)) body += ' r = csq(r);' + (bit === '1' ? ' r = cmul(r, z);' : '')
     body += ' return r;'
   }
   else {
@@ -208,5 +224,31 @@ export function fractalFS(power: number | null): string {
       'return m * vec2(cos(a), sin(a));',
     ].join(' ')
   }
-  return `${FS.slice(0, a)}vec2 csq(vec2 z) { return vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y); }\nvec2 cpow(vec2 z, float p) { ${body} }\n${FS.slice(b)}`
+  src = `${src.slice(0, a)}vec2 csq(vec2 z) { return vec2(z.x * z.x - z.y * z.y, 2.0 * z.x * z.y); }\nvec2 cpow(vec2 z, float p) { ${body} }\n${src.slice(b)}`
+  // 2. 迭代循环：不需要最近点时，逃逸就停，循环里只剩迭代本身
+  const loop = [
+    '    if (uShip == 1) z = vec2(abs(z.x), -abs(z.y));',
+    '    z = cpow(z, uPower) + c;',
+    '    m2 = dot(z, z);',
+    '    minR = min(minR, m2);',
+    '    if (m2 > 1e8) { esc = true; if (uMode == 0) break; }',
+    '    if (!esc) n += 1.0;',
+  ].join('\n')
+  if (!src.includes(loop)) throw new Error('fractalFS: 迭代循环与 FS 不一致')
+  const lines: string[] = []
+  if (o.ship) lines.push('    z = vec2(abs(z.x), -abs(z.y));')
+  lines.push('    z = cpow(z, uPower) + c;', '    m2 = dot(z, z);')
+  if (o.minR) {
+    lines.push('    minR = min(minR, m2);', '    if (m2 > 1e8) { esc = true; if (uMode == 0) break; }', '    if (!esc) n += 1.0;')
+  }
+  else {
+    lines.push('    if (m2 > 1e8) { esc = true; break; }', '    n += 1.0;')
+  }
+  src = src.replace(loop, lines.join('\n'))
+  // 3. 每像素取样：展开
+  const m = src.indexOf('void main() {')
+  const main = o.aa === 2
+    ? 'void main() {\n  vec2 f = gl_FragCoord.xy + uJitter;\n  gl_FragColor = vec4((shade(f + vec2(-0.25, -0.25)) + shade(f + vec2(0.25, -0.25)) + shade(f + vec2(-0.25, 0.25)) + shade(f + vec2(0.25, 0.25))) * 0.25, 1.0);\n}'
+    : 'void main() { gl_FragColor = vec4(shade(gl_FragCoord.xy + uJitter), 1.0); }'
+  return src.slice(0, m) + main
 }

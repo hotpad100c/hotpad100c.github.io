@@ -8,13 +8,16 @@
  * 每帧的计算量由调用方给的 budget（像素数）决定，使每帧都在一帧时间之内：
  *   - 运动中（滚动、换页过渡、拖动）：按 budget 降低分辨率画一帧（带亚像素抖动），
  *     平滑放大后与上一帧按 blend 混合：既是运动模糊，也把低分辨率的锯齿抹平。
- *   - 停下后：按全分辨率在屏幕外（pre）逐帧累积样本（渐进超采样，最多 MAX_SAMPLES 个）。
+ *   - 停下后：按全分辨率在屏幕外（pre）逐帧累积样本（渐进超采样，最多 cfg.maxSamples 个）。
  *     一个样本的全屏计算量超过 budget 时分成几条横带，几帧画完，画完再整幅更新到屏幕
- *     （第一个样本用 FADE_MS 淡入），不会卡住页面，也看不到一条一条的扫描。
+ *     （第一个样本用 cfg.fadeMs 淡入），不会卡住页面，也看不到一条一条的扫描。
  *   - 停下后的画面是确定的，所以换页过渡中分一部分算力先在 pre 里画它；
  *     停下时接着画，已经画好的直接淡入。画清晰的画面还会缓存几张，回到同一页时立刻清晰。
  */
 import { FS_BLUR, FS_BRIGHT, FS_COMP, FS_COPY, FS_STREAK, VS, VS2, fractalFS } from './shaders'
+import type { Variant } from './shaders'
+import type { RenderSettings } from './renderSettings'
+import { renderDefaults } from './renderSettings'
 import type { FractalPage, Palette, PostFx } from './fractalPages'
 
 type Target = { tex: WebGLTexture, fb: WebGLFramebuffer, w: number, h: number }
@@ -50,15 +53,8 @@ const PAL_UNIFORMS = ['uStops', 'uPos', 'uCount', 'uInside', 'uInsideMode', 'uGa
 const FRACTAL_UNIFORMS = ['uRes', 'uCenter', 'uScale', 'uRot', 'uC', 'uIter', 'uPower', 'uShip', 'uInv', 'uMandel', 'uMode', 'uPalMix', 'uAA', 'uJitter',
   ...PAL_UNIFORMS, ...PAL_UNIFORMS.map(n => `${n}2`)]
 const INT_UNIFORMS = new Set(['type'])
-export const MAX_SAMPLES = 16
 /** 运动时可用的分辨率比例（一档一档地降，不连续变化） */
-const SCALE_STEPS = [1, 0.85, 0.72, 0.6, 0.5, 0.42, 0.35]
-/** 停下后，从运动时的低分辨率画面淡入到全分辨率画面的时长 */
-const FADE_MS = 350
-/** 运动中分给「预先画终点画面」的算力比例 */
-const PRE_SHARE = 0.4
-/** 缓存几张画清晰的画面（每张是一整屏的贴图） */
-const CACHE_SIZE = 4
+const SCALE_STEPS = [1, 0.85, 0.72, 0.6, 0.5, 0.42, 0.35, 0.3, 0.25, 0.2]
 
 /** Halton 序列（2, 3）：均匀分布的亚像素偏移 */
 export function halton(i: number, b: number) {
@@ -70,6 +66,11 @@ export function halton(i: number, b: number) {
 /** 高斯模糊的 σ（1/4 分辨率的像素）：光晕 = BLOOM_SIGMA × 半径；柔焦固定。大小与原来的两轮模糊相当 */
 const BLOOM_SIGMA = 3.67
 const SOFT_SIGMA = 3.3
+/** 需要记录轨道离原点最近的距离吗（最近点模式，或内部不是纯色） */
+function needMinR(mode: FractalPage['mode'], pal: Palette) {
+  return mode === 'min' || pal.insideMode !== 'solid'
+}
+
 const STREAK_TYPES: Record<string, number> = { none: 0, rotate: 1, zoom: 2, spiral: 3 }
 
 export function hex(h: string): [number, number, number] {
@@ -159,7 +160,7 @@ export class FractalRenderer {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW)
     gl.enableVertexAttribArray(0)
     gl.vertexAttribPointer(0, 2, gl.FLOAT, false, 0, 0)
-    this.useVariant(2.5)
+    this.useVariant({ power: null, ship: false, minR: true, aa: 1 })
   }
 
   private program(vs: string, fs: string): WebGLProgram {
@@ -180,12 +181,13 @@ export class FractalRenderer {
     return p
   }
 
-  /** 选用某个幂次的分形着色器（第一次用到时编译） */
-  private useVariant(power: number) {
-    const key = Number.isInteger(power) && power >= 2 && power <= 16 ? String(power) : 'f'
+  /** 选用某个专用的分形着色器（第一次用到时编译） */
+  private useVariant(o: Variant) {
+    const power = Number.isInteger(o.power) && o.power! >= 2 && o.power! <= 16 ? o.power : null
+    const key = `${power ?? 'f'}|${+o.ship}|${+o.minR}|${o.aa}`
     let v = this.variants.get(key)
     if (!v) {
-      const prog = this.program(VS, fractalFS(key === 'f' ? null : power))
+      const prog = this.program(VS, fractalFS({ ...o, power }))
       const L: Record<string, WebGLUniformLocation | null> = {}
       for (const n of FRACTAL_UNIFORMS) L[n] = this.gl.getUniformLocation(prog, n)
       v = { prog, L }
@@ -195,9 +197,32 @@ export class FractalRenderer {
     this.L = v.L
   }
 
-  /** 先把这些幂次的着色器编译好（换页时不会因为编译卡一下） */
-  prepare(powers: number[]) {
-    for (const p of powers) this.useVariant(p)
+  /** 等着在空闲时编译的着色器 */
+  private pending: Variant[] = []
+
+  /** 记下这些页面要用的着色器，之后用 prepareStep() 在空闲时一个个编译好（换页时不会因为编译卡一下） */
+  prepare(pages: FractalPage[]) {
+    for (const p of pages) {
+      for (const pal of [p.palette.dark, p.palette.light]) {
+        const o = { ship: p.kind === 'ship', minR: needMinR(p.mode, pal) }
+        for (const aa of [1, 2] as const) {
+          this.pending.push({ power: p.power, aa, ...o }, { power: null, aa, ...o })
+        }
+      }
+    }
+  }
+
+  /** 编译一个还没编译的着色器；全部编译完返回 false */
+  prepareStep(): boolean {
+    const keep = { fractal: this.fractal, L: this.L }
+    while (this.pending.length) {
+      const before = this.variants.size
+      this.useVariant(this.pending.shift()!)
+      if (this.variants.size > before) break
+    }
+    this.fractal = keep.fractal
+    this.L = keep.L
+    return this.pending.length > 0
   }
 
   private loc(p: WebGLProgram, name: string) {
@@ -284,28 +309,32 @@ export class FractalRenderer {
     /** acc 这一帧有没有变（没变就不用重新输出到屏幕） */
     let changed = true
     if (o.moving || !this.valid) {
-      // 有要预先画的终点画面时，分 PRE_SHARE 的算力给它，其余给运动中的画面
+      // 有要预先画的终点画面时，分 this.cfg.preShare 的算力给它，其余给运动中的画面
       const pre = o.pre && this.valid ? o.pre : undefined
-      const budget = pre ? o.budget * (1 - PRE_SHARE) : o.budget
+      const budget = pre ? o.budget * (1 - this.cfg.preShare) : o.budget
       // 低分辨率画进 smp 的左下角，再用三次 B 样条平滑放大，混合进 acc。
       // 分辨率在一次运动中只会往下调（且隔一段时间才调一档），不会每帧变来变去；取样位置也固定，画面不会抖
       const want = Math.sqrt(budget / (w * h))
       const now = performance.now()
+      const lo = Math.min(1, Math.max(0.1, this.cfg.moveMinScale))
+      const hi = Math.min(1, Math.max(lo, this.cfg.moveMaxScale))
+      const steps = [hi, ...SCALE_STEPS.filter(x => x < hi && x > lo), lo].filter((x, i, a) => a.indexOf(x) === i)
       if (!this.inMotion) {
-        this.stepIdx = SCALE_STEPS.findIndex(x => x <= want * 1.0001)
-        if (this.stepIdx < 0) this.stepIdx = SCALE_STEPS.length - 1
+        this.stepIdx = steps.findIndex(x => x <= want * 1.0001)
+        if (this.stepIdx < 0) this.stepIdx = steps.length - 1
         this.inMotion = true
         this.stepTime = now
       }
-      else if (want < SCALE_STEPS[this.stepIdx] * 0.8 && this.stepIdx < SCALE_STEPS.length - 1 && now - this.stepTime > 400) {
+      else if (want < steps[Math.min(this.stepIdx, steps.length - 1)] * 0.8 && this.stepIdx < steps.length - 1 && now - this.stepTime > 400) {
         this.stepIdx++
         this.stepTime = now
       }
-      const s = SCALE_STEPS[this.stepIdx]
+      this.stepIdx = Math.min(this.stepIdx, steps.length - 1)
+      const s = steps[this.stepIdx]
       this.lastScale = s
       // 换页过渡中分辨率低时改为「再低一半 + 每像素 2×2 取样」：计算量相同，但每个像素是 4 个点的平均，
       // 细节不会变成一颗颗闪烁的噪点，放大后是柔和的模糊。同页滚动时画面变化慢，保持清晰（不这样做）
-      const aa = o.soft && s < 0.85 ? 2 : 1
+      const aa = o.soft && this.cfg.softTransitions >= 0.5 && s < 0.85 ? 2 : 1
       const sw = Math.max(1, Math.round(w * s / aa))
       const sh = Math.max(1, Math.round(h * s / aa))
       const smp = this.target('smp', w, h)
@@ -314,7 +343,7 @@ export class FractalRenderer {
         this.pass(this.copy, acc, { sc: [sw / w, sh / h], lim: [(sw - 0.5) / w, (sh - 0.5) / h], ts: s < 1 ? [w, h] : [0, 0] }, [['t', smp]]))
       this.valid = true
       this.restart()
-      if (pre) this.prerender(pre, o.budget * PRE_SHARE)
+      if (pre) this.prerender(pre, o.budget * this.cfg.preShare)
     }
     else {
       this.inMotion = false
@@ -322,7 +351,7 @@ export class FractalRenderer {
       const key = o.key ?? ''
       if (this.fadeStart >= 0) {
         // 新画面已经画好：从运动时的画面淡入（不是一条一条地出现）
-        const el = Math.min(1, (performance.now() - this.fadeStart) / FADE_MS)
+        const el = Math.min(1, (performance.now() - this.fadeStart) / this.cfg.fadeMs)
         const e = el * el * (3 - 2 * el)
         // acc = mix(原画面, 新画面, e)：每帧按剩下的比例补上
         const t = e >= 1 ? 1 : (e - this.fadeE) / Math.max(1e-6, 1 - this.fadeE)
@@ -330,7 +359,7 @@ export class FractalRenderer {
         this.fadeE = e
         if (e >= 1) { this.fadeStart = -1; this.samples = this.fadeTo }
       }
-      else if (this.samples >= MAX_SAMPLES) {
+      else if (this.samples >= this.maxS) {
         return false
       }
       else {
@@ -353,7 +382,7 @@ export class FractalRenderer {
           changed = false
         }
       }
-      more = this.fadeStart >= 0 || this.samples < MAX_SAMPLES
+      more = this.fadeStart >= 0 || this.samples < this.maxS
     }
     if (!changed) return more
     const P = f.post
@@ -380,7 +409,13 @@ export class FractalRenderer {
 
   /** 预先画好的终点画面：key、已累积的样本数、画到第几行 */
   private pre = { key: '', samples: 0, band: 0 }
-  /** 已经画清晰的画面（最多 CACHE_SIZE 张，最近用过的留下）：key → 贴图名 */
+  /** 渲染参数（render.json，调节器里可以改）；cacheSize 为 0 时不缓存 */
+  cfg: RenderSettings = renderDefaults
+  /** 排查用：强制不缓存 */
+  noCache = false
+  /** 停下后累积多少个样本 */
+  get maxS() { return Math.max(1, Math.round(this.cfg.maxSamples)) }
+  /** 已经画清晰的画面（最多 cacheSize 张，最近用过的留下）：key → 贴图名 */
   private cache = new Map<string, string>()
 
   private prerender(p: { key: string, f: Frame, v: View }, budget: number) {
@@ -394,17 +429,17 @@ export class FractalRenderer {
         this.cache.delete(p.key)
         this.cache.set(p.key, hit)
         this.pass(this.copy, out, { sc: [1, 1], lim: [1, 1], ts: [0, 0] }, [['t', this.target(hit, w, h)]])
-        this.pre.samples = MAX_SAMPLES
+        this.pre.samples = this.maxS
       }
     }
-    if (this.pre.samples >= MAX_SAMPLES) return
+    if (this.pre.samples >= this.maxS) return
     const n = this.pre.samples
     const psmp = this.target('psmp', w, h)
     if (this.bandStep(p.f, p.v, psmp, n, budget, this.pre.band)) {
       this.pre.band = 0
       this.blendInto(out, 1 / (n + 1), () => this.pass(this.copy, out, { sc: [1, 1], lim: [1, 1], ts: [0, 0] }, [['t', psmp]]))
       this.pre.samples = n + 1
-      if (this.pre.samples >= MAX_SAMPLES) this.store(p.key, out)
+      if (this.pre.samples >= this.maxS) this.store(p.key, out)
     }
     else {
       this.pre.band = this.nextBand
@@ -415,7 +450,10 @@ export class FractalRenderer {
   private store(key: string, src: Target) {
     if (this.cache.has(key)) return
     let name: string
-    if (this.cache.size >= CACHE_SIZE) {
+    const size = this.noCache ? 0 : Math.round(this.cfg.cacheSize)
+    if (size <= 0) return
+    while (this.cache.size > size) this.cache.delete(this.cache.keys().next().value as string)
+    if (this.cache.size >= size) {
       const [oldKey, oldName] = this.cache.entries().next().value as [string, string]
       this.cache.delete(oldKey)
       name = oldName
@@ -448,7 +486,13 @@ export class FractalRenderer {
   /** 把分形（每像素 1 个样本，带亚像素偏移）画进 out 左下角 w × h 的范围 */
   private drawFractal(f: Frame, v: View, out: Target, w: number, h: number, jitter: number[], aa: number) {
     const gl = this.gl
-    this.useVariant(f.power)
+    const mix2 = !!f.pal2 && f.palMix > 0
+    this.useVariant({
+      power: f.power,
+      ship: f.kind === 'ship',
+      minR: needMinR(f.mode, f.pal) || (mix2 && needMinR(f.mode, f.pal2!)),
+      aa: aa >= 2 ? 2 : 1,
+    })
     const L = this.L
     const e = effective(f, v.scroll, v.viewportH)
     gl.useProgram(this.fractal)
@@ -468,7 +512,6 @@ export class FractalRenderer {
     gl.uniform1i(L.uAA, aa)
     gl.uniform2f(L.uJitter, jitter[0], jitter[1])
     this.setPalette(f.pal, '')
-    const mix2 = !!f.pal2 && f.palMix > 0
     if (mix2) this.setPalette(f.pal2!, '2')
     gl.uniform1f(L.uPalMix, mix2 ? f.palMix : 0)
     gl.drawArrays(gl.TRIANGLES, 0, 3)

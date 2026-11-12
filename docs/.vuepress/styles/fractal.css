@@ -53,14 +53,33 @@
   backdrop-filter: var(--fx-panel-filter);
 }
 
-/* 文章、文档页：正文放在阅读面板上；右侧目录也加一层 */
+/*
+ * 文章、文档页：正文放在阅读面板上；右侧目录也加一层。
+ * 长文章的阅读面板可以有一两万像素高，直接给它 backdrop-filter 会超过显卡的最大纹理尺寸，
+ * Chrome 会渲染失败（整页内容消失、只剩背景，换页后也不恢复）。所以模糊交给一个只有一屏高、
+ * 用 sticky 跟着视口走的伪元素：它始终盖住面板在屏幕上可见的那一段，超出面板的部分被 overflow: clip 裁掉。
+ */
 .theme-plume .vp-doc-container .container > .content {
+  position: relative;
+  isolation: isolate;
+  overflow: clip;
   background: var(--fx-panel);
   border: 1px solid var(--vp-c-divider);
-  -webkit-backdrop-filter: var(--fx-panel-filter);
-  backdrop-filter: var(--fx-panel-filter);
   padding-top: 32px !important;
   padding-bottom: 40px !important;
+}
+.theme-plume .vp-doc-container .container > .content::before {
+  content: '';
+  display: block;
+  position: sticky;
+  top: 0;
+  z-index: -1;
+  /* 上下左右各多出 120px，盖住面板的内边距；在文档流里的总高度为 0，不影响排版 */
+  height: calc(100vh + 240px);
+  margin: -120px -120px calc(-100vh - 120px);
+  -webkit-backdrop-filter: var(--fx-panel-filter);
+  backdrop-filter: var(--fx-panel-filter);
+  pointer-events: none;
 }
 .theme-plume .vp-doc-container .aside-content .vp-doc-aside-outline {
   background: var(--fx-panel);
@@ -97,3 +116,7 @@
 /* 文字背后一层与页面底色相同的模糊影子：背景很亮时文字也看得清（panels.json 的 shadow / shadowBlur） */
 .theme-plume.vp-layout { text-shadow: var(--fx-text-shadow); }
 .theme-plume.vp-layout :is(pre, code, img, svg, .vp-button, button, input, textarea) { text-shadow: none; }
+
+/* 排查问题用（地址后面加 ?fx-noblur / ?fx-noshadow，见 FractalBackground.vue） */
+.fx-noblur *, .fx-noblur *::before { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.fx-noshadow .theme-plume.vp-layout { text-shadow: none !important; }

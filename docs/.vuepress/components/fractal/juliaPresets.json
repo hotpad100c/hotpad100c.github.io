@@ -1,0 +1,20 @@
+[
+  { "name": "Siegel 圆盘（局部）", "c": [-0.390541, -0.586788], "power": 2, "inverse": false, "view": { "x": 0.3, "y": 0.2, "zoom": 1.6, "rotate": 0 } },
+  { "name": "星系", "c": [-0.7269, 0.1889], "power": 2, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "海马谷", "c": [-0.75, 0.11], "power": 2, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "-0.4 + 0.6i", "c": [-0.4, 0.6], "power": 2, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "0.355 + 0.355i", "c": [0.355, 0.355], "power": 2, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "-0.54 + 0.54i", "c": [-0.54, 0.54], "power": 2, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "0.37 + 0.1i", "c": [0.37, 0.1], "power": 2, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "-0.70176 - 0.3842i", "c": [-0.70176, -0.3842], "power": 2, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "-0.835 - 0.2321i", "c": [-0.835, -0.2321], "power": 2, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "双螺旋 0.3555 + 0.3373i", "c": [0.355534, 0.337292], "power": 2, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "树枝 -0.162 + 1.04i", "c": [-0.162, 1.04], "power": 2, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "雪花枝 -0.1011 + 0.9563i", "c": [-0.1011, 0.9563], "power": 2, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "三次 z³ + 0.4", "c": [0.4, 0], "power": 3, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "四次 z⁴ + 0.6 + 0.55i", "c": [0.6, 0.55], "power": 4, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "五次 z⁵ + 0.544", "c": [0.544, 0], "power": 5, "inverse": false, "view": { "x": 0, "y": 0, "zoom": 0.9, "rotate": 0 } },
+  { "name": "反演 Siegel 圆盘", "c": [-0.390541, -0.586788], "power": 2, "inverse": true, "view": { "x": 0, "y": 0, "zoom": -1.2, "rotate": 0 } },
+  { "name": "反演 -0.835 - 0.2321i", "c": [-0.835, -0.2321], "power": 2, "inverse": true, "view": { "x": 0, "y": 0, "zoom": -1.2, "rotate": 0 } },
+  { "name": "反演星系", "c": [-0.7269, 0.1889], "power": 2, "inverse": true, "view": { "x": 0, "y": 0, "zoom": -1.2, "rotate": 0 } }
+]
