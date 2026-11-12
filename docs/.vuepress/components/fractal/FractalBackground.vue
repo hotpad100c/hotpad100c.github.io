@@ -18,10 +18,10 @@
  * - 地址后面加 ?fractal-tune 打开调节器（FractalTuner.vue）：实时调分形位置、面板透明度等，并导出参数
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { usePageFrontmatter, useRoute } from 'vuepress/client'
+import { usePageFrontmatter, useRoute, useRoutes } from 'vuepress/client'
 import { bgMain } from '../home/useHomeData'
 import FractalTuner from './FractalTuner.vue'
-import { fractalKeyFor, fractalPages } from './fractalPages'
+import { fractalKeyFor, fractalPages, juliaPresets, pageFor, presetName, setArticles } from './fractalPages'
 import { applyPanels, panelDefaults } from './panels'
 import type { Frame, View } from './renderer'
 import { FractalRenderer, frameOf, zoomToScale } from './renderer'
@@ -29,10 +29,13 @@ import { ease, lerpFrame, settle } from './transition'
 import { changed, initTune, renderSettings, tune, tunePage } from './tuneStore'
 
 const route = useRoute()
+// 全站有哪些文章：用来给每篇文章分配一个不重复的 Julia 集
+const routes = useRoutes()
+setArticles(Object.keys(routes.value))
 const frontmatter = usePageFrontmatter<{ fractal?: string }>()
 const pageKey = computed(() => fractalKeyFor(route.path, frontmatter.value.fractal))
 /** 调节器打开时，用调节器里改过的参数 */
-const page = computed(() => (tune.active && tune.pages[pageKey.value]) || fractalPages[pageKey.value])
+const page = computed(() => (tune.active && tune.pages[pageKey.value]) || pageFor(pageKey.value))
 
 const canvas = ref<HTMLCanvasElement>()
 const theme = ref<'dark' | 'light'>('dark')
@@ -215,7 +218,8 @@ function runProfile(): string {
 }
 
 function pageName() {
-  return pageKey.value
+  const preset = presetName(pageKey.value)
+  return preset ? `${pageKey.value}（${preset}）` : pageKey.value
 }
 
 function useFallback() {
@@ -266,7 +270,7 @@ onMounted(() => {
     canvas.value!.addEventListener('webglcontextlost', useFallback)
     if (/[?&]fractal-nocache\b/.test(q)) renderer.noCache = true
     // 其他页面要用的着色器在空闲时一个个编译（第一次换页时就不用现编）
-    renderer.prepare(Object.values(fractalPages))
+    renderer.prepare([...Object.values(fractalPages), ...juliaPresets.map(p => ({ ...fractalPages.posts, power: p.power, inverse: p.inverse }))])
     const idle = (cb: () => void) => ('requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 2000 }) : setTimeout(cb, 200))
     const step = () => { if (renderer?.prepareStep()) idle(step) }
     idle(step)

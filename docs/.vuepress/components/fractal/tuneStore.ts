@@ -4,7 +4,7 @@
  */
 import { reactive } from 'vue'
 import type { FractalPage } from './fractalPages'
-import { fractalPages } from './fractalPages'
+import { fractalPages, pageFor } from './fractalPages'
 import type { Panels } from './panels'
 import { panelDefaults } from './panels'
 import type { RenderSettings } from './renderSettings'
@@ -47,7 +47,7 @@ export function closeTune() {
 
 /** 开始调某一页：第一次时复制一份原始参数 */
 export function tunePage(key: string): FractalPage {
-  if (!tune.pages[key]) tune.pages[key] = clone(fractalPages[key])
+  if (!tune.pages[key]) tune.pages[key] = clone(pageFor(key))
   return tune.pages[key]
 }
 
@@ -88,5 +88,5 @@ export function exportAll(): string {
   return JSON.stringify(round({ 'fractalPages.json': pages, 'panels.json': tune.panels, 'render.json': tune.render }), null, 2)
 }
 export function exportPage(key: string): string {
-  return JSON.stringify(round({ [key]: tune.pages[key] ?? fractalPages[key] }), null, 2)
+  return JSON.stringify(round({ [key]: tune.pages[key] ?? pageFor(key) }), null, 2)
 }
