@@ -410,7 +410,9 @@ export class FractalRenderer {
 
   /** 预先画好的终点画面：key、已累积的样本数、画到第几行 */
   private pre = { key: '', samples: 0, band: 0 }
-  /** 已经画清晰的画面（最多 CACHE_SIZE 张，最近用过的留下）：key → 贴图名 */
+  /** 最多缓存几张（0：不缓存） */
+  cacheSize = CACHE_SIZE
+  /** 已经画清晰的画面（最多 cacheSize 张，最近用过的留下）：key → 贴图名 */
   private cache = new Map<string, string>()
 
   private prerender(p: { key: string, f: Frame, v: View }, budget: number) {
@@ -445,7 +447,8 @@ export class FractalRenderer {
   private store(key: string, src: Target) {
     if (this.cache.has(key)) return
     let name: string
-    if (this.cache.size >= CACHE_SIZE) {
+    if (this.cacheSize <= 0) return
+    if (this.cache.size >= this.cacheSize) {
       const [oldKey, oldName] = this.cache.entries().next().value as [string, string]
       this.cache.delete(oldKey)
       name = oldName

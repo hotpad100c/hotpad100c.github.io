@@ -116,3 +116,7 @@
 /* 文字背后一层与页面底色相同的模糊影子：背景很亮时文字也看得清（panels.json 的 shadow / shadowBlur） */
 .theme-plume.vp-layout { text-shadow: var(--fx-text-shadow); }
 .theme-plume.vp-layout :is(pre, code, img, svg, .vp-button, button, input, textarea) { text-shadow: none; }
+
+/* 排查问题用（地址后面加 ?fx-noblur / ?fx-noshadow，见 FractalBackground.vue） */
+.fx-noblur *, .fx-noblur *::before { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
+.fx-noshadow .theme-plume.vp-layout { text-shadow: none !important; }

@@ -40,8 +40,8 @@ const fallback = ref(false)
 const veil = ref('transparent')
 const debug = ref('')
 
-/** 渲染比例上限：高分屏也最多按 1.5 倍渲染（浏览器放大时自带一点柔化，看不出差别，像素数少了约一半） */
-const MAX_DPR = 1.5
+/** 渲染比例上限：跟随屏幕像素密度（高分屏按真实像素渲染，最清晰），最多 3 倍；总像素数另有 MAX_PIXELS 限制 */
+const MAX_DPR = 3
 /** 画布最多多少像素（超过时整体降低分辨率） */
 const MAX_PIXELS = 5_000_000
 /** 滚动追随的平滑时间（秒）：越大越「慢、软」 */
@@ -233,7 +233,17 @@ onMounted(() => {
   initTune()
   readTheme()
   applyPanels(theme.value, tune.active ? tune.panels[theme.value] : panelDefaults[theme.value])
-  showDebug = /[?&]fractal-debug\b/.test(window.location.search)
+  const q = window.location.search
+  showDebug = /[?&]fractal-debug\b/.test(q)
+  // 排查问题用的开关（加在地址后面）：
+  //   ?fx-noblur      所有面板不做背景模糊
+  //   ?fx-noshadow    去掉文字影子
+  //   ?fractal-off    不渲染分形，用静态背景图
+  //   ?fractal-nocache 不缓存清晰画面
+  for (const flag of ['fx-noblur', 'fx-noshadow']) {
+    if (new RegExp(`[?&]${flag}\\b`).test(q)) document.documentElement.classList.add(flag)
+  }
+  if (/[?&]fractal-off\b/.test(q)) { useFallback(); return }
   observer = new MutationObserver(readTheme)
   observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'class'] })
   mql = window.matchMedia('(prefers-reduced-motion: reduce)')
@@ -242,6 +252,7 @@ onMounted(() => {
   try {
     renderer = new FractalRenderer(canvas.value!)
     canvas.value!.addEventListener('webglcontextlost', useFallback)
+    if (/[?&]fractal-nocache\b/.test(q)) renderer.cacheSize = 0
     // 其他页面要用的着色器在空闲时一个个编译（第一次换页时就不用现编）
     renderer.prepare(Object.values(fractalPages))
     const idle = (cb: () => void) => ('requestIdleCallback' in window ? window.requestIdleCallback(cb, { timeout: 2000 }) : setTimeout(cb, 200))
