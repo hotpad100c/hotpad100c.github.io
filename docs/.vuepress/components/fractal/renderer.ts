@@ -507,7 +507,7 @@ export class FractalRenderer {
     gl.uniform1f(L.uPower, f.power)
     gl.uniform1i(L.uShip, f.kind === 'ship' ? 1 : 0)
     gl.uniform1i(L.uInv, f.inverse ? 1 : 0)
-    gl.uniform1i(L.uMandel, 0)
+    gl.uniform1i(L.uMandel, f.set === 'mandel' ? 1 : 0)
     gl.uniform1i(L.uMode, f.mode === 'min' ? 1 : 0)
     gl.uniform1i(L.uAA, aa)
     gl.uniform2f(L.uJitter, jitter[0], jitter[1])

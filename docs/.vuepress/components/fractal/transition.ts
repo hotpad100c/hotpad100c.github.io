@@ -82,6 +82,7 @@ export function lerpFrame(a: Frame, b: Frame, t: number): Frame {
   const s = t < 0.5 ? a : b
   return {
     kind: s.kind,
+    set: s.set,
     inverse: s.inverse,
     mode: s.mode,
     power: lerp(a.power, b.power, t),

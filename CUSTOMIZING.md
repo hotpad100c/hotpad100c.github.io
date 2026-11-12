@@ -132,6 +132,17 @@ fractal: about
 
 想给某个页面一套新参数：在 `fractalPages.json` 里新增一项（名字随意，例如 `"gtmc": { ... }`），再在那个页面写 `fractal: gtmc`。
 
+### 首页彩蛋
+
+连点两下首页的方块封面图：周围的组件滑开，露出背景，换成一个新的分形。
+
+- 拖动 / 滑动：实时改变 C，分形跟着变形（Mandelbrot / Burning Ship 集本身没有 C，拖动改为平移）
+- 滚轮 / 双指：缩放（只能在打开时的大小附近）
+- 摇一摇手机 / 按 R / 点「换一个」：随机一个新的。约三成是著名的 Julia 集（杜阿迪兔子、Basilica、San Marco、飞机……以及 `juliaPresets.json` 里的），其余完全随机：Julia 集（C 取在集合主体边界附近）、Mandelbrot / Multibrot 集放大到边界上某一点、Burning Ship 及其 Julia 集、负数幂次，有时反演。随机出来的会先在 CPU 上粗算一遍，太空或太平的重来；亮度自动调整。
+- Esc / 点「返回」：组件滑回来
+
+代码在 `components/fractal/egg.ts`；滑开的样式在 `styles/fractal.css`（`html.fx-egg`）。
+
 ### 每篇文章的分形
 
 每篇文章（`/posts/<名字>/`）各用一个不同的著名 Julia 集作背景（`components/fractal/juliaPresets.json`，现在有 18 个），配色和后期沿用 `posts`（文章列表）那一项。分配规则：所有文章按名字排序，依次按名字的哈希挑一个还没被用过的预设，所以每篇都不一样，而且每次打开都是同一个。新增文章时，已有文章的分配一般不变（除非恰好和新文章抢同一个）。

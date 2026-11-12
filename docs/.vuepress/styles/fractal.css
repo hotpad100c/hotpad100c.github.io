@@ -120,3 +120,26 @@
 /* 排查问题用（地址后面加 ?fx-noblur / ?fx-noshadow，见 FractalBackground.vue） */
 .fx-noblur *, .fx-noblur *::before { -webkit-backdrop-filter: none !important; backdrop-filter: none !important; }
 .fx-noshadow .theme-plume.vp-layout { text-shadow: none !important; }
+
+/*
+ * 首页彩蛋（components/fractal/egg.ts）：连点两下封面图后，周围的组件滑开，露出背景。
+ * fx-egg-anim 只在打开 / 关闭的动画期间存在，平时不影响这些组件自己的过渡。
+ */
+.fx-egg-anim .vp-navbar,
+.fx-egg-anim .vp-footer,
+.fx-egg-anim .sl-page .stage > * {
+  transition: transform 0.9s cubic-bezier(0.7, 0, 0.2, 1), opacity 0.9s ease !important;
+}
+.fx-egg-anim .sl-page .stage > .hero-window { transition-delay: 0.06s !important; }
+.fx-egg-anim .sl-page .stage > .col-left { transition-delay: 0.12s !important; }
+.fx-egg-anim .sl-page .stage > .col-right { transition-delay: 0.18s !important; }
+.fx-egg { overflow: hidden; }
+.fx-egg .vp-navbar { transform: translateY(-110%); }
+.fx-egg .vp-footer { transform: translateY(110%); opacity: 0; }
+.fx-egg .sl-page .stage > .intro { transform: translateX(-110vw) skewX(-10deg); opacity: 0; }
+.fx-egg .sl-page .stage > .hero-window { transform: translateX(110vw) skewX(-10deg); opacity: 0; }
+.fx-egg .sl-page .stage > .col-left { transform: translate(-110vw, 8vh) skewX(-10deg); opacity: 0; }
+.fx-egg .sl-page .stage > .col-right { transform: translate(110vw, 8vh) skewX(-10deg); opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  .fx-egg-anim .vp-navbar, .fx-egg-anim .vp-footer, .fx-egg-anim .sl-page .stage > * { transition: opacity 0.3s !important; }
+}

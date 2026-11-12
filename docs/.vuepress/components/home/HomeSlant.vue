@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { RouteLink } from 'vuepress/client'
+import { openEgg } from '../fractal/egg'
 import { actions, bgCube, featuredProjects, pickFeaturedProjects, profile, projects, recentCount, resolveImage, socials, useHomePosts, useHomeTags } from './useHomeData'
 
 /**
@@ -29,6 +30,22 @@ const tags = useHomeTags()
 const latest = computed(() => posts.value[0])
 const recent = computed(() => posts.value.slice(1, 1 + recentCount))
 const mods = pickFeaturedProjects(featuredProjects)
+
+/** 彩蛋：连点两下封面图（components/fractal/egg.ts）。手机上 dblclick 不可靠，自己数点击 */
+let lastClick = 0
+function onCoverClick() {
+  const now = Date.now()
+  if (now - lastClick < 450) {
+    lastClick = 0
+    // iOS 要在用户手势里申请「摇一摇」需要的运动传感器权限
+    const DM = (window as any).DeviceMotionEvent
+    if (DM && typeof DM.requestPermission === 'function') DM.requestPermission().catch(() => {})
+    openEgg()
+  }
+  else {
+    lastClick = now
+  }
+}
 </script>
 
 <template>
@@ -52,7 +69,7 @@ const mods = pickFeaturedProjects(featuredProjects)
         </p>
       </section>
 
-      <div class="hero-window" aria-hidden="true">
+      <div class="hero-window" aria-hidden="true" @click="onCoverClick">
         <div class="window-img" />
       </div>
 
