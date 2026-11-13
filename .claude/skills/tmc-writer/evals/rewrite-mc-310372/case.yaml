@@ -1,0 +1,8 @@
+schema_version: "1.1"
+name: rewrite-mc-310372
+expected_outcome: |
+  一篇 C 类（Bug 报告解析）博客草稿：frontmatter 齐全（title、date、英文 permalink、tags、draft: true），
+  先引用报告翻译，再分析 DRAIN_ORDER 与 INTRA_TICK_DRAIN_ORDER 的冲突，按游戏刻列出侦测器案例，
+  用「我们」叙述；源码只来自素材；EMP 等未测试的推论放在 ::: warning 待验证 容器里。
+context:
+  scaffold_script: place-files.sh
