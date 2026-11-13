@@ -219,6 +219,7 @@ function runProfile(): string {
 }
 
 function pageName() {
+  if (egg.active) return `彩蛋（${egg.name}）`
   const preset = presetName(pageKey.value)
   return preset ? `${pageKey.value}（${preset}）` : pageKey.value
 }
@@ -368,7 +369,18 @@ function onShake(e: DeviceMotionEvent) {
 /** 彩蛋里的拖动（单指 / 鼠标）改变 C，双指捏合缩放 */
 const eggPointers = new Map<number, { x: number, y: number }>()
 let pinchDist = 0
+/** 在画面上快速点两下（同一处附近、350ms 内）：退出彩蛋 */
+let lastTap = { t: 0, x: 0, y: 0 }
 function onEggDown(e: PointerEvent) {
+  const now = performance.now()
+  if (eggPointers.size === 0) {
+    if (now - lastTap.t < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) {
+      lastTap.t = 0
+      closeEgg()
+      return
+    }
+    lastTap = { t: now, x: e.clientX, y: e.clientY }
+  }
   eggPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
   (e.target as HTMLElement).setPointerCapture(e.pointerId)
   if (eggPointers.size === 2) {
@@ -453,14 +465,7 @@ function onWheel(e: WheelEvent) {
     @pointerup="onEggUp"
     @pointercancel="onEggUp"
     @wheel.prevent="onEggWheel"
-  >
-    <div class="egg-bar" @pointerdown.stop>
-      <span class="egg-name">{{ egg.name }}</span>
-      <span class="egg-hint">拖动改变 C · 滚轮 / 双指缩放 · 摇一摇或按 R 换一个</span>
-      <button type="button" @click="randomize()">换一个</button>
-      <button type="button" @click="closeEgg()">返回</button>
-    </div>
-  </div>
+  />
   <template v-if="tune.active">
     <div
       v-if="tune.drag"
@@ -503,35 +508,8 @@ function onWheel(e: WheelEvent) {
   z-index: 115;
   cursor: grab;
   touch-action: none;
-  animation: egg-in 0.6s 0.5s both;
 }
 .fractal-egg:active { cursor: grabbing; }
-@keyframes egg-in { from { opacity: 0; } to { opacity: 1; } }
-.egg-bar {
-  position: absolute;
-  left: 50%;
-  bottom: max(18px, env(safe-area-inset-bottom));
-  transform: translateX(-50%);
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 6px 12px;
-  width: max-content;
-  max-width: calc(100vw - 32px);
-  padding: 8px 14px;
-  font: 12px/1.5 var(--sl-mono, ui-monospace, monospace);
-  color: #efe9fd;
-  background: rgba(11, 9, 16, 0.72);
-  border: 1px solid rgba(181, 156, 242, 0.35);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  cursor: default;
-}
-.egg-name { color: #b59cf2; font-weight: 700; }
-.egg-hint { color: #a197bd; }
-.egg-bar button { background: #221a34; color: #efe9fd; border: 1px solid rgba(181, 156, 242, 0.4); font: inherit; padding: 3px 10px; cursor: pointer; }
-.egg-bar button:hover { background: #b59cf2; color: #0b0910; }
 .fractal-drag {
   position: fixed;
   inset: 0;

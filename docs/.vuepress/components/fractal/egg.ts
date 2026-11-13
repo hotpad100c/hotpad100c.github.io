@@ -1,11 +1,11 @@
 /**
- * 首页彩蛋：连点两下首页的方块封面图，周围的组件滑开，露出背景。
+ * 首页彩蛋：连点两下首页的方块封面图，周围的组件滑开，露出背景（画面上什么都不加，只有分形）。
  *   - 拖动 / 滑动：实时改变 C，分形跟着变形
  *   - 滚轮 / 双指：缩放（只能稍微放大缩小）
- *   - 摇一摇手机 / 按 R / 点「换一个」：随机一个新的分形（约三成是著名的 Julia 集；其余随机：Julia、
- *     Mandelbrot / Multibrot 放大、Burning Ship 及其 Julia 集、负数幂次，有时反演）
- *   - Mandelbrot / Burning Ship 集本身没有可变的 C，拖动改为平移
- *   - Esc / 点「返回」：组件滑回来
+ *   - 摇一摇手机 / 按 R：随机一个新的 Julia 集，能随机的数值全部随机：
+ *     迭代的底（普通 z^p + c / Burning Ship）、幂次（正、负、小数）、C、反演、着色模式、内部颜色、
+ *     视图（中心、缩放、旋转）、迭代次数、渐变的频率 / 偏移 / 循环；少数时候用著名的 C
+ *   - 在画面上快速点两下 / Esc：组件滑回来
  * 状态放在这里；交互和画面在 FractalBackground.vue，组件滑开的样式在 styles/fractal.css（html.fx-egg）。
  */
 import { reactive } from 'vue'
@@ -70,7 +70,7 @@ function boundaryC(d: number, jitter: [number, number]): Cx {
   const r = (1 / d) ** (1 / (d - 1))
   const a = phi / (d - 1)
   const z: Cx = [r * Math.cos(a), r * Math.sin(a)]
-  const zd = ipow(z, d)
+  const zd = cpow(z, d)
   return [(z[0] - zd[0]) * k, (z[1] - zd[1]) * k]
 }
 
@@ -125,7 +125,7 @@ function lively(p: FractalPage): boolean {
   const total = W * H
   if (p.mode === 'min') {
     const mean = sum / total
-    return sum2 / total - mean * mean > 0.006
+    return sum2 / total - mean * mean > 0.015
   }
   // 逃逸次数要有足够的跨度（第 10 到第 90 百分位至少差 2.5 倍），否则画面是一片平涂
   logs.sort((x, y) => x - y)
@@ -134,7 +134,7 @@ function lively(p: FractalPage): boolean {
 }
 
 /**
- * 自动曝光：粗算画面里逃逸的点，把渐变的 gamma 调到「三成多的点落在渐变 0.4 以上」。
+ * 自动曝光：粗算画面里逃逸的点，调渐变的 gamma，让它们在渐变上的平均位置在 0.3 左右。
  * 不同的分形逃逸次数差别很大（有的几次就逃逸，有的要上百次），固定的 gamma 会让很多画面几乎全黑
  */
 function autoLevel(p: FractalPage) {
@@ -153,139 +153,163 @@ function autoLevel(p: FractalPage) {
     }
   }
   if (ts.length < 20) return
-  ts.sort((x, y) => x - y)
-  // 取偏亮的那部分（第 65 百分位）对齐到渐变的 0.4
-  const q = Math.min(0.98, Math.max(1e-4, ts[Math.floor(ts.length * 0.65)]))
-  const g = Math.min(1.2, Math.max(0.1, Math.log(0.4) / Math.log(q)))
+  // 二分找 gamma，让整幅画面在渐变上的平均位置在 0.3 左右（渐变从暗到亮，平均位置大致就是平均亮度）。
+  // 循环渐变（cycle）时位置会绕回来，没法这样估计，按不循环来算
+  const pal0 = p.palette.dark
+  const f = pal0.cycle ? 1 : pal0.frequency
+  const o = pal0.cycle ? 0 : pal0.offset
+  const mean = (g: number) => ts.reduce((acc, t) => acc + Math.min(1, Math.max(0, t ** g * f + o)), 0) / ts.length
+  const target = p.mode === 'min' ? 0.38 : 0.3
+  let lo = 0.06
+  let hi = 2.5
+  for (let k = 0; k < 30; k++) {
+    const mid = (lo + hi) / 2
+    if (mean(mid) > target) lo = mid
+    else hi = mid
+  }
+  const g = (lo + hi) / 2
+  let freq = pal0.frequency
+  let off = pal0.offset
+  if (pal0.cycle) {
+    // 循环渐变：最快逃逸的点（画面外围）在渐变的起点 offset 处，偏移只能取 0–0.12，保证外围是暗的
+    off = Math.min(0.12, Math.max(0, off))
+  }
+  else {
+    // 很多点的值接近 1 时（比如最近点模式的外围），gamma 压不下来：把频率也按比例调小
+    const m = mean(g)
+    if (m > 0.36) freq *= 0.3 / m
+  }
   for (const pal of [p.palette.dark, p.palette.light]) {
     pal.gamma = g
-    pal.frequency = 1
-    pal.offset = 0
-    pal.cycle = false
+    pal.frequency = freq
+    pal.offset = off
   }
-}
-
-/** 在一个范围里找一个「边界附近」的点（逃逸得不快不慢）作为放大的中心 */
-function edgePoint(p: FractalPage, box: [number, number, number, number]): Cx | null {
-  for (let k = 0; k < 400; k++) {
-    const x = rand(box[0], box[2])
-    const y = rand(box[1], box[3])
-    const [n] = orbit(p, x, y, 256)
-    if (n >= 24 && n < 256) return [x, y]
-  }
-  return null
 }
 
 const SUP = '⁰¹²³⁴⁵⁶⁷⁸⁹'
 const sup = (n: number) => (n < 0 ? '⁻' : '') + String(Math.abs(n)).split('').map(d => SUP[+d]).join('')
 const cStr = (c: Cx) => `${c[0].toFixed(4)} ${c[1] < 0 ? '−' : '+'} ${Math.abs(c[1]).toFixed(4)}i`
 
-function makePage(o: { c: Cx, power: number, inverse: boolean, zoom: number, rotate: number, x?: number, y?: number, set?: 'julia' | 'mandel', kind?: 'mandelbrot' | 'ship', mode?: 'escape' | 'min' }): FractalPage {
-  // 用友链页的配色：色标在整个渐变上均匀分布，适合各种分形（再由 autoLevel 调 gamma）
-  const base = fractalPages.friends
-  return {
-    ...base,
-    kind: o.kind ?? 'mandelbrot',
-    set: o.set ?? 'julia',
-    mode: o.mode ?? 'escape',
-    iterations: 256,
-    power: o.power,
-    inverse: o.inverse,
-    c: o.c,
-    view: { x: o.x ?? 0, y: o.y ?? 0, zoom: o.zoom, rotate: o.rotate },
-    scroll: { speed: 0, parallax: 0 },
-    veil: 0,
-    palette: tamePalette(base.palette, o.power < 0 || o.mode === 'min'),
-  }
-}
+type Inside = FractalPage['palette']['dark']['insideMode']
 
-/** 彩蛋用的配色：曝光、光晕压低一点（交给 autoLevel 调亮度）；负数幂次 / 最近点模式的内部也按最近点着色，不然一片黑 */
-function tamePalette(src: FractalPage['palette'], minInside: boolean): FractalPage['palette'] {
-  const pal = JSON.parse(JSON.stringify(src)) as FractalPage['palette']
-  for (const t of [pal.dark, pal.light]) {
-    if (minInside) t.insideMode = 'min'
+/** 生成一个页面：配色用友链页那套（色标在整个渐变上均匀分布），关掉红蓝分光，压低曝光和光晕（亮度交给 autoLevel） */
+function makePage(o: {
+  kind: FractalPage['kind']
+  power: number
+  inverse: boolean
+  mode: FractalPage['mode']
+  iterations: number
+  c: Cx
+  view: FractalPage['view']
+  inside: Inside
+  frequency: number
+  offset: number
+  cycle: boolean
+}): FractalPage {
+  const base = fractalPages.friends
+  const palette = JSON.parse(JSON.stringify(base.palette)) as FractalPage['palette']
+  for (const t of [palette.dark, palette.light]) {
+    t.insideMode = o.inside
+    t.frequency = o.frequency
+    t.offset = o.offset
+    t.cycle = o.cycle
     if (t.post) {
+      t.post.chroma = 0
       t.post.exposure = Math.min(t.post.exposure, 0.15)
       t.post.bloom.intensity = Math.min(t.post.bloom.intensity, 0.7)
     }
   }
-  return pal
+  return {
+    ...base,
+    kind: o.kind,
+    set: 'julia',
+    mode: o.mode,
+    iterations: o.iterations,
+    power: o.power,
+    inverse: o.inverse,
+    c: o.c,
+    view: o.view,
+    scroll: { speed: 0, parallax: 0 },
+    veil: 0,
+    palette,
+  }
 }
 
-/** 随机生成一种（不够热闹就重来，最多 12 次） */
-function generate(): { page: FractalPage, name: string } {
+/**
+ * 随机一个幂次：多数是整数 2–8，也有负数（−2 到 −6）和小数。
+ * 小数幂次用复数的主辐角，画面里会有一条笔直的分界线（数学上本来就是这样），所以少一点
+ */
+function randomPower(): number {
   const r = Math.random()
-  // 著名的 Julia 集
-  if (r < 0.28) {
-    if (Math.random() < 0.5) {
-      const p = pick(CLASSICS)
-      return { page: makePage({ c: p.c, power: p.power, inverse: p.inverse, zoom: p.zoom, rotate: rand(-30, 30) }), name: p.name }
+  if (r < 0.68) return pick([2, 2, 2, 3, 3, 4, 4, 5, 6, 7, 8])
+  if (r < 0.86) return -pick([2, 2, 3, 3, 4, 5, 6])
+  return Math.round(rand(1.5, 8) * 100) / 100
+}
+
+/** 随机生成一个 Julia 集（不够热闹就重来，最多 16 次） */
+function generate(): FractalPage {
+  let page: FractalPage | null = null
+  for (let tries = 0; tries < 16; tries++) {
+    const kind: FractalPage['kind'] = Math.random() < 0.3 ? 'ship' : 'mandelbrot'
+    let power = randomPower()
+    let c: Cx
+    const famous = kind === 'mandelbrot' && Math.random() < 0.15
+    if (famous) {
+      // 少数时候用著名的 C
+      const p = Math.random() < 0.5 ? pick(CLASSICS) : pick(juliaPresets)
+      c = [p.c[0], p.c[1]]
+      power = p.power
     }
-    const p = pick(juliaPresets)
-    return { page: makePage({ c: p.c, power: p.power, inverse: p.inverse, zoom: p.view.zoom, rotate: rand(-30, 30), x: p.view.x, y: p.view.y }), name: p.name }
-  }
-  let best: { page: FractalPage, name: string } | null = null
-  for (let tries = 0; tries < 12; tries++) {
-    let page: FractalPage
-    let name: string
-    const inv = Math.random() < 0.3
-    const rot = rand(0, 360)
-    if (r < 0.52) {
-      // 随机 Julia 集：z^d + c，c 取在主体边界附近
-      const d = pick([2, 2, 2, 3, 3, 4, 5, 6])
-      const c = boundaryC(d, [0.96, 1.05])
-      page = makePage({ c, power: d, inverse: inv, zoom: inv ? rand(-1.4, -0.9) : rand(0.4, 1.0), rotate: rot })
-      name = `Julia：z${sup(d)} + (${cStr(c)})`
-    }
-    else if (r < 0.68) {
-      // Mandelbrot / Multibrot 集：放大到边界上的某一点
-      const d = pick([2, 2, 2, 3, 4, 5])
-      if (Math.random() < 0.2) {
-        page = makePage({ c: [0, 0], power: d, inverse: true, zoom: rand(-1.6, -0.8), rotate: rot, set: 'mandel', x: rand(-0.3, 0.3), y: rand(-0.3, 0.3) })
-        name = `Mandelbrot${d === 2 ? '' : `（z${sup(d)}）`}：反演`
-      }
-      else {
-        const ctr = boundaryC(d, [0.995, 1.005])
-        page = makePage({ c: [0, 0], power: d, inverse: false, zoom: rand(2, 6), rotate: rot, set: 'mandel', x: ctr[0], y: ctr[1] })
-        name = `Mandelbrot${d === 2 ? '' : `（z${sup(d)}）`}：放大到 ${cStr(ctr)}`
-      }
-    }
-    else if (r < 0.86) {
-      // Burning Ship：集合本身放大到船身边缘，或者它的 Julia 集
-      if (Math.random() < 0.55) {
-        page = makePage({ c: [0, 0], power: 2, inverse: false, zoom: 0, rotate: 0, set: 'mandel', kind: 'ship' })
-        const ctr = edgePoint(page, [-2, -2, 1, 1])
-        if (ctr) { page.view.x = ctr[0]; page.view.y = ctr[1]; page.view.zoom = rand(1.5, 5) }
-        else { page.view.x = -0.45; page.view.y = -0.5; page.view.zoom = 0.3 }
-        name = `Burning Ship：放大到 ${cStr([page.view.x, page.view.y])}`
-      }
-      else {
-        const c: Cx = [rand(-1.9, 0.6), rand(-1.2, 0.6)]
-        page = makePage({ c, power: pick([2, 2, 3]), inverse: inv, zoom: inv ? rand(-1.4, -0.9) : rand(0.2, 0.9), rotate: rot, kind: 'ship' })
-        name = `Burning Ship Julia：c = ${cStr(c)}${page.power === 2 ? '' : `，z${sup(page.power)}`}`
-      }
+    else if (kind === 'mandelbrot' && power > 1) {
+      // C 取在主体边界附近（往里是「胖」的集合，往外是尘埃状）
+      c = boundaryC(power, [0.94, 1.06])
     }
     else {
-      // 负数幂次：z^(−d) + c，配最近点着色更好看
-      const d = pick([-2, -2, -3, -4, -5])
-      const c: Cx = [rand(-1, 1), rand(-1, 1)]
-      const mode = Math.random() < 0.6 ? 'min' : 'escape'
-      page = makePage({ c, power: d, inverse: inv, zoom: rand(-0.6, 0.8), rotate: rot, mode })
-      name = `负幂：z${sup(d)} + (${cStr(c)})${mode === 'min' ? '，最近点着色' : ''}`
+      // Burning Ship 底、负数幂次：边界没有公式，在一个范围里随机，由 lively 挑
+      c = [rand(-1.8, 1.2), rand(-1.5, 1.5)]
     }
-    if (inv && page.set !== 'mandel' && !name.includes('反演')) name += '，反演'
-    best = { page, name }
+    const inverse = Math.random() < 0.35
+    const mode: FractalPage['mode'] = Math.random() < (power < 0 ? 0.45 : 0.04) ? 'min' : 'escape'
+    const inside: Inside = power < 0 || mode === 'min'
+      ? pick<Inside>(['min', 'min', 'angle'])
+      : pick<Inside>(['solid', 'solid', 'solid', 'min', 'angle'])
+    const cycle = Math.random() < 0.4
+    const view = {
+      x: inverse ? rand(-0.4, 0.4) : rand(-0.6, 0.6),
+      y: inverse ? rand(-0.4, 0.4) : rand(-0.6, 0.6),
+      zoom: inverse ? rand(-1.6, -0.6) : rand(-0.2, 1.6),
+      rotate: rand(0, 360),
+    }
+    page = makePage({
+      kind,
+      power,
+      inverse,
+      mode,
+      iterations: Math.round(rand(160, 360)),
+      c,
+      view,
+      inside,
+      frequency: cycle ? rand(1, 3) : rand(0.8, 1.3),
+      offset: cycle ? rand(0, 0.12) : rand(-0.05, 0.1),
+      cycle,
+    })
     if (lively(page)) break
   }
-  return best!
+  return page!
 }
 
-/** 换一个：大约三成是著名的 Julia 集，其余随机（Julia、Mandelbrot、Burning Ship、负数幂次，可能反演） */
+/** 显示用的名字（调试信息里能看到） */
+function describe(p: FractalPage): string {
+  const pw = Number.isInteger(p.power) ? sup(p.power) : `^${p.power}`
+  return `${p.kind === 'ship' ? 'Burning Ship ' : ''}Julia：z${pw} + (${cStr(p.c)})${p.inverse ? '，反演' : ''}${p.mode === 'min' ? '，最近点' : ''}`
+}
+
+/** 换一个 */
 export function randomize() {
-  const { page, name } = generate()
+  const page = generate()
   autoLevel(page)
   egg.page = page
-  egg.name = name
+  egg.name = describe(page)
   egg.baseZoom = page.view.zoom
 }
 
@@ -310,17 +334,8 @@ export function closeEgg() {
 export function nudgeC(dx: number, dy: number) {
   const p = egg.page
   if (!p) return
-  if (p.set === 'mandel') {
-    // Mandelbrot / Burning Ship 集本身没有可变的 C：拖动改为平移画面
-    const s = 3.2 / 2 ** p.view.zoom
-    const a = p.view.rotate * Math.PI / 180
-    p.view.x -= (Math.cos(a) * dx + Math.sin(a) * dy) * s
-    p.view.y -= (Math.sin(a) * dx - Math.cos(a) * dy) * s
-  }
-  else {
-    const k = 0.25 / Math.max(1, Math.abs(p.power) - 1)
-    p.c = [p.c[0] + dx * k, p.c[1] - dy * k]
-  }
+  const k = 0.25 / Math.max(1, Math.abs(p.power) - 1)
+  p.c = [p.c[0] + dx * k, p.c[1] - dy * k]
   egg.version++
 }
 
