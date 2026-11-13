@@ -1,0 +1,120 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Serif+SC:wght@400;700;900&family=Playfair+Display:ital,wght@0,900;1,900&display=swap');
+/*
+ * TMCWords-Search（https://hotpad100c.github.io/TMCWords-Search/）的博客风格覆盖。
+ * 由 scripts/mirror.mjs 复制为镜像里的 __blog-theme.css，在原样式之后加载。
+ * 原站的颜色都是直接写死的，没有变量，所以这里逐个选择器覆盖：
+ * 蓝图网格背景、发光阴影换成博客的配色与 1px 发丝线。
+ */
+:root {
+  --b-bg: #efe9fb;
+  --b-panel: #f8f5fe;
+  --b-raised: #ffffff;
+  --b-line: #d6cbee;
+  --b-line-strong: #b3a0de;
+  --b-fg: #1d1534;
+  --b-fg-2: #5b5078;
+  --b-accent: #5d3b99;
+  --b-on-accent: #ffffff;
+  --b-hover: #ebe4f8;
+  --b-mono: 'JetBrains Mono', ui-monospace, Menlo, Consolas, monospace;
+  --b-serif: 'Noto Serif SC', 'Source Han Serif SC', 'Songti SC', serif;
+  --b-display: 'Playfair Display', 'Noto Serif SC', serif;
+  --b-cut: 5px;
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --b-bg: #0b0910;
+  --b-panel: #100d18;
+  --b-raised: #16121f;
+  --b-line: #2a2340;
+  --b-line-strong: #4a3c70;
+  --b-fg: #efe9fd;
+  --b-fg-2: #a197bd;
+  --b-accent: #b59cf2;
+  --b-on-accent: #0b0910;
+  --b-hover: #1d1828;
+  color-scheme: dark;
+}
+
+* { border-radius: 0 !important; }
+body {
+  font-family: var(--b-mono) !important;
+  background: var(--b-bg) !important;
+  background-image: none !important;
+  color: var(--b-fg) !important;
+}
+body::before { display: none !important; }
+
+h1 {
+  font-family: var(--b-display) !important;
+  font-style: italic;
+  letter-spacing: 0 !important;
+  color: var(--b-fg) !important;
+  text-shadow: none !important;
+  border-top: 1px solid var(--b-line-strong) !important;
+  border-bottom: 1px solid var(--b-line-strong) !important;
+}
+.subtitle { color: var(--b-fg-2) !important; }
+
+/* 输入框、下拉框、按钮、勾选框 */
+input[type="text"], select, button, input[type="checkbox"] {
+  border: 1px solid var(--b-line-strong) !important;
+  background-color: var(--b-raised) !important;
+  color: var(--b-fg) !important;
+  box-shadow: none !important;
+  font-family: var(--b-mono) !important;
+}
+select {
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--b-accent) 50%),
+    linear-gradient(-45deg, var(--b-accent) 50%, transparent 50%) !important;
+}
+input[type="text"]::placeholder { color: var(--b-fg-2) !important; }
+input[type="text"]:focus, select:focus, select:hover, button:hover {
+  border-color: var(--b-accent) !important;
+  background-color: var(--b-raised) !important;
+  box-shadow: none !important;
+  outline: none;
+}
+select option { background: var(--b-raised) !important; color: var(--b-fg) !important; }
+input[type="checkbox"]:checked::after { background: var(--b-accent) !important; }
+button {
+  clip-path: polygon(var(--b-cut) 0, 100% 0, calc(100% - var(--b-cut)) 100%, 0 100%);
+  background-color: var(--b-accent) !important;
+  color: var(--b-on-accent) !important;
+  border: none !important;
+}
+
+/* 面板：方正 + 1px 发丝线；面板标题（::before）改为平行四边形小标签 */
+#columnSelectors, .data-source, .table-container, #loadingBar {
+  background: var(--b-panel) !important;
+  border: 1px solid var(--b-line) !important;
+  box-shadow: none !important;
+}
+#columnSelectors::before, .data-source::before, .table-container::before {
+  background: var(--b-accent) !important;
+  color: var(--b-on-accent) !important;
+  clip-path: polygon(var(--b-cut) 0, 100% 0, calc(100% - var(--b-cut)) 100%, 0 100%);
+  padding-inline: 10px !important;
+}
+#columnSelectors label:hover { color: var(--b-accent) !important; }
+.progress-bar {
+  background: repeating-linear-gradient(90deg, var(--b-accent), var(--b-accent) 10px, var(--b-line-strong) 10px, var(--b-line-strong) 20px) !important;
+}
+
+/* 表格 */
+th {
+  background: var(--b-raised) !important;
+  color: var(--b-accent) !important;
+  border-bottom: 1px solid var(--b-line-strong) !important;
+  border-right: 1px solid var(--b-line) !important;
+}
+td { border-bottom: 1px solid var(--b-line) !important; border-right: 1px solid var(--b-line) !important; }
+th:last-child, td:last-child { border-right: none !important; }
+tbody tr:hover { background: var(--b-hover) !important; box-shadow: none !important; }
+.no-result { color: var(--b-fg-2) !important; }
+
+a { color: var(--b-accent) !important; border-bottom-color: var(--b-accent) !important; }
+
+/* 在 iframe 里高度由内容决定 */
+.blog-mirror-framed body { min-height: 0 !important; }

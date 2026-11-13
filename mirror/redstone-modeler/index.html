@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+        <title>Redstone Modeler</title>
+        <link rel="stylesheet" href="app.css?v=462b4e5" />
+        <meta name="build" content="462b4e5" />
+        <script>
+            // Shows problems on the page. Without this a browser that cannot run the editor just
+            // shows a dead page, and the reason is only in the developer console.
+            (function () {
+                var messages = [];
+                var banner = null;
+                function webgl2() {
+                    try { return !!document.createElement("canvas").getContext("webgl2"); } catch (e) { return false; }
+                }
+                function render() {
+                    if (!banner) {
+                        banner = document.createElement("div");
+                        banner.id = "error_banner";
+                        banner.style.cssText = "position:fixed;z-index:10000;left:0;right:0;top:0;padding:8px 12px;background:#b00020;color:#fff;font:12px/1.4 sans-serif;white-space:pre-wrap;word-break:break-word";
+                        (document.body || document.documentElement).appendChild(banner);
+                    }
+                    var build = (document.querySelector("meta[name=build]") || {}).content;
+                    var zh = /^zh/i.test(navigator.language || "");
+                    var hint = /did not start|could not start|没有启动|无法启动/.test(messages.join(" "))
+                        ? (zh
+                            ? "\n\n如果网站刚更新过，浏览器可能保留了旧文件。请不带缓存重新加载（Safari：Cmd+Option+E 后重新加载；Chrome 和 Firefox：Ctrl+Shift+R 或 Cmd+Shift+R）。"
+                            : "\n\nIf the site was updated a moment ago your browser may have kept old files. Reload without the cache (Safari: Cmd+Option+E, then reload; Chrome and Firefox: Ctrl+Shift+R or Cmd+Shift+R).")
+                        : "";
+                    banner.textContent = messages.join("\n") + hint + "\n\n[build " + build + " | WebGL2: " + webgl2() + " | " + navigator.userAgent + "]";
+                    var close = document.createElement("button");
+                    close.textContent = "x";
+                    close.style.cssText = "position:absolute;right:6px;top:6px;border:1px solid #fff;background:transparent;color:#fff;border-radius:4px";
+                    close.onclick = function () { banner.remove(); banner = null; };
+                    banner.appendChild(close);
+                }
+                function note(message) {
+                    if (messages.indexOf(message) < 0) { messages.push(message); }
+                    if (document.body) { render(); } else { document.addEventListener("DOMContentLoaded", render); }
+                }
+                window.__rm_boot = { note: note, count: function () { return messages.length; } };
+                window.addEventListener("error", function (e) {
+                    if (e.target && e.target !== window && (e.target.src || e.target.href)) {
+                        note("Could not load " + (e.target.src || e.target.href));
+                    } else {
+                        note((e.message || "Error") + (e.filename ? " (" + String(e.filename).split("/").slice(-2).join("/") + ":" + e.lineno + ")" : ""));
+                    }
+                }, true);
+                window.addEventListener("unhandledrejection", function (e) {
+                    note("Unhandled error: " + ((e.reason && e.reason.message) || e.reason));
+                });
+                setTimeout(function () {
+                    if (!window.__rm) {
+                        var chinese = /^zh/i.test(navigator.language || "");
+                        note(messages.length
+                            ? (chinese ? "编辑器没有启动。" : "The editor did not start.")
+                            : (chinese ? "编辑器没有启动。这个浏览器可能太旧了：需要 Safari 15 或更新版本。" : "The editor did not start. This browser may be too old: Safari 15 or newer is needed."));
+                    }
+                }, 6000);
+            })();
+        </script>
+        <script src="lzma/lzma_worker-min.js"></script>
+    </head>
+    <body>
+        <div id="top_bar">
+            <button type="button" id="pack_button" data-i18n="top.packs">Resource packs</button>
+            <span id="pack_summary" class="note" data-i18n="top.no_pack">none loaded</span>
+            <button type="button" id="erase_button" data-i18n="top.eraser" data-i18n-title="top.eraser_title" title="Eraser: left click removes blocks (E)">Eraser</button>
+            <button type="button" id="clear_button" data-i18n="top.clear" data-i18n-title="top.clear_title" title="Remove every block">Clear</button>
+            <button type="button" id="fp_button" data-i18n="top.first_person" data-i18n-title="top.first_person_title" title="Fly around inside the model (F)">First person</button>
+            <button type="button" id="settings_button" data-i18n="top.settings">Settings</button>
+            <button type="button" id="image_button" data-i18n="top.copy_image">Copy image</button>
+            <button type="button" id="share_button" data-i18n="top.share" data-i18n-title="top.share_title" title="Share this model together with the resources it uses">Share</button>
+            <button type="button" id="schematic_button" data-i18n="top.schematic" data-i18n-title="top.schematic_title" title="Open or save a litematic, schematic or structure file">Schematic</button>
+            <button type="button" id="save_button" data-i18n="top.save">Save</button>
+            <input type="text" id="load_input" size="8" data-i18n-placeholder="top.code_placeholder" placeholder="code" />
+            <button type="button" id="load_button" data-i18n="top.load">Load</button>
+            <div id="separator"></div>
+            <div id="plane_controls" hidden>
+                <span class="note" data-i18n="top.plane">Plane</span>
+                <button type="button" id="layer_down" data-i18n-title="top.plane_back_title" title="Move plane back ([)">-</button>
+                <div id="layer_number"></div>
+                <button type="button" id="layer_up" data-i18n-title="top.plane_forward_title" title="Move plane forward (])">+</button>
+            </div>
+        </div>
+        <div id="main">
+            <div id="viewport">
+                <canvas id="canvas3d"></canvas>
+                <canvas id="gizmo" data-i18n-title="view.gizmo_title" title="Click an axis to look along it, the centre for the default view"></canvas>
+                <div id="onboarding">
+                    <h2 data-i18n="onboarding.title">Import a resource pack to start</h2>
+                    <p id="onboarding_note" class="error" hidden></p>
+                    <p data-i18n="onboarding.text">Blocks, models and block states are read from the resource packs you provide. Nothing is uploaded; the compiled result is cached in this browser.</p>
+                    <button type="button" id="onboarding_button" data-i18n="onboarding.button">Import resource packs</button>
+                </div>
+                <div id="fp_overlay" hidden>
+                    <div id="fp_crosshair"></div>
+                    <div id="fp_top">
+                        <button type="button" id="fp_blocks" data-i18n="fp.blocks" data-i18n-title="fp.blocks_title" title="Choose a block (E)">Blocks</button>
+                        <button type="button" id="fp_exit" data-i18n="fp.exit" data-i18n-title="fp.exit_title" title="Back to the model (F)">Exit</button>
+                    </div>
+                    <div id="fp_stick"><div id="fp_knob"></div></div>
+                    <div id="fp_lift">
+                        <button type="button" id="fp_up" data-i18n-title="fp.up_title" title="Up (Space)">▲</button>
+                        <button type="button" id="fp_down" data-i18n-title="fp.down_title" title="Down (Shift)">▼</button>
+                    </div>
+                    <div id="fp_pause" hidden>
+                        <p data-i18n="fp.paused">Paused</p>
+                        <button type="button" id="fp_resume" data-i18n="fp.resume">Continue</button>
+                        <button type="button" id="fp_leave" data-i18n="fp.leave">Leave first person</button>
+                        <p class="note" data-i18n="fp.keys">W A S D fly, Space up, Shift down, double tap W sprints. Left click breaks, right click places, middle click picks, the wheel changes the block in hand.</p>
+                    </div>
+                </div>
+                <div id="build_id" class="note"></div>
+                <div id="help" data-i18n="help.text">Click: place · Right click or Eraser (E): remove · Alt+click: pick · Drag: rotate · Right drag: pan · Wheel: zoom · 1-9: hotbar · Axis ball: 2D views, then [ ] moves the plane</div>
+            </div>
+            <div id="sidebar">
+                <input type="search" id="block_search" data-i18n-placeholder="sidebar.search" placeholder="Search blocks" />
+                <select id="block_namespace" data-i18n-title="sidebar.namespace_title" title="Only show blocks of one namespace (mod)" hidden></select>
+                <div id="block_list"></div>
+                <div id="block_states"></div>
+            </div>
+        </div>
+        <div id="state_bar" hidden>
+            <div class="row">
+                <div id="state_filters"></div>
+                <label class="note"><input type="checkbox" id="state_dedupe" /> <span data-i18n="state.dedupe">Hide look-alikes</span></label>
+                <span id="state_note" class="note"></span>
+            </div>
+            <div id="state_grid"></div>
+        </div>
+        <div id="hotbar_row">
+            <div id="held_name" role="status" aria-live="polite"></div>
+            <button type="button" id="state_toggle" data-i18n-title="state.toggle_title" title="Show every state combination of the held block">States ▲</button>
+            <div id="hotbar"></div>
+        </div>
+
+        <div id="link_banner" role="status" hidden></div>
+
+        <dialog id="schematic_dialog">
+            <h2 data-i18n="schematic.title">Litematic, schematic and structure files</h2>
+            <section>
+                <h3 data-i18n="schematic.import_title">Open</h3>
+                <p class="note" data-i18n="schematic.import_intro">Opens .litematic (Litematica), .schem (WorldEdit and others) and .nbt (structure blocks, Create). The space gets the size of the file, and what is in the editor now is replaced. Block entities, entities and items are not read. You can also drop a file on the page.</p>
+                <div class="row">
+                    <label class="file_button"><span data-i18n="schematic.open_file">Open file</span><input id="schematic_file" type="file" accept=".litematic,.schem,.schematic,.nbt,application/octet-stream,application/gzip" /></label>
+                </div>
+                <div id="schematic_import_status" class="note"></div>
+            </section>
+            <section>
+                <h3 data-i18n="schematic.export_title">Save as a file</h3>
+                <p class="note" data-i18n="schematic.export_intro">Saves the blocks in the smallest box that holds them. Blocks the game does not know are written as they are. Nothing but blocks is saved.</p>
+                <div class="row">
+                    <label><span data-i18n="schematic.format">Format</span>
+                        <select id="schematic_format">
+                            <option value="litematic">.litematic (Litematica)</option>
+                            <option value="schem">.schem (Sponge, WorldEdit)</option>
+                            <option value="nbt">.nbt (structure)</option>
+                        </select></label>
+                    <label><span data-i18n="schematic.version">For the game version</span>
+                        <select id="schematic_version"></select></label>
+                    <button type="button" id="schematic_save" data-i18n="schematic.save">Download</button>
+                </div>
+                <div id="schematic_export_status" class="note"></div>
+            </section>
+            <div class="row"><button type="button" id="schematic_close" data-i18n="schematic.close">Close</button></div>
+        </dialog>
+
+        <dialog id="share_dialog">
+            <h2 data-i18n="share.title">Share this model</h2>
+            <p class="note" data-i18n="share.intro">Packs the model together with the models and textures of the blocks it uses, so the other side does not need your resource packs. Copy the code, or send the file when the code is too long for a message.</p>
+            <section>
+                <div class="row"><label><span data-i18n="share.scope">Include</span>
+                    <select id="share_scope">
+                        <option value="used" data-i18n="share.scope_used">Only the states used in the model (smallest)</option>
+                        <option value="all" data-i18n="share.scope_all">Every state of the blocks used</option>
+                        <option value="pack" data-i18n="share.scope_pack">The whole compiled resource pack</option>
+                    </select></label></div>
+                <div class="row" id="share_languages_row" hidden><label><input id="share_all_languages" type="checkbox" /> <span data-i18n="share.all_languages">Keep the block names of every language</span></label></div>
+                <div class="row"><label><input id="share_compact" type="checkbox" checked /> <span data-i18n="share.compact" data-i18n-title="share.compact_title" title="A tighter encoding: smaller codes, same result">Compact encoding</span></label></div>
+                <div class="row"><label><input id="share_minimal" type="checkbox" /> <span data-i18n="share.minimal" data-i18n-title="share.minimal_title" title="Lossy: at most 256 colours, and block ids, states and models are replaced by codes. Blocks can then only be found by their names.">Minimal (lossy)</span></label></div>
+                <div id="share_stats" class="note"></div>
+                <div id="share_parts" class="note"></div>
+                <div id="share_warning" class="error"></div>
+                <textarea id="share_code" rows="4" readonly spellcheck="false"></textarea>
+                <div class="row">
+                    <button type="button" id="share_copy" data-i18n="share.copy">Copy share code</button>
+                    <button type="button" id="share_download" data-i18n="share.download">Download file (.rmmodel)</button>
+                </div>
+                <div class="row">
+                    <label><span data-i18n="share.service">Upload to</span>
+                        <select id="share_service">
+                            <option value="mclogs">mclo.gs</option>
+                            <option value="pastes">pastes.dev</option>
+                        </select></label>
+                    <button type="button" id="share_link_button" data-i18n="share.link_button">Copy share link</button>
+                </div>
+                <input id="share_link" type="text" readonly spellcheck="false" hidden />
+                <div id="share_status" class="note"></div>
+                <p class="note" data-i18n="share.copyright">The code contains the textures of the blocks that are used. Only share what you may share.</p>
+            </section>
+            <section>
+                <h3 data-i18n="share.open_title">Open a shared model</h3>
+                <div class="row">
+                    <label class="file_button"><span data-i18n="share.open_file">Open file (.rmmodel)</span><input id="share_file" type="file" accept=".rmmodel,.rmpack,.zip,application/zip,application/octet-stream" /></label>
+                </div>
+                <textarea id="share_paste" rows="3" spellcheck="false" data-i18n-placeholder="share.open_paste" placeholder="Or paste a share code"></textarea>
+                <div class="row"><button type="button" id="share_open_button" data-i18n="share.open_button">Open</button></div>
+                <div id="share_open_status" class="note"></div>
+                <p class="note" data-i18n="share.open_hint">A shared model brings its own resources. They are added to this browser as a pack called "… (shared)" and used; your own packs stay as they are.</p>
+            </section>
+            <div class="row"><button type="button" id="share_close" data-i18n="share.close">Close</button></div>
+        </dialog>
+
+        <dialog id="settings_dialog">
+            <h2 data-i18n="settings.title">Settings</h2>
+            <section>
+                <h3 data-i18n="settings.language_title">Language</h3>
+                <div class="row"><label><span data-i18n="settings.ui_language">Interface</span> <select id="ui_language"></select></label></div>
+            </section>
+            <section>
+                <h3 data-i18n="settings.names_title">Block names</h3>
+                <div class="row"><label><span data-i18n="settings.names_label">Show and search names in</span> <select id="search_language"></select></label></div>
+                <p class="note" data-i18n="settings.names_help">English names and block ids are always searched too, so "stone", "Stone" and the name in this language all find the block. The names come from the language files of your resource packs.</p>
+                <div id="language_note" class="note"></div>
+            </section>
+            <section>
+                <h3 data-i18n="settings.space">Model space</h3>
+                <div class="row">
+                    <label>X <input id="size_x" type="number" inputmode="numeric" /></label>
+                    <label><span data-i18n="settings.size_y">Y (height)</span> <input id="size_y" type="number" inputmode="numeric" /></label>
+                    <label>Z <input id="size_z" type="number" inputmode="numeric" /></label>
+                    <button type="button" id="size_apply" data-i18n="settings.apply">Apply</button>
+                </div>
+                <div id="size_note" class="note"></div>
+                <p class="note" data-i18n="settings.size_help">1 to 4096 blocks per side. Blocks outside a smaller space are removed. Large spaces are built in pieces, but a model with very many blocks can still be slow.</p>
+            </section>
+            <section>
+                <h3 data-i18n="settings.colours">Colours</h3>
+                <div class="row"><label><span data-i18n="settings.background">Background</span> <input id="bg_color" type="color" /></label></div>
+                <div class="row">
+                    <label><span data-i18n="settings.plane_colour">2D plane</span> <input id="plane_color" type="color" /></label>
+                    <label><span data-i18n="settings.opacity">Opacity</span> <input id="plane_opacity" type="range" min="0" max="1" step="0.01" /> <span id="plane_opacity_value"></span></label>
+                </div>
+            </section>
+            <section>
+                <h3 data-i18n="settings.controls">Controls</h3>
+                <div class="row">
+                    <label><span data-i18n="settings.mouse">Mouse buttons</span>
+                        <select id="mouse_mapping">
+                            <option value="minecraft" data-i18n="settings.mouse_minecraft">Like Minecraft: left breaks, right places</option>
+                            <option value="classic" data-i18n="settings.mouse_classic">Classic: left places, right breaks</option>
+                        </select></label>
+                </div>
+                <p class="note" data-i18n="settings.mouse_help">A finger taps to place and presses and holds to break. The middle button, or Alt and click, takes the block into the hotbar.</p>
+                <div class="row">
+                    <label><span data-i18n="settings.fly_speed">First person speed (blocks per second)</span> <input id="fly_speed" type="number" min="2" max="30" step="1" inputmode="numeric" /></label>
+                    <label><span data-i18n="settings.look">Turning with a finger</span> <input id="look_sensitivity" type="range" min="0.2" max="3" step="0.1" /></label>
+                </div>
+            </section>
+            <div class="row">
+                <button type="button" id="settings_reset" data-i18n="settings.reset">Reset</button>
+                <button type="button" id="settings_close" data-i18n="settings.close">Close</button>
+            </div>
+        </dialog>
+
+        <dialog id="pack_dialog">
+            <h2 data-i18n="pack.title">Resource packs</h2>
+            <p class="note" data-i18n="pack.intro">Everything stays in your browser. Packs higher in the list override packs below them, like in Minecraft, so put a default or vanilla pack at the bottom and special packs (for example redstone visualisation) above it.</p>
+            <section>
+                <h3 data-i18n="pack.step1">1. Stack packs</h3>
+                <div class="row">
+                    <label class="file_button"><span data-i18n="pack.add">Add pack (.zip / .jar / .rmpack)</span><input id="pack_file" type="file" multiple accept=".zip,.jar,.rmpack,.rmmodel,application/zip,application/java-archive,application/octet-stream" /></label>
+                    <label class="file_button"><span data-i18n="pack.add_folder">Add folder</span><input id="pack_folder" type="file" webkitdirectory /></label>
+                    <select id="vanilla_version"><option value="latest" data-i18n="pack.vanilla_latest">Latest release</option></select>
+                    <button type="button" id="vanilla_button" data-i18n="pack.vanilla">Add Minecraft (official)</button>
+                </div>
+                <p class="note" data-i18n="pack.vanilla_hint">Downloads the game's own files from Mojang to this browser when you click, nothing goes through us, and they are only used here. It is about 30 MB.</p>
+                <ol id="source_list"></ol>
+                <div class="row">
+                    <input id="pack_name" type="text" data-i18n-placeholder="pack.name_placeholder" placeholder="Name of the compiled pack" />
+                    <button type="button" id="compile_button" data-i18n="pack.compile">Compile and use</button>
+                </div>
+                <div id="compile_status"></div>
+            </section>
+            <section>
+                <h3 data-i18n="pack.step2">2. Saved in this browser</h3>
+                <ul id="library_list"></ul>
+                <div id="storage_note" class="note"></div>
+            </section>
+            <div class="row"><button type="button" id="pack_close" data-i18n="pack.close">Close</button></div>
+        </dialog>
+        <script type="module" src="js/app.mjs?v=462b4e5"></script>
+    <link rel="stylesheet" href="./__blog-theme.css" data-blog-mirror><script src="./__blog-bridge.js" data-blog-mirror></script>
+</body>
+</html>

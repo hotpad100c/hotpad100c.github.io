@@ -1,0 +1,1188 @@
+<!DOCTYPE html><html data-dpl-id="dpl_81UqPwtvWozeGSY6rp83BnXSZrKQ" lang="zh" class="WR3K9q_variable _BdSTW_variable y-p0Lq_variable scroll-smooth" data-scroll-behavior="smooth"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/><link rel="stylesheet" href="/mirror/gtmc/_next/static/immutable/chunks/1--73xuv1oujp.css" data-precedence="next"/><link rel="stylesheet" href="/mirror/gtmc/_next/static/immutable/chunks/1-6si-z422xsj.css" data-precedence="next"/><link rel="stylesheet" href="/mirror/gtmc/_next/static/immutable/chunks/1ch066s1xnct2.css" data-precedence="next"/><link rel="stylesheet" href="/mirror/gtmc/_next/static/immutable/chunks/2hvdik4jmy56c.css" data-precedence="next"/><meta name="theme-color" content="#f5f4ef" media="(prefers-color-scheme: light)"/><meta name="theme-color" content="#101826" media="(prefers-color-scheme: dark)"/><meta name="next-size-adjust" content=""/><title>01 刻与刻间时序 | GTMC</title><meta name="description" content="在Minecraft中有大量的事件需要处理，这些事件被按顺序放在一个大循环里，我们称这个循环为游戏主循环，在不使用 /tick 命令，游戏正常运行的情况下，这个主循环总是以约 每秒20次 的间隔循环，我们称这个最短间隔为 GameTick ，简称…"/><link rel="canonical" href="/mirror/gtmc/zh/articles/micro-timing/tick-timing/"/><link rel="alternate" hrefLang="zh" href="/mirror/gtmc/zh/articles/micro-timing/tick-timing/"/><link rel="alternate" hrefLang="en" href="/mirror/gtmc/en/articles/micro-timing/tick-timing/"/><link rel="alternate" hrefLang="x-default" href="/mirror/gtmc/zh/articles/micro-timing/tick-timing/"/><meta name="google-site-verification" content="QE8InawtRuO1F7YrvI1JN56__AFPCAFo6Gn-Vi1QJI8"/><meta property="og:title" content="01 刻与刻间时序"/><meta property="og:description" content="在Minecraft中有大量的事件需要处理，这些事件被按顺序放在一个大循环里，我们称这个循环为游戏主循环，在不使用 /tick 命令，游戏正常运行的情况下，这个主循环总是以约 每秒20次 的间隔循环，我们称这个最短间隔为 GameTick ，简称…"/><meta property="og:url" content="https://www.techmc.wiki/zh/articles/micro-timing/tick-timing"/><meta property="og:image" content="https://www.techmc.wiki/api/og/articles/micro-timing/tick-timing?locale=zh"/><meta property="og:image:width" content="1200"/><meta property="og:image:height" content="630"/><meta property="og:image:alt" content="01 刻与刻间时序"/><meta property="og:type" content="article"/><meta name="twitter:card" content="summary_large_image"/><meta name="twitter:title" content="01 刻与刻间时序"/><meta name="twitter:description" content="在Minecraft中有大量的事件需要处理，这些事件被按顺序放在一个大循环里，我们称这个循环为游戏主循环，在不使用 /tick 命令，游戏正常运行的情况下，这个主循环总是以约 每秒20次 的间隔循环，我们称这个最短间隔为 GameTick ，简称…"/><meta name="twitter:image" content="https://www.techmc.wiki/api/og/articles/micro-timing/tick-timing?locale=zh"/><link rel="icon" href="/mirror/gtmc/__q/1sumh34.ico" sizes="256x256" type="image/x-icon"/><link rel="icon" href="/mirror/gtmc/logo-mark-light.svg"/><link rel="preload" as="image" href="/mirror/gtmc/article-assets/MicroTiming/img/OrderBetweenTicks.jpg" fetchPriority="high"/></head><body class="bg-tech-bg/50 h-dvh w-full overflow-hidden antialiased"><div hidden=""><!--$--><!--/$--></div><!--&--><!--$?--><template id="B:0"></template><!--/$--><!--$?--><template id="B:1"></template><!--/$--><div id="site-scroll-root" class="h-dvh min-h-0 w-full overflow-x-hidden overflow-y-auto scroll-smooth [scroll-timeline:--site-scroll_block]"><!--$--><!--/$--><div class="flex min-h-full flex-col"><!--&--><div class="text-tech-main selection:bg-tech-main/20 selection:text-tech-main-dark relative min-h-screen w-full font-sans"><section aria-label="Notifications alt+T" tabindex="-1" aria-live="polite" aria-relevant="additions text" aria-atomic="false" data-react-aria-top-layer="true"></section><a href="#main-content" class="focus:bg-surface-overlay focus:border-tech-main focus:text-tech-main-dark sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[100] focus:border focus:px-4 focus:py-2 focus:font-mono focus:text-xs focus:outline-none">跳转到主要内容</a><header class="fixed inset-x-0 top-0 z-50"><div class="data-scrolled:border-tech-main/30 data-scrolled:bg-surface-overlay/90 border-b border-transparent transition-[background-color,border-color,box-shadow] duration-300 data-scrolled:shadow-[0_8px_24px_-16px_rgb(32_40_60/0.35)] data-scrolled:backdrop-blur-md"><div class="mx-auto flex h-16 w-full max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 md:h-20 lg:px-8"><div class="flex min-w-0 items-center gap-4 xl:gap-6"><a class="group inline-flex items-center gap-2 transition-opacity hover:opacity-80 text-lg min-h-11 shrink-0 " href="https://www.techmc.wiki/zh"><span aria-hidden="true" style="--gtmc-mark-light:url(&quot;/mirror/gtmc/_next/static/immutable/media/logo-mark-light.0t81063fjzbiq.svg&quot;);--gtmc-mark-dark:url(&quot;/mirror/gtmc/_next/static/immutable/media/logo-mark-dark.0qlz95m86fadz.svg&quot;);background-size:contain;background-repeat:no-repeat;background-position:center" class="gtmc-logo-mark-bg shrink-0 size-5"></span><span class="display-title text-tech-main-dark tracking-tight">GTMC</span></a><!--$--><ul class="relative hidden items-center gap-1 xl:flex"><li aria-hidden="true" data-slot="navigation-indicator" class="t-tabs-pill invisible list-none border border-tech-main/40 [--tabs-pill-bg:var(--color-tech-accent)]"></li><li class="relative z-10"><a data-nav-key="/articles/preface" class="focus-visible:outline-tech-main flex h-11 items-center rounded-none border border-transparent px-3 text-sm font-medium whitespace-nowrap transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-[-2px] text-tech-main hover:text-tech-main-dark" href="/mirror/gtmc/zh/articles/preface/">文章</a></li><li class="relative z-10"><a data-nav-key="/pdf" class="focus-visible:outline-tech-main flex h-11 items-center rounded-none border border-transparent px-3 text-sm font-medium whitespace-nowrap transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-[-2px] text-tech-main hover:text-tech-main-dark" href="https://www.techmc.wiki/zh/pdf">PDF</a></li><li class="relative z-10"><a data-nav-key="/glossary" class="focus-visible:outline-tech-main flex h-11 items-center rounded-none border border-transparent px-3 text-sm font-medium whitespace-nowrap transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-[-2px] text-tech-main hover:text-tech-main-dark" href="https://www.techmc.wiki/zh/glossary">术语表</a></li><li class="relative z-10"><a data-nav-key="/about" class="focus-visible:outline-tech-main flex h-11 items-center rounded-none border border-transparent px-3 text-sm font-medium whitespace-nowrap transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-[-2px] text-tech-main hover:text-tech-main-dark" href="https://www.techmc.wiki/zh/about">关于</a></li><li class="relative z-10"><a data-nav-key="/authors" class="focus-visible:outline-tech-main flex h-11 items-center rounded-none border border-transparent px-3 text-sm font-medium whitespace-nowrap transition-colors duration-200 focus-visible:outline-2 focus-visible:outline-offset-[-2px] text-tech-main hover:text-tech-main-dark" href="https://www.techmc.wiki/zh/authors">贡献者</a></li></ul><!--/$--></div><div class="flex shrink-0 items-center gap-1"><!--$--><button data-slot="tooltip-trigger" data-variant="ghost" data-size="icon" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:text-foreground size-11 hover:bg-accent hover:no-underline aria-pressed:bg-accent" type="button" aria-label="搜索文章" disabled="" data-state="closed"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search size-4" aria-hidden="true"><path d="m21 21-4.34-4.34"></path><circle cx="11" cy="11" r="8"></circle></svg></button><!--/$--><button data-slot="dropdown-menu-trigger" data-variant="ghost" data-size="icon-sm" class="font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:bg-tech-main/10 hover:text-tech-main-dark hover:no-underline hidden size-11 md:size-11 xl:flex" type="button" aria-label="切换到浅色主题" title="切换到浅色主题" id="radix-_R_ksnmiivb_" aria-haspopup="menu" aria-expanded="false" data-state="closed"><span aria-hidden="true" class="t-icon-swap invisible" data-state="a"><span class="t-icon" data-icon="a"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-sun size-4" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2"></path><path d="M12 20v2"></path><path d="m4.93 4.93 1.41 1.41"></path><path d="m17.66 17.66 1.41 1.41"></path><path d="M2 12h2"></path><path d="M20 12h2"></path><path d="m6.34 17.66-1.41 1.41"></path><path d="m19.07 4.93-1.41 1.41"></path></svg></span><span class="t-icon" data-icon="b"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-moon size-4" aria-hidden="true"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"></path></svg></span></span></button><!--$--><button data-slot="dropdown-menu-trigger" data-variant="ghost" data-size="icon-sm" class="font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:bg-tech-main/10 hover:text-tech-main-dark hover:no-underline hidden size-11 md:size-11 xl:flex" type="button" aria-label="切换语言" title="切换语言" id="radix-_R_ssnmiivb_" aria-haspopup="menu" aria-expanded="false" data-state="closed"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe size-4" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg></button><!--/$--><button data-slot="sheet-trigger" data-variant="ghost" data-size="icon" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:bg-accent/50 hover:text-foreground size-11 xl:hidden" aria-label="切换导航菜单" aria-expanded="false" type="button" aria-haspopup="dialog" data-state="closed"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu size-5" aria-hidden="true"><path d="M4 5h16"></path><path d="M4 12h16"></path><path d="M4 19h16"></path></svg></button><span aria-hidden="true" class="bg-tech-main/20 mx-1 h-6 w-px shrink-0"></span><div class="relative size-11 shrink-0"><div class="flex size-11 items-center justify-center"><div class="border-tech-main/30 bg-tech-main/5 size-8 animate-pulse border"></div></div></div></div></div></div></header><div class="flex min-h-screen w-full flex-col overflow-x-clip"><div class="h-16 shrink-0 md:h-20" aria-hidden="true"></div><main id="main-content" class="relative flex w-full flex-1 flex-col p-4 sm:p-6 lg:px-12 lg:py-8"><div class="animate-page-enter flex w-full flex-1 flex-col motion-reduce:animate-none"><!--$--><!--/$--><!--$--><!--/$--><!--&--><!--$--><div class="
+          relative isolate flex min-h-[calc(100dvh-8rem)] min-w-0
+          flex-col overflow-x-clip
+          md:grid md:grid-cols-12
+          md:gap-6
+          md:max-w-360 md:mx-auto
+        "><div class="
+        border-tech-main/40 bg-surface-overlay/95 sticky top-16 z-30 border-y
+        shadow-sm backdrop-blur-sm transition-[opacity] duration-200 md:hidden
+        opacity-100
+      "><button data-slot="button" data-variant="ghost" data-size="default" class="inline-flex font-sans shrink-0 items-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:bg-accent/50 hover:text-foreground px-4 py-2.5 sm:px-6 sm:py-3 min-h-11 sm:min-h-auto h-12 w-full justify-between" type="button" aria-expanded="false" aria-label="切换文章树" data-testid="mobile-tree-toggle"><span>文章目录</span><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></button><div class="
+            grid transition-[grid-template-rows,opacity] duration-300 ease-out motion-reduce:transition-none
+            grid-rows-[0fr] opacity-0
+          "><div class="overflow-hidden"><div class="border-tech-main/30 bg-surface-overlay/95 max-h-[calc(100dvh-12rem)] overflow-y-auto overscroll-contain border-t px-4 pt-3 pb-4"><div class="relative flex min-h-0 flex-1 flex-col"><div class="flex shrink-0 items-center gap-1 border-b pb-1"><div class="ml-auto flex shrink-0 items-center"><button data-slot="tooltip-trigger" data-variant="ghost" data-size="icon" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:bg-accent/50 hover:text-foreground size-11 md:size-8" type="button" aria-label="折叠全部" data-state="closed"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-fold-vertical" aria-hidden="true"><path d="M12 22v-6"></path><path d="M12 8V2"></path><path d="M4 12H2"></path><path d="M10 12H8"></path><path d="M16 12h-2"></path><path d="M22 12h-2"></path><path d="m15 19-3-3-3 3"></path><path d="m15 5-3 3-3-3"></path></svg></button><button data-slot="tooltip-trigger" data-variant="ghost" data-size="icon" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:bg-accent/50 hover:text-foreground size-11 md:size-8" type="button" aria-label="定位当前" data-state="closed"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-locate-fixed" aria-hidden="true"><line x1="2" x2="5" y1="12" y2="12"></line><line x1="19" x2="22" y1="12" y2="12"></line><line x1="12" x2="12" y1="2" y2="5"></line><line x1="12" x2="12" y1="19" y2="22"></line><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="3"></circle></svg></button></div></div><div class="reader-rail-scrollbar min-h-0 flex-1 overflow-y-auto pt-2 pb-4 "><ul class="my-0.5"><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/preface/"><span aria-hidden="true" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums"></span><span class="min-w-0">总序</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>方块更新</span></button><div aria-hidden="true" class="
+        grid transition-[grid-template-rows,opacity] motion-reduce:transition-none duration-300 ease-out
+        grid-rows-[0fr] opacity-0
+      "><div class="overflow-hidden"><ul class="my-0.5 ml-2 border-l pl-2 guide-line"><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/block-update/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">00</span><span class="min-w-0">引言</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/block-update/update-concepts/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">01</span><span class="min-w-0">更新的概念与不同类型的更新</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/block-update/continuous-updates/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">02</span><span class="min-w-0">连续的方块更新及其分析方法</span></a></li></ul></div></div></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>微时序</span></button><div aria-hidden="true" class="
+        grid transition-[grid-template-rows,opacity] motion-reduce:transition-none duration-300 ease-out
+        grid-rows-[0fr] opacity-0
+      "><div class="overflow-hidden"><ul class="my-0.5 ml-2 border-l pl-2 guide-line"><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-tech-signal before:w-[3px]
+                bg-tech-main/5
+             "><a aria-current="page" class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        font-semibold text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/tick-timing/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">01</span><span class="min-w-0">刻与刻间时序</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/intra-tick-timing/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">02</span><span class="min-w-0">初窥刻内时序</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/scheduled-ticks/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">03</span><span class="min-w-0">计划刻与计划刻元件</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/leafandscaffolding/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">04</span><span class="min-w-0">树电与脚电</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/block-entities/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">05</span><span class="min-w-0">方块实体</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/block-events/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">06</span><span class="min-w-0">方块事件</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/pistons/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">07</span><span class="min-w-0">活塞：方块事件与方块实体</span></a></li></ul></div></div></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>Masa Mod</span></button><div aria-hidden="true" class="
+        grid transition-[grid-template-rows,opacity] motion-reduce:transition-none duration-300 ease-out
+        grid-rows-[0fr] opacity-0
+      "><div class="overflow-hidden"><ul class="my-0.5 ml-2 border-l pl-2 guide-line"><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/masamod/masa-gadget/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">01</span><span class="min-w-0">Masa Gadget</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/masamod/litematica/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">02</span><span class="min-w-0">投影模组教程</span></a></li></ul></div></div></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>实体运动</span></button><div aria-hidden="true" class="
+        grid transition-[grid-template-rows,opacity] motion-reduce:transition-none duration-300 ease-out
+        grid-rows-[0fr] opacity-0
+      "><div class="overflow-hidden"><ul class="my-0.5 ml-2 border-l pl-2 guide-line"><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">00</span><span class="min-w-0">绪论</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-motion-basics/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">01</span><span class="min-w-0">实体运动基础</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-move-collision/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">02</span><span class="min-w-0">实体移动过程及碰撞机制</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-motion-formulas/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">03</span><span class="min-w-0">实体自由运动相关公式推导</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-external-forces/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">04</span><span class="min-w-0">外界因素对运动的影响</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-living-motion/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">05</span><span class="min-w-0">LivingEntity运动机制</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-specific-analysis/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">06</span><span class="min-w-0">几类具体实体运动分析</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-motion-applications/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">07</span><span class="min-w-0">实体运动应用举例</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-motion-references/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">08</span><span class="min-w-0">参考文献</span></a></li><li class="
+                mt-2.5 mb-1 flex list-none items-center gap-2 pl-1 font-mono
+                text-xs tracking-[0.12em] text-tech-main/50 uppercase
+              "><span class="h-px flex-1 bg-tech-main/25"></span><span>附录</span><span class="h-px w-4 bg-tech-main/25"></span></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/appendix/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">I.</span><span class="min-w-0">附录</span></a></li></ul></div></div></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>村庄</span></button></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>瞬时元件</span></button><div aria-hidden="true" class="
+        grid transition-[grid-template-rows,opacity] motion-reduce:transition-none duration-300 ease-out
+        grid-rows-[0fr] opacity-0
+      "><div class="overflow-hidden"><ul class="my-0.5 ml-2 border-l pl-2 guide-line"><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/instant-components/rails/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">01</span><span class="min-w-0">铁轨</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/instant-components/copper-bulb/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">02</span><span class="min-w-0">铜灯</span></a></li></ul></div></div></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>绿萌科技</span></button></li><li class="
+                mt-2.5 mb-1 flex list-none items-center gap-2 pl-1 font-mono
+                text-xs tracking-[0.12em] text-tech-main/50 uppercase
+              "><span class="h-px flex-1 bg-tech-main/25"></span><span>附录</span><span class="h-px w-4 bg-tech-main/25"></span></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/appendix/stack/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">A.</span><span class="min-w-0">栈的概念</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/appendix/glossary/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">B.</span><span class="min-w-0">术语表</span></a></li></ul></div></div></div></div></div></div><div class="
+        relative hidden shrink-0 self-stretch
+        md:col-start-1 md:justify-self-end md:block
+        md:col-span-3
+      " data-chapter-nav-region="true"><div class="flex h-full"><aside class="
+            h-full w-56 overflow-clip border-r guide-line
+            transition-[width,opacity,border-color] duration-300
+            ease-[cubic-bezier(0.16,1,0.3,1)]
+          " style="opacity:1"><div class="
+              sticky top-20 flex w-56 flex-col justify-center
+              hover:z-20
+              sm:top-26 sm:h-[calc(100dvh-128px)]
+              lg:top-28 lg:h-[calc(100dvh-144px)]
+            "><div class="
+                flex max-h-4/5 min-h-0 flex-1 flex-col overflow-visible
+                border-b guide-line text-tech-main
+                md:px-4 md:py-2
+              "><div class="relative flex min-h-0 flex-1 flex-col"><div class="flex shrink-0 items-center gap-1 border-b pb-1"><h2 class="min-w-0 text-sm font-semibold">文章目录</h2><div class="ml-auto flex shrink-0 items-center"><button data-slot="tooltip-trigger" data-variant="ghost" data-size="icon" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:bg-accent/50 hover:text-foreground size-11 md:size-8" type="button" aria-label="折叠全部" data-state="closed"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-fold-vertical" aria-hidden="true"><path d="M12 22v-6"></path><path d="M12 8V2"></path><path d="M4 12H2"></path><path d="M10 12H8"></path><path d="M16 12h-2"></path><path d="M22 12h-2"></path><path d="m15 19-3-3-3 3"></path><path d="m15 5-3 3-3-3"></path></svg></button><button data-slot="tooltip-trigger" data-variant="ghost" data-size="icon" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:bg-accent/50 hover:text-foreground size-11 md:size-8" type="button" aria-label="定位当前" data-state="closed"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-locate-fixed" aria-hidden="true"><line x1="2" x2="5" y1="12" y2="12"></line><line x1="19" x2="22" y1="12" y2="12"></line><line x1="12" x2="12" y1="2" y2="5"></line><line x1="12" x2="12" y1="19" y2="22"></line><circle cx="12" cy="12" r="7"></circle><circle cx="12" cy="12" r="3"></circle></svg></button></div></div><div class="reader-rail-scrollbar min-h-0 flex-1 overflow-y-auto pt-2 pb-4 pr-1"><ul class="my-0.5"><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/preface/"><span aria-hidden="true" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums"></span><span class="min-w-0">总序</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>方块更新</span></button><div aria-hidden="true" class="
+        grid transition-[grid-template-rows,opacity] motion-reduce:transition-none duration-300 ease-out
+        grid-rows-[0fr] opacity-0
+      "><div class="overflow-hidden"><ul class="my-0.5 ml-2 border-l pl-2 guide-line"><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/block-update/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">00</span><span class="min-w-0">引言</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/block-update/update-concepts/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">01</span><span class="min-w-0">更新的概念与不同类型的更新</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/block-update/continuous-updates/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">02</span><span class="min-w-0">连续的方块更新及其分析方法</span></a></li></ul></div></div></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>微时序</span></button><div aria-hidden="true" class="
+        grid transition-[grid-template-rows,opacity] motion-reduce:transition-none duration-300 ease-out
+        grid-rows-[0fr] opacity-0
+      "><div class="overflow-hidden"><ul class="my-0.5 ml-2 border-l pl-2 guide-line"><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-tech-signal before:w-[3px]
+                bg-tech-main/5
+             "><a aria-current="page" class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        font-semibold text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/tick-timing/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">01</span><span class="min-w-0">刻与刻间时序</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/intra-tick-timing/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">02</span><span class="min-w-0">初窥刻内时序</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/scheduled-ticks/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">03</span><span class="min-w-0">计划刻与计划刻元件</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/leafandscaffolding/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">04</span><span class="min-w-0">树电与脚电</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/block-entities/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">05</span><span class="min-w-0">方块实体</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/block-events/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">06</span><span class="min-w-0">方块事件</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/micro-timing/pistons/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">07</span><span class="min-w-0">活塞：方块事件与方块实体</span></a></li></ul></div></div></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>Masa Mod</span></button><div aria-hidden="true" class="
+        grid transition-[grid-template-rows,opacity] motion-reduce:transition-none duration-300 ease-out
+        grid-rows-[0fr] opacity-0
+      "><div class="overflow-hidden"><ul class="my-0.5 ml-2 border-l pl-2 guide-line"><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/masamod/masa-gadget/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">01</span><span class="min-w-0">Masa Gadget</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/masamod/litematica/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">02</span><span class="min-w-0">投影模组教程</span></a></li></ul></div></div></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>实体运动</span></button><div aria-hidden="true" class="
+        grid transition-[grid-template-rows,opacity] motion-reduce:transition-none duration-300 ease-out
+        grid-rows-[0fr] opacity-0
+      "><div class="overflow-hidden"><ul class="my-0.5 ml-2 border-l pl-2 guide-line"><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">00</span><span class="min-w-0">绪论</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-motion-basics/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">01</span><span class="min-w-0">实体运动基础</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-move-collision/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">02</span><span class="min-w-0">实体移动过程及碰撞机制</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-motion-formulas/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">03</span><span class="min-w-0">实体自由运动相关公式推导</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-external-forces/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">04</span><span class="min-w-0">外界因素对运动的影响</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-living-motion/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">05</span><span class="min-w-0">LivingEntity运动机制</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-specific-analysis/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">06</span><span class="min-w-0">几类具体实体运动分析</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-motion-applications/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">07</span><span class="min-w-0">实体运动应用举例</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/entity-motion-references/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">08</span><span class="min-w-0">参考文献</span></a></li><li class="
+                mt-2.5 mb-1 flex list-none items-center gap-2 pl-1 font-mono
+                text-xs tracking-[0.12em] text-tech-main/50 uppercase
+              "><span class="h-px flex-1 bg-tech-main/25"></span><span>附录</span><span class="h-px w-4 bg-tech-main/25"></span></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/entity-motion-intro/appendix/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">I.</span><span class="min-w-0">附录</span></a></li></ul></div></div></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>村庄</span></button></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>瞬时元件</span></button><div aria-hidden="true" class="
+        grid transition-[grid-template-rows,opacity] motion-reduce:transition-none duration-300 ease-out
+        grid-rows-[0fr] opacity-0
+      "><div class="overflow-hidden"><ul class="my-0.5 ml-2 border-l pl-2 guide-line"><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/instant-components/rails/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">01</span><span class="min-w-0">铁轨</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/instant-components/copper-bulb/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">02</span><span class="min-w-0">铜灯</span></a></li></ul></div></div></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                before:bg-transparent
+                
+             "><button type="button" aria-expanded="false" class="
+        mt-2 grid min-h-11 w-full cursor-pointer grid-cols-[1.25rem_minmax(0,1fr)] items-center gap-x-2 pl-2 text-left
+        font-sans text-[0.8125rem] leading-snug font-semibold text-tech-main/80
+        transition-colors hover:text-tech-main-dark md:mt-1 md:min-h-7
+        focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus:outline-none
+      "><span class="flex w-4 shrink-0 items-center justify-center text-tech-main/50"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-3"><path d="M6 4 12 8l-6 4v-8Z" fill="currentColor"></path></svg></span><span>绿萌科技</span></button></li><li class="
+                mt-2.5 mb-1 flex list-none items-center gap-2 pl-1 font-mono
+                text-xs tracking-[0.12em] text-tech-main/50 uppercase
+              "><span class="h-px flex-1 bg-tech-main/25"></span><span>附录</span><span class="h-px w-4 bg-tech-main/25"></span></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/appendix/stack/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">A.</span><span class="min-w-0">栈的概念</span></a></li><li data-chapter-nav-row="1" class="
+                  relative my-0.5 list-none transition-colors duration-300 md:my-0
+                  before:absolute before:top-0 before:left-0 before:h-full before:w-[2px]
+                  before:transition-[width,background-color] motion-reduce:before:transition-none before:duration-200 before:content-[&#x27;&#x27;]
+                
+                        before:bg-transparent
+                        hover:before:w-[2px] hover:before:bg-tech-main/40
+                      
+                hover:bg-tech-main/5
+             "><a class="
+        grid min-h-11 w-full grid-cols-[1.25rem_minmax(0,1fr)] items-baseline
+        gap-x-2 py-2 pr-1 pl-2 font-sans text-[0.8125rem] leading-snug
+        transition-colors focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 md:min-h-7 md:py-0.5 md:text-sm
+        text-tech-main hover:text-tech-main-dark
+      " href="/mirror/gtmc/zh/articles/appendix/glossary/"><span aria-hidden="false" class="text-center font-mono text-xs leading-none text-tech-main/55 tabular-nums">B.</span><span class="min-w-0">术语表</span></a></li></ul></div></div></div></div></aside><div class="relative h-full w-0"><div class="sticky top-[50vh] -translate-y-1/2 justify-center overflow-visible"><button data-slot="button" data-variant="outline" data-size="icon-sm" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-background border-input text-foreground hover:bg-accent hover:text-accent-foreground size-8 absolute top-0 -left-4 z-40 -translate-y-1/2" type="button" aria-label="隐藏章节导航" aria-expanded="true" data-chapter-nav-toggle=""><span class="
+                  flex size-3 items-center justify-center select-none
+                "><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false" class="size-2.5"><path d="M10 4v8L4 8l6-4Z" fill="currentColor"></path></svg></span></button></div></div></div></div><main class="
+        relative my-6 min-w-0
+        md:w-full
+        md:mx-auto
+        md:max-w-4xl
+        md:col-start-4 md:col-span-9 xl:col-span-7
+      "><!--&--><!--$--><!--&--><div class="border-tech-main/30 bg-surface/80 relative min-h-screen min-w-0 border p-6 backdrop-blur-sm sm:p-8"><nav aria-label="Chapter" class="mb-4 flex flex-wrap items-center gap-2 font-mono text-xs tracking-[0.15em] uppercase"><span class="bg-tech-signal text-tech-signal-ink inline-flex h-5 items-center px-1.5 text-xs font-bold tracking-wider">CH<!-- --> <!-- -->02</span><span class="contents"><a href="/mirror/gtmc/zh/articles/micro-timing/" class="text-tech-main/70 hover:text-tech-main-dark hover:decoration-tech-main/40 transition-colors hover:underline hover:underline-offset-4">微时序</a></span></nav><header><div class="
+          relative mb-5 border guide-line bg-surface-overlay/80 p-3
+          font-mono text-xs text-tech-main
+          sm:mb-6 sm:p-3
+        "><div class="hidden flex-wrap items-center gap-x-3 gap-y-2 text-tech-main/50 sm:flex"><span class="inline-flex min-w-0 items-center gap-3">路径：<!-- --> <!-- -->MicroTiming/刻与刻间时序.zh.md</span></div><div class="flex flex-col gap-3 sm:mt-2 sm:gap-4"><div class="t-acc flex flex-col" data-open="false"><div class="flex items-center gap-3"><div class="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-tech-main/65"><span class="inline-flex items-center gap-1.5"><a class="text-tech-main underline decoration-tech-main/30 underline-offset-4" href="https://www.techmc.wiki/zh/authors/tanhHeng">tanhHeng</a><span data-slot="badge" data-variant="ghost" class="inline-flex font-mono w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-none border py-0.5 text-xs whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 [&amp;&gt;svg]:pointer-events-none [&amp;&gt;svg]:size-3 border-transparent bg-transparent px-0 text-tech-main/50">+<!-- -->3</span></span><div data-orientation="vertical" role="none" data-slot="separator" class="shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px bg-tech-main/35 h-3"></div><span>字数：<!-- --> <!-- -->1,617</span><div data-orientation="vertical" role="none" data-slot="separator" class="shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px bg-tech-main/35 h-3"></div><span>预计阅读时间：<!-- --> <!-- -->5<!-- --> <!-- -->分钟</span><div data-orientation="vertical" role="none" data-slot="separator" class="shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px bg-tech-main/35 h-3"></div><span>最后编辑：<!-- --> <!-- -->2026-04-05</span></div><button data-slot="tooltip-trigger" data-variant="ghost" data-size="icon" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:text-foreground size-11 hover:bg-accent hover:no-underline aria-pressed:bg-accent md:size-8" type="button" aria-label="展开元数据" aria-expanded="false" aria-controls="_R_25fiut5ul4nmiivb_" data-state="closed"><span class="t-acc-chevron" aria-hidden="true"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-chevron-down size-4" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg></span></button></div><div id="_R_25fiut5ul4nmiivb_" aria-hidden="true" class="t-acc-panel"><div class="t-acc-panel-inner min-h-0"><div class="mt-3 border-t guide-line pt-3"><dl class="
+                  grid grid-cols-1 gap-y-2.5 text-xs
+                  md:grid-cols-[auto_minmax(0,1fr)] md:items-baseline md:gap-x-4
+                  md:gap-y-2
+                "><dt class="text-tech-main/55">贡献者：</dt><dd><ul class="flex flex-wrap items-center gap-x-4"><li><a class="
+          group/contributor flex min-h-11 items-center gap-1.5 py-0.5
+          text-xs text-tech-main transition-colors
+          hover:text-tech-main-dark sm:min-h-8
+        " href="https://www.techmc.wiki/zh/authors/tanhHeng"><span data-slot="avatar" class="group/avatar relative flex overflow-hidden rounded-none select-none border guide-line size-5 shrink-0 sm:size-6"><span data-slot="avatar-fallback" class="flex size-full items-center justify-center rounded-none bg-transparent font-mono text-xs font-bold tracking-widest text-tech-main/50 uppercase">t</span></span><span class="underline decoration-tech-main/30 underline-offset-4 group-hover/contributor:decoration-tech-main-dark font-medium text-tech-main-dark">tanhHeng</span></a></li><li><a class="
+          group/contributor flex min-h-11 items-center gap-1.5 py-0.5
+          text-xs text-tech-main transition-colors
+          hover:text-tech-main-dark sm:min-h-8
+        " href="https://www.techmc.wiki/zh/authors/BFladderbeanawa"><span data-slot="avatar" class="group/avatar relative flex overflow-hidden rounded-none select-none border guide-line size-5 shrink-0 sm:size-6"><span data-slot="avatar-fallback" class="flex size-full items-center justify-center rounded-none bg-transparent font-mono text-xs font-bold tracking-widest text-tech-main/50 uppercase">B</span></span><span class="underline decoration-tech-main/30 underline-offset-4 group-hover/contributor:decoration-tech-main-dark">BFladderbeanawa</span></a></li><li><a class="
+          group/contributor flex min-h-11 items-center gap-1.5 py-0.5
+          text-xs text-tech-main transition-colors
+          hover:text-tech-main-dark sm:min-h-8
+        " href="https://www.techmc.wiki/zh/authors/SDU-Little-River"><span data-slot="avatar" class="group/avatar relative flex overflow-hidden rounded-none select-none border guide-line size-5 shrink-0 sm:size-6"><span data-slot="avatar-fallback" class="flex size-full items-center justify-center rounded-none bg-transparent font-mono text-xs font-bold tracking-widest text-tech-main/50 uppercase">S</span></span><span class="underline decoration-tech-main/30 underline-offset-4 group-hover/contributor:decoration-tech-main-dark">SDU-Little-River</span></a></li><li><a class="
+          group/contributor flex min-h-11 items-center gap-1.5 py-0.5
+          text-xs text-tech-main transition-colors
+          hover:text-tech-main-dark sm:min-h-8
+        " href="https://www.techmc.wiki/zh/authors/hotpad100c"><span data-slot="avatar" class="group/avatar relative flex overflow-hidden rounded-none select-none border guide-line size-5 shrink-0 sm:size-6"><span data-slot="avatar-fallback" class="flex size-full items-center justify-center rounded-none bg-transparent font-mono text-xs font-bold tracking-widest text-tech-main/50 uppercase">h</span></span><span class="underline decoration-tech-main/30 underline-offset-4 group-hover/contributor:decoration-tech-main-dark">hotpad100c</span></a></li></ul></dd><dt class="text-tech-main/55">创建时间：</dt><dd class="text-tech-main"><time dateTime="2024-12-14T20:46:48+08:00">2024-12-14</time></dd><dt class="text-tech-main/55">最后编辑：</dt><dd class="text-tech-main"><time dateTime="2026-04-05T22:16:41+08:00">2026-04-05</time></dd><dt class="text-tech-main/55">链接：</dt><dd class="flex min-w-0 items-center gap-2"><code class="
+                      min-w-0 flex-1 truncate border guide-line
+                      bg-tech-accent/10 px-1.5 py-0.5
+                    ">https://www.techmc.wiki/zh/articles/micro-timing/tick-timing</code><button data-slot="tooltip-trigger" data-variant="ghost" data-size="icon" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:text-foreground size-11 hover:bg-accent hover:no-underline aria-pressed:bg-accent md:size-8" type="button" aria-label="复制" aria-busy="false" data-state="closed"><span class="t-icon-swap" data-state="a" aria-hidden="true"><span class="t-icon" data-icon="a"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy size-4" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></span><span class="t-icon" data-icon="b"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check size-4" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span></span><span class="sr-only" aria-live="polite"></span></button></dd><dt class="text-tech-main/55">复用</dt><dd><span class="flex flex-wrap items-center gap-x-3 gap-y-1"><a target="_blank" rel="noopener noreferrer" class="
+          underline decoration-tech-main/30 underline-offset-4
+          transition-colors hover:text-tech-main-dark
+          hover:decoration-tech-main-dark
+        " href="https://creativecommons.org/licenses/by-nc-sa/4.0/">CC BY-NC-SA 4.0</a><button data-slot="tooltip-trigger" data-variant="ghost" data-size="icon" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:text-foreground size-11 hover:bg-accent hover:no-underline aria-pressed:bg-accent md:size-8" type="button" aria-label="复制建议署名" aria-busy="false" data-state="closed"><span class="t-icon-swap" data-state="a" aria-hidden="true"><span class="t-icon" data-icon="a"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy size-4" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></span><span class="t-icon" data-icon="b"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check size-4" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span></span><span class="sr-only" aria-live="polite"></span></button></span></dd></dl></div></div></div></div></div></div><figure class="border-tech-main/40 bg-surface-overlay/60 mb-8 border"><div class="t-skel relative aspect-21/9 w-full overflow-hidden " aria-busy="true"><div class="t-skel-skeleton is-pulsing pointer-events-none" aria-hidden="true"><div class="bg-tech-accent/20 size-full"></div></div><div class="t-skel-content size-full"><img alt="不同时间亮起的灯" decoding="async" data-nimg="fill" class="object-cover" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent" src="/mirror/gtmc/__q/srhhna.jpg"/></div></div><figcaption class="border-tech-main/30 text-tech-main/80 border-t px-3 py-2 text-sm">不同时间亮起的灯</figcaption></figure></header><article lang="zh" class="article-prose min-w-0" data-article-content="true"><h1 id="01-刻与刻间时序" class="display-title group border-tech-main-dark/60 target:animate-target-blink target:border-tech-signal text-tech-main-dark relative mt-8 mb-5 border-b-2 pb-3 text-2xl leading-tight font-semibold text-balance sm:text-3xl lg:text-4xl flex items-start gap-4 "><span class="min-w-0 flex-1">01 刻与刻间时序</span><div class="flex shrink-0 items-center gap-1"><a aria-label="编辑文章" data-slot="tooltip-trigger" data-variant="ghost" data-size="icon" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:text-foreground size-11 hover:bg-accent hover:no-underline aria-pressed:bg-accent md:size-8" data-state="closed" href="https://www.techmc.wiki/zh/draft/new?file=MicroTiming%2F%E5%88%BB%E4%B8%8E%E5%88%BB%E9%97%B4%E6%97%B6%E5%BA%8F.zh"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-pen lucide-edit-2 size-4" aria-hidden="true"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"></path></svg></a><button data-slot="tooltip-trigger" data-variant="ghost" data-size="icon" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground hover:text-foreground size-11 hover:bg-accent hover:no-underline aria-pressed:bg-accent md:size-8" type="button" aria-label="复制为 Markdown" aria-busy="false" data-state="closed"><span class="t-icon-swap" data-state="a" aria-hidden="true"><span class="t-icon" data-icon="a"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-copy size-4" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg></span><span class="t-icon" data-icon="b"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check size-4" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span></span><span class="sr-only" aria-live="polite"></span></button></div></h1>
+<blockquote class="border-tech-main bg-tech-main/5 text-tech-main my-6 border-l-2 p-4 font-sans italic [&amp;_p:last-child]:mb-0" node="[object Object]">
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">我们在前文中已经学习了更新理论了，但是好奇的小 B 决定不止于此。他拿出了创造物品栏的<del>雷石东直放站</del>红石中继器，拉下了拉杆。</p>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">也许是小 B 太过敏感，当他拉下拉杆的时候，他发现红石中继器好像没有立刻亮起，他以为游戏出现了虫，便多尝试了几次。他很快意识到这是个稳定的，可复现的现象。很显然，与前文中我们探讨的大量瞬时现象不同，这里出现了所谓<strong>异步</strong>的现象，他称这种现象为<strong>延迟</strong></p>
+</blockquote>
+<h2 id="1-游戏刻红石刻与延迟" class="display-title group border-tech-main/40 target:animate-target-blink target:border-tech-signal text-tech-main-dark relative mt-10 mb-4 block w-fit max-w-full border-b pr-8 pb-2 text-2xl leading-tight font-semibold text-balance"><button type="button" data-heading-anchor="" aria-label="复制标题链接" aria-busy="false" class="absolute -left-6 top-[0.5lh] size-5 -translate-y-1/2 sm:-left-8 sm:size-6 text-tech-main/50 hover:text-tech-main-dark group-hover:opacity-100 focus-visible:opacity-100 flex cursor-pointer items-center justify-center border-none bg-transparent p-0 opacity-0 no-underline transition-opacity focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-none"><span class="t-icon-swap" data-state="a" aria-hidden="true"><span class="t-icon" data-icon="a"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link-2 size-3.5 sm:size-4" aria-hidden="true"><path d="M9 17H7A5 5 0 0 1 7 7h2"></path><path d="M15 7h2a5 5 0 1 1 0 10h-2"></path><line x1="8" x2="16" y1="12" y2="12"></line></svg></span><span class="t-icon" data-icon="b"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check size-3.5 sm:size-4" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span></span><span class="sr-only" aria-live="polite"></span></button>1 游戏刻，红石刻与延迟</h2>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">在 Minecraft 中有大量的事件需要处理，这些事件被按顺序放在一个大循环里，我们称这个循环为游戏主循环，在不使用 <em>/tick</em> 命令，游戏正常运行的情况下，这个主循环总是以约 <strong>每秒 20 次</strong> 的间隔循环，我们称这个最短间隔为 <strong>GameTick</strong> ，简称 <strong>gt</strong>。由于历史遗留问题，当前部分情况下我们仍采用<strong>红石刻 RedstoneTick</strong>的记号，简称<strong>rt</strong>。其与 gt 有如下换算关系：<span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>1</mn><mi>r</mi><mi>t</mi><mo>=</mo><mn>2</mn><mi>g</mi><mi>t</mi></mrow><annotation encoding="application/x-tex">1rt=2gt</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em"></span><span class="mord">1</span><span class="mord mathnormal" style="margin-right:0.0278em">r</span><span class="mord mathnormal">t</span><span class="mspace" style="margin-right:0.2778em"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2778em"></span></span><span class="base"><span class="strut" style="height:0.8389em;vertical-align:-0.1944em"></span><span class="mord">2</span><span class="mord mathnormal" style="margin-right:0.0359em">g</span><span class="mord mathnormal">t</span></span></span></span>。</p>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">这意味着：</p>
+<ol class="text-tech-main-dark mb-6 list-decimal space-y-1.5 pl-8 font-sans text-base/relaxed [&amp;_p]:mb-2 [&amp;_p:last-child]:mb-0" node="[object Object]">
+<li class="text-tech-main-dark relative" node="[object Object]">1gt = <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mfrac><mn>1</mn><mn>20</mn></mfrac></mrow><annotation encoding="application/x-tex">\frac{1}{20}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.1901em;vertical-align:-0.345em"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8451em"><span style="top:-2.655em"><span class="pstrut" style="height:3em"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">20</span></span></span></span><span style="top:-3.23em"><span class="pstrut" style="height:3em"></span><span class="frac-line" style="border-bottom-width:0.04em"></span></span><span style="top:-3.394em"><span class="pstrut" style="height:3em"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">1</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.345em"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span>秒 = <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mn>0.05</mn></mrow><annotation encoding="application/x-tex">0.05</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.6444em"></span><span class="mord">0.05</span></span></span></span>秒</li>
+<li class="text-tech-main-dark relative" node="[object Object]">即使 Minecraft 算力充足，在不到 0.05 秒内计算完了游戏在本 gt 需要计算的全部内容，也会停止计算直到下一 gt 到来。</li>
+</ol>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">因此，玩家定义了两个指标以衡量游戏是否卡顿，分别是 <strong>TPS</strong> 和 <strong>mspt</strong>。TPS 全称 Tick Per Second 指的是每秒钟游戏执行了多少游戏刻。通常而言，这个数值是 20，但当游戏卡顿时，其将会低于 20。而 mspt，全称 Millisecond Per Tick，指的是当前游戏执行每一刻所需要花费的毫秒数，数值越低则游戏卡顿越低。</p>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">值得注意的是，mspt 总是与 TPS 保持着如下关系：</p>
+<ul class="border-tech-main/30 text-tech-main-dark mb-6 list-disc space-y-1.5 border-l pl-8 font-sans text-base/relaxed [&amp;_p]:mb-2 [&amp;_p:last-child]:mb-0" node="[object Object]">
+<li class="text-tech-main-dark relative" node="[object Object]">当 mspt 低于 50 时，TPS 为 20</li>
+<li class="text-tech-main-dark relative" node="[object Object]">当 mspt 大于 50 时，TPS = <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mfrac><mn>1000</mn><mrow><mi>m</mi><mi>s</mi><mi>p</mi><mi>t</mi></mrow></mfrac></mrow><annotation encoding="application/x-tex">\frac{1000}{mspt}</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1.3262em;vertical-align:-0.4811em"></span><span class="mord"><span class="mopen nulldelimiter"></span><span class="mfrac"><span class="vlist-t vlist-t2"><span class="vlist-r"><span class="vlist" style="height:0.8451em"><span style="top:-2.655em"><span class="pstrut" style="height:3em"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mathnormal mtight">m</span><span class="mord mathnormal mtight">s</span><span class="mord mathnormal mtight">pt</span></span></span></span><span style="top:-3.23em"><span class="pstrut" style="height:3em"></span><span class="frac-line" style="border-bottom-width:0.04em"></span></span><span style="top:-3.394em"><span class="pstrut" style="height:3em"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">1000</span></span></span></span></span><span class="vlist-s">​</span></span><span class="vlist-r"><span class="vlist" style="height:0.4811em"><span></span></span></span></span></span><span class="mclose nulldelimiter"></span></span></span></span></span></li>
+</ul>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">在游戏中，绝大部分红石元件的响应是有<strong>延迟</strong>的。元件的<strong>宏观</strong>延迟我们在此处将其单位定义为<strong>gt</strong>，部分元件的延迟如下：</p>
+<ul class="border-tech-main/30 text-tech-main-dark mb-6 list-disc space-y-1.5 border-l pl-8 font-sans text-base/relaxed [&amp;_p]:mb-2 [&amp;_p:last-child]:mb-0" node="[object Object]">
+<li class="text-tech-main-dark relative" node="[object Object]">中继器：2-8gt</li>
+<li class="text-tech-main-dark relative" node="[object Object]">比较器：2gt</li>
+<li class="text-tech-main-dark relative" node="[object Object]">侦测器：2gt</li>
+<li class="text-tech-main-dark relative" node="[object Object]">...</li>
+</ul>
+<h2 id="2-中继器比较器初步" class="display-title group border-tech-main/40 target:animate-target-blink target:border-tech-signal text-tech-main-dark relative mt-10 mb-4 block w-fit max-w-full border-b pr-8 pb-2 text-2xl leading-tight font-semibold text-balance"><button type="button" data-heading-anchor="" aria-label="复制标题链接" aria-busy="false" class="absolute -left-6 top-[0.5lh] size-5 -translate-y-1/2 sm:-left-8 sm:size-6 text-tech-main/50 hover:text-tech-main-dark group-hover:opacity-100 focus-visible:opacity-100 flex cursor-pointer items-center justify-center border-none bg-transparent p-0 opacity-0 no-underline transition-opacity focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-none"><span class="t-icon-swap" data-state="a" aria-hidden="true"><span class="t-icon" data-icon="a"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link-2 size-3.5 sm:size-4" aria-hidden="true"><path d="M9 17H7A5 5 0 0 1 7 7h2"></path><path d="M15 7h2a5 5 0 1 1 0 10h-2"></path><line x1="8" x2="16" y1="12" y2="12"></line></svg></span><span class="t-icon" data-icon="b"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check size-3.5 sm:size-4" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span></span><span class="sr-only" aria-live="polite"></span></button>2 中继器，比较器初步</h2>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">中继器和比较器具有宏观延迟。中继器的延迟和其设定档位有关，而比较器的延迟总是 2gt。</p>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">中继器的基本作用是增强信号。即将任何强度不为 0 的红石信号在延迟指定游戏刻后变为强度为 15 的信号。</p>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">当中继器侧面被中继器或比较器直接贴脸输入时，则会进入 “锁存” 状态，此时，其输入端的任何改变均不影响其亮起或熄灭状态，直到其侧面输入结束，等待延迟对应 gt 后，若状态需要更改，则更改其状态。</p>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">比较器总共有 3 个输入端，分别为前面和两个侧面输入。当侧面无任何输入时，其总是会直接输出等同于前面输入的信号强度的信号。当其侧面存在输入时，比较器的行为取决于其模式。比较器有两种模式，分别为：</p>
+<ul class="border-tech-main/30 text-tech-main-dark mb-6 list-disc space-y-1.5 border-l pl-8 font-sans text-base/relaxed [&amp;_p]:mb-2 [&amp;_p:last-child]:mb-0" node="[object Object]">
+<li class="text-tech-main-dark relative" node="[object Object]">比较模式</li>
+<li class="text-tech-main-dark relative" node="[object Object]">减法模式</li>
+</ul>
+<div class="my-10 flex items-center justify-center gap-3" aria-hidden="true"><span class="bg-tech-main/25 h-px w-16"></span><span class="text-tech-main/45 rotate-45"><span class="border-tech-main/45 block size-1.5 border"></span></span><span class="bg-tech-main/25 h-px w-16"></span></div>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">其默认为<strong>比较模式</strong>。当比较器处于<strong>比较模式</strong>时，其总是遵循如下逻辑进行输出：</p>
+<blockquote class="border-tech-main bg-tech-main/5 text-tech-main my-6 border-l-2 p-4 font-sans italic [&amp;_p:last-child]:mb-0" node="[object Object]">
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">取左侧输入和右侧输入的最大值，若其最大值大于其前端输入，则不进行任何输出，否则输出其前端输入。</p>
+</blockquote>
+<div class="my-10 flex items-center justify-center gap-3" aria-hidden="true"><span class="bg-tech-main/25 h-px w-16"></span><span class="text-tech-main/45 rotate-45"><span class="border-tech-main/45 block size-1.5 border"></span></span><span class="bg-tech-main/25 h-px w-16"></span></div>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">当比较器处于<strong>减法模式</strong>时，其总是遵循如下逻辑进行输出：</p>
+<blockquote class="border-tech-main bg-tech-main/5 text-tech-main my-6 border-l-2 p-4 font-sans italic [&amp;_p:last-child]:mb-0" node="[object Object]">
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">取左侧输入和右侧输入的最大值，若其最大值大于其前端输入，则不进行任何输出，否则输出其 (前端输入 - 侧面输入的最大值)。</p>
+</blockquote>
+<div class="my-10 flex items-center justify-center gap-3" aria-hidden="true"><span class="bg-tech-main/25 h-px w-16"></span><span class="text-tech-main/45 rotate-45"><span class="border-tech-main/45 block size-1.5 border"></span></span><span class="bg-tech-main/25 h-px w-16"></span></div>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">比较器与容器的互动在此处不做讨论。</p>
+<h2 id="3-充能理论" class="display-title group border-tech-main/40 target:animate-target-blink target:border-tech-signal text-tech-main-dark relative mt-10 mb-4 block w-fit max-w-full border-b pr-8 pb-2 text-2xl leading-tight font-semibold text-balance"><button type="button" data-heading-anchor="" aria-label="复制标题链接" aria-busy="false" class="absolute -left-6 top-[0.5lh] size-5 -translate-y-1/2 sm:-left-8 sm:size-6 text-tech-main/50 hover:text-tech-main-dark group-hover:opacity-100 focus-visible:opacity-100 flex cursor-pointer items-center justify-center border-none bg-transparent p-0 opacity-0 no-underline transition-opacity focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-none"><span class="t-icon-swap" data-state="a" aria-hidden="true"><span class="t-icon" data-icon="a"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link-2 size-3.5 sm:size-4" aria-hidden="true"><path d="M9 17H7A5 5 0 0 1 7 7h2"></path><path d="M15 7h2a5 5 0 1 1 0 10h-2"></path><line x1="8" x2="16" y1="12" y2="12"></line></svg></span><span class="t-icon" data-icon="b"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check size-3.5 sm:size-4" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span></span><span class="sr-only" aria-live="polite"></span></button>3 充能理论</h2>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">我们建立充能理论以解释一种发生在中继器与比较器等元件的现象，其重要特征为隔着方块充能红石粉或其它中继器/比较器。</p>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">我们定义对于任意<strong>可充能</strong>方块，其有两种充能状态：<strong>强充能</strong> 和 <strong>弱充能</strong>。</p>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">当可充能方块被强充能时，其标志性特征为可以激活其周围 6 个方向的红石粉，无论其指向。而弱充能时仅能激活输入端对着可充能方块的中继器，比较器和部分其他红石元件。这也被作为辨别两种充能的重要办法。</p>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">以下方法可以使得方块被强充能：</p>
+<ul class="border-tech-main/30 text-tech-main-dark mb-6 list-disc space-y-1.5 border-l pl-8 font-sans text-base/relaxed [&amp;_p]:mb-2 [&amp;_p:last-child]:mb-0" node="[object Object]">
+<li class="text-tech-main-dark relative" node="[object Object]">中继器，比较器，红石火把，侦测器直接对着可充能方块发出信号。</li>
+</ul>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">以下方法可以使得方块被弱充能：</p>
+<ul class="border-tech-main/30 text-tech-main-dark mb-6 list-disc space-y-1.5 border-l pl-8 font-sans text-base/relaxed [&amp;_p]:mb-2 [&amp;_p:last-child]:mb-0" node="[object Object]">
+<li class="text-tech-main-dark relative" node="[object Object]">可充能方块被信号强度不为 0 的红石粉指向。</li>
+</ul>
+<div data-state="loading" class="t-skel article-image-skel relative my-8 aspect-video max-w-full "><div class="t-skel-skeleton border-tech-main/30 bg-tech-main/5 pointer-events-none absolute inset-0 z-10 flex flex-col border p-1 shadow-sm is-pulsing" aria-hidden="true"><div class="bg-tech-accent/10 relative flex size-full flex-1 items-center justify-center overflow-hidden"><div aria-hidden="true" class="pointer-events-none absolute inset-0"><div class="top-0 left-0 -translate-px border-t-2 border-l-2 absolute size-2 border-tech-main/30 pointer-events-none "></div><div class="top-0 right-0 translate-x-px -translate-y-px border-t-2 border-r-2 absolute size-2 border-tech-main/30 pointer-events-none "></div><div class="bottom-0 left-0 -translate-x-px translate-y-px border-b-2 border-l-2 absolute size-2 border-tech-main/30 pointer-events-none "></div><div class="right-0 bottom-0 translate-px border-r-2 border-b-2 absolute size-2 border-tech-main/30 pointer-events-none "></div></div><span class="text-tech-main/40 relative z-10 text-[0.5625rem] tracking-widest uppercase select-none">// IMG_LOAD</span></div></div><div class="t-skel-content"><img alt="强充能和弱充能" loading="lazy" decoding="async" data-nimg="fill" class="border-tech-main/30 bg-tech-main/5 border object-contain p-1 shadow-sm" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent" src="/mirror/gtmc/__q/kghf7x.png"/></div></div>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">在 MC 中，可充能方块是大多数，因此我们在此以不可充能方块的显著特征——不压线，来区分两种方块。压线指的是一种现象，绝大多数方块在会切断上下连接的红石粉，我们称这种现象为压线。但部分方块，如玻璃，台阶，半砖，箱子等并不具备此现象，这也意味着他们是不可充能方块。我们在这里定义活塞/粘性活塞也为不可充能方块。</p>
+<h2 id="4-刻间时序" class="display-title group border-tech-main/40 target:animate-target-blink target:border-tech-signal text-tech-main-dark relative mt-10 mb-4 block w-fit max-w-full border-b pr-8 pb-2 text-2xl leading-tight font-semibold text-balance"><button type="button" data-heading-anchor="" aria-label="复制标题链接" aria-busy="false" class="absolute -left-6 top-[0.5lh] size-5 -translate-y-1/2 sm:-left-8 sm:size-6 text-tech-main/50 hover:text-tech-main-dark group-hover:opacity-100 focus-visible:opacity-100 flex cursor-pointer items-center justify-center border-none bg-transparent p-0 opacity-0 no-underline transition-opacity focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-none"><span class="t-icon-swap" data-state="a" aria-hidden="true"><span class="t-icon" data-icon="a"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-link-2 size-3.5 sm:size-4" aria-hidden="true"><path d="M9 17H7A5 5 0 0 1 7 7h2"></path><path d="M15 7h2a5 5 0 1 1 0 10h-2"></path><line x1="8" x2="16" y1="12" y2="12"></line></svg></span><span class="t-icon" data-icon="b"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check size-3.5 sm:size-4" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg></span></span><span class="sr-only" aria-live="polite"></span></button>4 刻间时序</h2>
+<blockquote class="border-tech-main bg-tech-main/5 text-tech-main my-6 border-l-2 p-4 font-sans italic [&amp;_p:last-child]:mb-0" node="[object Object]">
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">此部分重点用于讲解基础时序分析。</p>
+</blockquote>
+<div data-state="loading" class="t-skel article-image-skel relative my-8 aspect-video max-w-full "><div class="t-skel-skeleton border-tech-main/30 bg-tech-main/5 pointer-events-none absolute inset-0 z-10 flex flex-col border p-1 shadow-sm is-pulsing" aria-hidden="true"><div class="bg-tech-accent/10 relative flex size-full flex-1 items-center justify-center overflow-hidden"><div aria-hidden="true" class="pointer-events-none absolute inset-0"><div class="top-0 left-0 -translate-px border-t-2 border-l-2 absolute size-2 border-tech-main/30 pointer-events-none "></div><div class="top-0 right-0 translate-x-px -translate-y-px border-t-2 border-r-2 absolute size-2 border-tech-main/30 pointer-events-none "></div><div class="bottom-0 left-0 -translate-x-px translate-y-px border-b-2 border-l-2 absolute size-2 border-tech-main/30 pointer-events-none "></div><div class="right-0 bottom-0 translate-px border-r-2 border-b-2 absolute size-2 border-tech-main/30 pointer-events-none "></div></div><span class="text-tech-main/40 relative z-10 text-[0.5625rem] tracking-widest uppercase select-none">// IMG_LOAD</span></div></div><div class="t-skel-content"><img alt="基础时序" loading="lazy" decoding="async" data-nimg="fill" class="border-tech-main/30 bg-tech-main/5 border object-contain p-1 shadow-sm" style="position:absolute;height:100%;width:100%;left:0;top:0;right:0;bottom:0;color:transparent" src="/mirror/gtmc/__q/1wotgy.png"/></div></div>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">在这里我们给出一个例子来使用 gt 的概念来分析最简单的时序。</p>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">如图所示，当拉下拉杆时，右侧中继器会在延迟 8gt 后被激活，接下来强充能方块，此时处于减法模式的比较器侧面的红石信号强度为 14，而正面输入的信号强度为 15，15-14=1&gt;0，在延迟 2gt 后激活红石灯，共延迟 10gt。</p>
+<p class="text-tech-main-dark mb-4 font-sans text-base/relaxed">左侧的比较器处于比较模式，其正面和侧面的信号强度都是 14，两侧强度相等，延迟 2gt 后输出信号强度为 14 的红石信号，强充能了面前的方块，随后中继器在延迟 6gt 后激活红石灯，共计延迟 8gt。</p></article><div class="mt-14 flex items-center justify-center gap-4" aria-hidden="true"><span class="bg-tech-main/20 h-px w-20"></span><span class="flex items-center gap-1.5"><span class="bg-tech-main/40 size-1 rotate-45"></span><span class="bg-tech-signal size-1.5 rotate-45"></span><span class="bg-tech-main/40 size-1 rotate-45"></span></span><span class="bg-tech-main/20 h-px w-20"></span></div><nav aria-label="上一篇, 下一篇" class="relative mt-14 border-t border-tech-main/25 pt-6"><span aria-hidden="true" class="bg-tech-signal absolute -top-px left-0 h-0.5 w-28"></span><div class="grid grid-cols-1 gap-3 md:grid-cols-2 md:gap-4"><a href="/mirror/gtmc/zh/articles/block-update/continuous-updates/" class="
+        group relative flex min-h-24 w-full flex-col justify-between
+        overflow-hidden border border-tech-main/30 bg-surface/55 p-4
+        transition-colors
+        hover:border-tech-main/60 hover:bg-tech-main/5
+        focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 focus:outline-none
+        
+        
+      "><span aria-hidden="true" class="
+          pointer-events-none absolute top-0 h-px w-20 bg-tech-main/30
+          transition-colors group-hover:bg-tech-main/60
+          left-4
+        "></span><div aria-hidden="true" class="pointer-events-none absolute inset-0"><div class="top-0 left-0 -translate-px border-t-2 border-l-2 absolute size-2 border-tech-main/35 pointer-events-none opacity-0 transition-opacity group-hover:opacity-100"></div><div class="top-0 right-0 translate-x-px -translate-y-px border-t-2 border-r-2 absolute size-2 border-tech-main/35 pointer-events-none opacity-0 transition-opacity group-hover:opacity-100"></div><div class="bottom-0 left-0 -translate-x-px translate-y-px border-b-2 border-l-2 absolute size-2 border-tech-main/35 pointer-events-none opacity-0 transition-opacity group-hover:opacity-100"></div><div class="right-0 bottom-0 translate-px border-r-2 border-b-2 absolute size-2 border-tech-main/35 pointer-events-none opacity-0 transition-opacity group-hover:opacity-100"></div></div><div class="
+          flex flex-wrap items-center gap-x-2 gap-y-1 font-mono
+          text-xs tracking-[0.16em] text-tech-main/60 uppercase
+          
+        "><span>上一篇</span><span class="border border-tech-main/25 px-1.5 py-0.5 text-tech-main/45">方块更新</span></div><div class="
+          mt-4 flex items-end gap-3
+          
+        "><span aria-hidden="true" class="
+            flex size-6 shrink-0 items-center justify-center border
+            border-tech-main/30 bg-tech-bg/60 leading-none text-tech-main
+            transition-colors
+            group-hover:border-tech-main/60 group-hover:bg-tech-main/10
+          "><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-left size-3.5" aria-hidden="true"><path d="m12 19-7-7 7-7"></path><path d="M19 12H5"></path></svg></span><span class="line-clamp-2 text-sm font-medium text-tech-main-dark sm:text-base">连续的方块更新及其分析方法</span></div></a><a href="/mirror/gtmc/zh/articles/micro-timing/intra-tick-timing/" class="
+        group relative flex min-h-24 w-full flex-col justify-between
+        overflow-hidden border border-tech-main/30 bg-surface/55 p-4
+        transition-colors
+        hover:border-tech-main/60 hover:bg-tech-main/5
+        focus-visible:outline-tech-main focus-visible:outline-2
+        focus-visible:outline-offset-2 focus:outline-none
+        md:items-end md:text-right
+        
+      "><span aria-hidden="true" class="
+          pointer-events-none absolute top-0 h-px w-20 bg-tech-main/30
+          transition-colors group-hover:bg-tech-main/60
+          right-4
+        "></span><div aria-hidden="true" class="pointer-events-none absolute inset-0"><div class="top-0 left-0 -translate-px border-t-2 border-l-2 absolute size-2 border-tech-main/35 pointer-events-none opacity-0 transition-opacity group-hover:opacity-100"></div><div class="top-0 right-0 translate-x-px -translate-y-px border-t-2 border-r-2 absolute size-2 border-tech-main/35 pointer-events-none opacity-0 transition-opacity group-hover:opacity-100"></div><div class="bottom-0 left-0 -translate-x-px translate-y-px border-b-2 border-l-2 absolute size-2 border-tech-main/35 pointer-events-none opacity-0 transition-opacity group-hover:opacity-100"></div><div class="right-0 bottom-0 translate-px border-r-2 border-b-2 absolute size-2 border-tech-main/35 pointer-events-none opacity-0 transition-opacity group-hover:opacity-100"></div></div><div class="
+          flex flex-wrap items-center gap-x-2 gap-y-1 font-mono
+          text-xs tracking-[0.16em] text-tech-main/60 uppercase
+          md:justify-end
+        "><span>下一篇</span></div><div class="
+          mt-4 flex items-end gap-3
+          md:flex-row-reverse
+        "><span aria-hidden="true" class="
+            flex size-6 shrink-0 items-center justify-center border
+            border-tech-main/30 bg-tech-bg/60 leading-none text-tech-main
+            transition-colors
+            group-hover:border-tech-main/60 group-hover:bg-tech-main/10
+          "><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right size-3.5" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></span><span class="line-clamp-2 text-sm font-medium text-tech-main-dark sm:text-base">初窥刻内时序</span></div></a></div></nav><!--$?--><template id="B:3"></template><!--/$--></div><!--$--><!--/$--><!--/&--><!--/$--><!--/&--></main><div class="hidden xl:col-start-11 xl:col-span-2 xl:block xl:justify-self-stretch xl:self-stretch"><div class="hidden h-full w-full min-w-0 shrink-0 xl:block" aria-hidden="true"></div></div></div><!--/$--><!--/&--></div></main></div></div><!--/&--><footer aria-label="Site information" class="border-tech-main-dark bg-tech-bg relative mt-auto w-full border-t-2 before:pointer-events-none before:absolute before:inset-0 before:z-[-1] before:bg-[radial-gradient(var(--color-tech-line)_1px,transparent_1px)] before:bg-[length:24px_24px] before:opacity-[0.04]"><div class="relative mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"><div class="grid gap-10 py-8 md:grid-cols-12 md:gap-8"><div class="md:col-span-7"><a class="group inline-flex items-center gap-2 transition-opacity hover:opacity-80 text-2xl  " href="https://www.techmc.wiki/zh"><span aria-hidden="true" style="--gtmc-mark-light:url(&quot;/mirror/gtmc/_next/static/immutable/media/logo-mark-light.0t81063fjzbiq.svg&quot;);--gtmc-mark-dark:url(&quot;/mirror/gtmc/_next/static/immutable/media/logo-mark-dark.0qlz95m86fadz.svg&quot;);background-size:contain;background-repeat:no-repeat;background-position:center" class="gtmc-logo-mark-bg shrink-0 size-7"></span><span class="display-title text-tech-main-dark tracking-tight">GTMC</span></a><p class="display-title text-tech-main-dark mt-6 text-2xl md:text-4xl">Graduate Texts in Minecraft</p><p class="text-tech-main mt-3 max-w-md text-sm/relaxed">求知于方寸之间。</p><p class="mt-4"><a class="footer-link text-tech-main-dark inline-flex items-center gap-1 text-sm font-medium" href="/mirror/gtmc/zh/articles/preface/">前言<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-arrow-right size-4" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg></a></p></div><div class="guide-line md:col-span-5 md:border-l md:pl-8"><dl aria-label="成书统计"><div class="border-tech-main/10 flex items-baseline justify-between gap-4 border-b py-2"><dt class="text-tech-main/50 text-xs tracking-[0.12em] uppercase">文章</dt><dd class="text-tech-main-dark font-mono text-sm wrap-break-word tabular-nums">25</dd></div><div class="border-tech-main/10 flex items-baseline justify-between gap-4 border-b py-2"><dt class="text-tech-main/50 text-xs tracking-[0.12em] uppercase">作者</dt><dd class="text-tech-main-dark font-mono text-sm wrap-break-word tabular-nums">12</dd></div><div class="border-tech-main/10 flex items-baseline justify-between gap-4 border-b py-2"><dt class="text-tech-main/50 text-xs tracking-[0.12em] uppercase">最近修订</dt><dd class="text-tech-main-dark font-mono text-sm wrap-break-word tabular-nums">2026年8月</dd></div></dl></div></div><div data-orientation="horizontal" role="none" data-slot="separator" class="shrink-0 data-[orientation=horizontal]:h-px data-[orientation=horizontal]:w-full data-[orientation=vertical]:h-full data-[orientation=vertical]:w-px bg-tech-main/15"></div><div class="grid grid-cols-2 gap-x-6 gap-y-10 py-12 sm:grid-cols-3"><nav aria-label="社区"><h3 class="section-label">社区</h3><ul class="mt-3 flex flex-col gap-2"><li><a class="footer-link text-tech-main text-sm" href="https://www.techmc.wiki/zh/about">关于</a></li><li><a class="footer-link text-tech-main text-sm" href="https://www.techmc.wiki/zh/authors">贡献者</a></li><li><a href="https://github.com/techmc-wiki" target="_blank" rel="noopener noreferrer" class="footer-link text-tech-main text-sm">团队</a></li><li><a href="https://qm.qq.com/q/IIaL1EnBuY" target="_blank" rel="noopener noreferrer" class="footer-link text-tech-main text-sm">QQ 群</a></li></ul></nav><nav aria-label="参与"><h3 class="section-label">参与</h3><ul class="mt-3 flex flex-col gap-2"><li><a class="footer-link text-tech-main text-sm" href="https://www.techmc.wiki/zh/draft">参与贡献</a></li><li><a class="footer-link text-tech-main text-sm" href="https://www.techmc.wiki/zh/editorial-policy">编辑政策</a></li><li><a href="https://github.com/techmc-wiki/gtmc/issues" target="_blank" rel="noopener noreferrer" class="footer-link text-tech-main text-sm">议题</a></li></ul></nav><nav aria-label="源码"><h3 class="section-label">源码</h3><ul class="mt-3 flex flex-col gap-2"><li><a href="https://github.com/techmc-wiki/gtmc" target="_blank" rel="noopener noreferrer" class="footer-link text-tech-main text-sm">代码仓库</a></li><li><a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank" rel="noopener noreferrer" class="footer-link text-tech-main text-sm">CC BY-NC-SA 4.0</a></li><li><a href="https://github.com/techmc-wiki/gtmc/blob/main/LICENSE" target="_blank" rel="noopener noreferrer" class="footer-link text-tech-main text-sm">Apache-2.0</a></li></ul></nav></div><div class="mt-14 flex items-center justify-center gap-4" aria-hidden="true"><span class="bg-tech-main/20 h-px w-20"></span><span class="flex items-center gap-1.5"><span class="bg-tech-main/40 size-1 rotate-45"></span><span class="bg-tech-signal size-1.5 rotate-45"></span><span class="bg-tech-main/40 size-1 rotate-45"></span></span><span class="bg-tech-main/20 h-px w-20"></span></div><div class="flex flex-col gap-6 pt-10 pb-12 md:flex-row md:items-end md:justify-between"><div class="max-w-2xl space-y-2"><p class="text-tech-main/70 text-xs/relaxed">本站为非官方 Minecraft 产品，与 Mojang Studios 无任何关联。</p><p class="text-tech-main/55 text-xs/relaxed">贡献者保留各自作品的版权。文章内容以 CC BY-NC-SA 4.0 协议发布，署名信息保存在文章元数据与源代码历史记录中。</p></div><div class="flex flex-col items-start gap-3 md:items-end"><p class="text-tech-main/70 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs"><span>© 2024–2026 GTMC Collective</span><span class="text-tech-main/40 font-mono">d6e3449</span></p><!--$--><button data-slot="dropdown-menu-trigger" data-variant="ghost" data-size="icon-sm" class="inline-flex font-sans shrink-0 items-center justify-center gap-2 whitespace-nowrap text-sm font-medium transition-colors rounded-none outline-none focus-visible:outline-tech-main focus-visible:outline-2 focus-visible:outline-offset-2 border disabled:pointer-events-none disabled:opacity-50 [&amp;_svg]:pointer-events-none [&amp;_svg]:shrink-0 [&amp;_svg:not([class*=&#x27;size-&#x27;])]:size-4 bg-transparent border-transparent text-muted-foreground size-8 hover:bg-tech-main/10 hover:text-tech-main-dark hover:no-underline md:size-10" type="button" aria-label="切换语言" title="切换语言" id="radix-_R_5aqiivb_" aria-haspopup="menu" aria-expanded="false" data-state="closed"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-globe size-4" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"></path><path d="M2 12h20"></path></svg></button><!--/$--></div></div></div><div aria-hidden="true" class="bg-tech-bg relative w-full overflow-hidden select-none"><div class="@container mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8"><div class="relative h-[28cqi] max-h-85 min-h-47.5 w-full"><p class="display-title text-tech-main/15 pointer-events-none absolute inset-0 flex translate-y-[7%] items-center justify-center text-center text-[31cqi] leading-[0.78] tracking-[-0.03em] whitespace-nowrap select-none">GTMC</p><div class="h-full w-full" style="position:relative"><canvas style="position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none"></canvas></div></div></div></div></footer></div></div><!--/&--></body></html><footer class="blog-mirror-credit"><p class="blog-mirror-langs"><a href="/mirror/gtmc/zh/articles/preface/">中文目录</a> · <a href="/mirror/gtmc/en/articles/preface/">English</a></p><p>本页是 <a href="https://www.techmc.wiki/">GTMC（Graduate Texts in Technical Minecraft）</a> 的镜像快照。原文：<a href="https://www.techmc.wiki/zh/articles/micro-timing">https://www.techmc.wiki/zh/articles/micro-timing</a></p><p>内容依 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hans">CC BY-NC-SA 4.0</a> 授权，版权归原作者所有。镜像去掉了站点脚本（搜索、编辑、切换语言等功能不可用）并修改了样式，内容未改动。</p></footer><link rel="stylesheet" href="/mirror/gtmc/__blog-theme.css" data-blog-mirror><script src="/mirror/gtmc/__blog-bridge.js" data-blog-mirror></script>
+</body></html>
