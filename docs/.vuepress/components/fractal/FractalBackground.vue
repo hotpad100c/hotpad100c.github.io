@@ -27,6 +27,7 @@ import type { Frame, View } from './renderer'
 import { FractalRenderer, frameOf, zoomToScale } from './renderer'
 import { ease, lerpFrame, settle } from './transition'
 import { changed, initTune, renderSettings, tune, tunePage } from './tuneStore'
+import { closeEgg, egg, nudgeC, randomize, zoomBy } from './egg'
 
 const route = useRoute()
 // 全站有哪些文章：用来给每篇文章分配一个不重复的 Julia 集
@@ -35,7 +36,7 @@ setArticles(Object.keys(routes.value))
 const frontmatter = usePageFrontmatter<{ fractal?: string }>()
 const pageKey = computed(() => fractalKeyFor(route.path, frontmatter.value.fractal))
 /** 调节器打开时，用调节器里改过的参数 */
-const page = computed(() => (tune.active && tune.pages[pageKey.value]) || pageFor(pageKey.value))
+const page = computed(() => (egg.active && egg.page) || (tune.active && tune.pages[pageKey.value]) || pageFor(pageKey.value))
 
 const canvas = ref<HTMLCanvasElement>()
 const theme = ref<'dark' | 'light'>('dark')
@@ -155,7 +156,7 @@ function draw() {
   try {
     // 停下后的画面是确定的（目标页的参数 + 滚动停下的位置）：换页过渡中在屏幕外先把它画好。
     // 同页滚动时不分算力给它，滚动中的画面保持尽量清晰
-    const keyAt = (scroll: number) => `${pageKey.value}|${theme.value}|${tune.version}|${Math.round(scroll)}|${v.w}x${v.h}`
+    const keyAt = (scroll: number) => `${egg.active ? `egg:${egg.name}:${egg.version}` : pageKey.value}|${theme.value}|${tune.version}|${Math.round(scroll)}|${v.w}x${v.h}`
     const pre = trans && current ? { key: keyAt(target), f: current, v: { ...v, scroll: target } } : undefined
     renderer.cfg = renderSettings()
     more = renderer.draw(f, v, { moving, reset: dirty || ended, budget, blend: renderSettings().motionBlur > 0 ? 1 - Math.exp(-Math.max(dt, 1 / 240) / renderSettings().motionBlur) : 1, key: keyAt(shownScroll), soft: !!trans, pre })
@@ -218,6 +219,7 @@ function runProfile(): string {
 }
 
 function pageName() {
+  if (egg.active) return `彩蛋（${egg.name}）`
   const preset = presetName(pageKey.value)
   return preset ? `${pageKey.value}（${preset}）` : pageKey.value
 }
@@ -316,6 +318,100 @@ watch(() => tune.version, () => {
   request()
 })
 
+// 首页彩蛋（egg.ts）：拖动 / 缩放时原地改了参数，立刻用新参数重画（不做过渡）
+watch(() => egg.version, () => {
+  if (!renderer || !egg.active) return
+  current = frameOf(page.value, theme.value)
+  if (trans) trans.to = current
+  dirty = true
+  nudged = true
+  request()
+})
+// 彩蛋中换页（比如浏览器后退）：先关掉彩蛋
+watch(() => route.path, () => closeEgg())
+watch(() => egg.active, (on) => {
+  if (on) {
+    window.addEventListener('keydown', onEggKey)
+    window.addEventListener('devicemotion', onShake)
+  }
+  else {
+    window.removeEventListener('keydown', onEggKey)
+    window.removeEventListener('devicemotion', onShake)
+    eggPointers.clear()
+  }
+})
+function onEggKey(e: KeyboardEvent) {
+  if (e.key === 'Escape') closeEgg()
+  else if (e.key === 'r' || e.key === 'R') randomize()
+}
+/** 摇一摇：加速度（去掉重力）超过阈值就换一个，1 秒内只换一次 */
+let lastShake = 0
+let lastG: [number, number, number] | null = null
+function onShake(e: DeviceMotionEvent) {
+  let mag = 0
+  const a = e.acceleration
+  if (a && a.x !== null) {
+    mag = Math.hypot(a.x ?? 0, a.y ?? 0, a.z ?? 0)
+  }
+  else {
+    const g = e.accelerationIncludingGravity
+    if (!g || g.x === null) return
+    const cur: [number, number, number] = [g.x ?? 0, g.y ?? 0, g.z ?? 0]
+    if (lastG) mag = Math.hypot(cur[0] - lastG[0], cur[1] - lastG[1], cur[2] - lastG[2])
+    lastG = cur
+  }
+  const now = performance.now()
+  if (mag > 14 && now - lastShake > 1000) {
+    lastShake = now
+    randomize()
+  }
+}
+/** 彩蛋里的拖动（单指 / 鼠标）改变 C，双指捏合缩放 */
+const eggPointers = new Map<number, { x: number, y: number }>()
+let pinchDist = 0
+/** 在画面上快速点两下（同一处附近、350ms 内）：退出彩蛋 */
+let lastTap = { t: 0, x: 0, y: 0 }
+function onEggDown(e: PointerEvent) {
+  const now = performance.now()
+  if (eggPointers.size === 0) {
+    if (now - lastTap.t < 350 && Math.hypot(e.clientX - lastTap.x, e.clientY - lastTap.y) < 30) {
+      lastTap.t = 0
+      closeEgg()
+      return
+    }
+    lastTap = { t: now, x: e.clientX, y: e.clientY }
+  }
+  eggPointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  (e.target as HTMLElement).setPointerCapture(e.pointerId)
+  if (eggPointers.size === 2) {
+    const [a, b] = [...eggPointers.values()]
+    pinchDist = Math.hypot(a.x - b.x, a.y - b.y)
+  }
+}
+function onEggMove(e: PointerEvent) {
+  const prev = eggPointers.get(e.pointerId)
+  if (!prev) return
+  const cur = { x: e.clientX, y: e.clientY }
+  eggPointers.set(e.pointerId, cur)
+  const m = Math.min(window.innerWidth, window.innerHeight)
+  if (eggPointers.size === 1) {
+    nudgeC((cur.x - prev.x) / m, (cur.y - prev.y) / m)
+  }
+  else if (eggPointers.size === 2) {
+    const [a, b] = [...eggPointers.values()]
+    const d = Math.hypot(a.x - b.x, a.y - b.y)
+    if (pinchDist > 0 && d > 0) zoomBy(Math.log2(d / pinchDist))
+    pinchDist = d
+  }
+}
+function onEggUp(e: PointerEvent) {
+  eggPointers.delete(e.pointerId)
+  pinchDist = 0
+}
+function onEggWheel(e: WheelEvent) {
+  zoomBy(-e.deltaY * 0.0015)
+}
+
 // 「拖动背景」：拖动平移、滚轮缩放（以鼠标为中心），与 Julia 分形编辑器的手感一致
 let dragFrom: { x: number, y: number } | null = null
 /** 屏幕上的位移（CSS px，y 向下）→ 分形坐标里的位移 */
@@ -361,6 +457,15 @@ function onWheel(e: WheelEvent) {
   </div>
   <!-- 调试信息单独放：放进调节器会让它每帧重新渲染，正在输入的数字会被改回去 -->
   <div v-if="debug" class="fractal-debug" :class="{ 'with-tuner': tune.active }">{{ debug }}</div>
+  <div
+    v-if="egg.active"
+    class="fractal-egg"
+    @pointerdown.prevent="onEggDown"
+    @pointermove="onEggMove"
+    @pointerup="onEggUp"
+    @pointercancel="onEggUp"
+    @wheel.prevent="onEggWheel"
+  />
   <template v-if="tune.active">
     <div
       v-if="tune.drag"
@@ -397,6 +502,14 @@ function onWheel(e: WheelEvent) {
 .is-fallback {
   background: var(--fallback-img) center / cover no-repeat;
 }
+.fractal-egg {
+  position: fixed;
+  inset: 0;
+  z-index: 115;
+  cursor: grab;
+  touch-action: none;
+}
+.fractal-egg:active { cursor: grabbing; }
 .fractal-drag {
   position: fixed;
   inset: 0;

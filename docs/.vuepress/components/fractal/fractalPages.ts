@@ -41,7 +41,10 @@ export interface Palette {
 }
 
 export interface FractalPage {
+  /** mandelbrot：z² + c；ship：Burning Ship（先取绝对值再乘方） */
   kind: 'mandelbrot' | 'ship'
+  /** julia（默认）：c 固定，像素是 z 的初值；mandel：像素是 c（Mandelbrot / Multibrot 集本身） */
+  set?: 'julia' | 'mandel'
   power: number
   inverse: boolean
   mode: 'escape' | 'min'
